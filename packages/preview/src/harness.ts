@@ -63,8 +63,9 @@ export const PREVIEW_HTML = `<!doctype html>
   <head>
     <meta charset="utf-8" />
     <style>
-      html, body { margin: 0; padding: 0; background: transparent; }
-      #preview-root { display: inline-block; padding: 16px; }
+      html, body { margin: 0; padding: 0; height: 100%; background: transparent; }
+      body { display: flex; align-items: center; justify-content: center; }
+      #preview-root { padding: 16px; }
     </style>
   </head>
   <body>

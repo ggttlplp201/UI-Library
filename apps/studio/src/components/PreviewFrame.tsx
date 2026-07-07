@@ -17,6 +17,11 @@ export interface PreviewFrameProps {
    * false for fixed-size hosts (e.g. library cards that clip/scale).
    */
   autoSize?: boolean
+  /**
+   * When false, the iframe ignores pointer events so the host (card) receives
+   * hover/drag instead. Default true.
+   */
+  interactive?: boolean
 }
 
 type Status = 'loading' | 'ready' | 'error'
@@ -34,6 +39,7 @@ export function PreviewFrame({
   className,
   onSize,
   autoSize = true,
+  interactive = true,
 }: PreviewFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [url, setUrl] = useState<string | null>(null)
@@ -106,7 +112,13 @@ export function PreviewFrame({
           ref={iframeRef}
           src={`${url}__preview__`}
           title={`${exportName} preview`}
-          style={{ width: '100%', height: '100%', border: 0, colorScheme: 'light' }}
+          style={{
+            width: '100%',
+            height: '100%',
+            border: 0,
+            colorScheme: 'light',
+            pointerEvents: interactive ? 'auto' : 'none',
+          }}
         />
       )}
       {status === 'loading' && (

@@ -36,7 +36,8 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     [result.entries, presets.entries],
   )
   const entry = entries.find((e) => e.id === selectedId) ?? null
-  const previewRoot = entry?.source === 'preset' ? presets.root : result.root
+  const rootFor = (e: { source: string }) => (e.source === 'preset' ? presets.root : result.root)
+  const previewRoot = entry ? rootFor(entry) : result.root
   const controls = useMemo(() => (entry ? deriveControls(entry) : []), [entry])
 
   // Seed args from control defaults the first time a component is opened.
@@ -87,7 +88,12 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       </header>
 
       <div className="flex-1 flex overflow-hidden min-h-0">
-        <LibraryPanel entries={entries} selectedId={selectedId} onSelect={setSelectedId} />
+        <LibraryPanel
+          entries={entries}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          rootFor={rootFor}
+        />
 
         <main className="flex-1 min-w-0 flex items-center justify-center p-8 bg-background overflow-auto">
           {entry ? (

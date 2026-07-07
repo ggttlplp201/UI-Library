@@ -1,14 +1,17 @@
 import { useMemo, useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
+import { LibraryCard } from './LibraryCard'
 
 export function LibraryPanel({
   entries,
   selectedId,
   onSelect,
+  rootFor,
 }: {
   entries: RegistryEntry[]
   selectedId: string | null
   onSelect: (id: string) => void
+  rootFor: (entry: RegistryEntry) => string
 }) {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string>('all')
@@ -26,7 +29,7 @@ export function LibraryPanel({
   })
 
   return (
-    <div className="w-[250px] border-r border-border flex flex-col shrink-0 bg-card">
+    <div className="w-[260px] border-r border-border flex flex-col shrink-0 bg-card">
       <div className="px-3 pt-3 pb-2 shrink-0">
         <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5">
           Components
@@ -56,42 +59,20 @@ export function LibraryPanel({
         </div>
       </div>
 
-      <ul className="flex-1 overflow-y-auto px-2 pb-3">
+      <div className="flex-1 overflow-y-auto px-2 pb-3 grid grid-cols-2 gap-1.5 auto-rows-[116px] content-start">
         {filtered.map((entry) => (
-          <li key={entry.id}>
-            <button
-              type="button"
-              onClick={() => onSelect(entry.id)}
-              className={`w-full text-left rounded-md px-2.5 py-2 mb-0.5 border transition-colors ${
-                selectedId === entry.id
-                  ? 'border-primary/35 bg-secondary'
-                  : 'border-transparent hover:bg-secondary/60'
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                <span className="text-xs font-medium truncate">{entry.name}</span>
-                {entry.source === 'preset' && (
-                  <span className="text-[8px] font-semibold uppercase tracking-wider px-1 py-px rounded bg-primary/20 text-accent-foreground shrink-0">
-                    preset
-                  </span>
-                )}
-                {entry.flags.needsMocking && (
-                  <span
-                    title="Uses context or external hooks — preview will mock"
-                    className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"
-                  />
-                )}
-              </span>
-              <span className="block text-[10px] text-muted-foreground truncate">
-                {entry.filePath}
-              </span>
-            </button>
-          </li>
+          <LibraryCard
+            key={entry.id}
+            entry={entry}
+            root={rootFor(entry)}
+            selected={selectedId === entry.id}
+            onSelect={() => onSelect(entry.id)}
+          />
         ))}
         {filtered.length === 0 && (
-          <li className="text-[11px] text-muted-foreground px-2.5 py-2">No matches.</li>
+          <p className="col-span-2 text-[11px] text-muted-foreground px-2 py-2">No matches.</p>
         )}
-      </ul>
+      </div>
     </div>
   )
 }
