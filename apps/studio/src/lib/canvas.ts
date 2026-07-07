@@ -20,9 +20,11 @@ export interface Instance {
   entryId: string
   x: number
   y: number
-  /** Uniform scale (Canva-style corner resize); default 1 */
-  scale?: number
-  /** Rotation in degrees (edge-drag rotate); default 0 */
+  /** Horizontal scale — corners scale both axes together, side handles stretch this one; default 1 */
+  scaleX?: number
+  /** Vertical scale; default 1 */
+  scaleY?: number
+  /** Rotation in degrees (rotate handle); default 0 */
   rotation?: number
   args: Record<string, unknown>
   style: StyleOverride

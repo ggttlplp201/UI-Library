@@ -116,7 +116,7 @@ export const PREVIEW_HTML = `<!doctype html>
     <style>
       html, body { margin: 0; padding: 0; height: 100%; background: transparent; }
       body { display: flex; align-items: center; justify-content: center; }
-      #preview-root { padding: 16px; }
+      #preview-root { padding: 0; }
     </style>
   </head>
   <body>
