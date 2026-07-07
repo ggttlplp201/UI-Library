@@ -130,6 +130,8 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
             onArgChange={setArg}
             style={selected.style}
             onStyleChange={setStyle}
+            position={{ x: selected.x, y: selected.y }}
+            onPositionChange={(x, y) => patchInstance(selected.id, { x, y })}
           />
         )}
       </div>

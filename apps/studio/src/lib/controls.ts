@@ -83,8 +83,11 @@ export function deriveControls(entry: RegistryEntry): ControlSpec[] {
     .map(controlFor)
     .filter((c): c is ControlSpec => c != null)
 
-  const hasChildren = controls.some((c) => c.name === 'children')
-  if (!hasChildren && !VOID_LIKE.test(entry.name)) {
+  // Inject a `children` text control only when the component has no other
+  // text-bearing prop to drive its content (docgen usually filters `children`
+  // out). Components with their own text props (title, label, …) don't need it.
+  const hasContentControl = controls.some((c) => c.name === 'children' || c.kind === 'text')
+  if (!hasContentControl && !VOID_LIKE.test(entry.name)) {
     controls.unshift({
       name: 'children',
       kind: 'text',
