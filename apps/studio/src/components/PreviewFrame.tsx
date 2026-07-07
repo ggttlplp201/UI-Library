@@ -218,9 +218,14 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         </div>
       )}
       {status === 'error' && (
-        <div className="absolute inset-0 flex items-center justify-center p-2 pointer-events-none">
-          <span className="text-[10px] text-destructive text-center line-clamp-3" title={error ?? ''}>
-            {error}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 pointer-events-none">
+          {/* Compound sub-components (Dialog/DropdownMenu parts) can't render in
+              isolation — show a calm name label, with the reason on hover. */}
+          <span className="text-[11px] text-muted-foreground text-center" title={error ?? ''}>
+            {exportName}
+          </span>
+          <span className="text-[8px] text-muted-foreground/60 uppercase tracking-wider">
+            needs context
           </span>
         </div>
       )}

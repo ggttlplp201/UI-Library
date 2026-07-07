@@ -13,6 +13,10 @@ export interface CanvasHandle {
 }
 
 const CANVAS_BG: Record<CanvasTheme, string> = { dark: '#0c0c0f', light: '#ffffff' }
+const DOT_COLOR: Record<CanvasTheme, string> = {
+  dark: 'rgba(255,255,255,0.10)',
+  light: 'rgba(0,0,0,0.10)',
+}
 
 // Corner handles scale (Canva-style); edge handles rotate.
 const CORNERS = [
@@ -174,6 +178,11 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
       <div
         ref={surfaceRef}
         className="absolute inset-0"
+        style={{
+          backgroundImage: `radial-gradient(${DOT_COLOR[theme]} 1px, transparent 1px)`,
+          backgroundSize: '20px 20px',
+          backgroundPosition: '-1px -1px',
+        }}
         onClick={() => onSelect(null)}
         onDragOver={(e) => {
           e.preventDefault()
@@ -314,7 +323,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                         onRemove(inst.id)
                       }}
                       onPointerDown={(e) => e.stopPropagation()}
-                      className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 w-6 h-6 rounded-md bg-destructive text-white text-sm leading-none flex items-center justify-center shadow"
+                      className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 w-5 h-5 rounded-sm border border-border bg-card text-foreground hover:bg-secondary text-xs leading-none flex items-center justify-center shadow-sm"
                       title="Remove"
                     >
                       ×
