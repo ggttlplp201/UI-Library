@@ -32,6 +32,10 @@ export function getRecentPaths(): string[] {
 }
 
 export function rememberPath(path: string): void {
-  const next = [path, ...getRecentPaths().filter((p) => p !== path)].slice(0, RECENTS_MAX)
-  localStorage.setItem(RECENTS_KEY, JSON.stringify(next))
+  try {
+    const next = [path, ...getRecentPaths().filter((p) => p !== path)].slice(0, RECENTS_MAX)
+    localStorage.setItem(RECENTS_KEY, JSON.stringify(next))
+  } catch {
+    // Best-effort: blocked storage must not fail a successful scan.
+  }
 }

@@ -54,6 +54,12 @@ export interface ScanStats {
   durationMs: number
 }
 
+/** A file the scanner had to skip (parse/docgen failure) without aborting the scan. */
+export interface ScanError {
+  filePath: string
+  message: string
+}
+
 /** Result of scanning one external folder (the Studio never copies the folder). */
 export interface ScanResult {
   /** Absolute path of the scanned root */
@@ -61,4 +67,6 @@ export interface ScanResult {
   scannedAt: string
   stats: ScanStats
   entries: RegistryEntry[]
+  /** Present only when some files failed to parse; the rest of the scan still succeeds */
+  errors?: ScanError[]
 }

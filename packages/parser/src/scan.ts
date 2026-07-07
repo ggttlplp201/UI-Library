@@ -6,6 +6,7 @@ import type { PropItem } from 'react-docgen-typescript'
 import type {
   PropSpec,
   RegistryEntry,
+  ScanError,
   ScanResult,
 } from '@component-style-studio/registry'
 import { walkComponentFiles } from './walk.js'
@@ -31,29 +32,69 @@ const DOCGEN_OPTIONS = {
   },
 }
 
+interface TargetConfig {
+  options: ts.CompilerOptions
+  /** Files the target's own tsconfig includes — carries ambient types (vite-env.d.ts, module declarations) */
+  fileNames: string[]
+}
+
+function parseConfigFile(configPath: string): ts.ParsedCommandLine | undefined {
+  const { config } = ts.readConfigFile(configPath, ts.sys.readFile)
+  if (!config) return undefined
+  return ts.parseJsonConfigFileContent(config, ts.sys, dirname(configPath), undefined, configPath)
+}
+
 /**
- * Compiler options for the *target* folder: its own tsconfig.json when present
- * (real `paths`, real strictness), with gaps filled so extraction works even
- * on minimal configs — docgen only type-checks, it never emits.
+ * Compiler config for the *target* folder: its own tsconfig.json when present
+ * (real `paths`, real strictness, its included ambient files), with gaps
+ * filled so extraction works even on minimal configs. The scan program never
+ * emits, so options forced here can't affect the target project.
+ *
+ * Deliberately does NOT pass `projectReferences` to the program: with Vite's
+ * solution-style layout the walked src files belong to the referenced
+ * tsconfig.app.json project, and a reference-aware program redirects them
+ * away from source, leaving docgen with nothing. Instead, a solution-style
+ * root (no own files) gets its options/fileNames folded in from the
+ * referenced leaf configs directly.
  */
-function loadCompilerOptions(root: string): ts.CompilerOptions {
+function loadTargetConfig(root: string): TargetConfig {
   let options: ts.CompilerOptions = {}
+  const fileNames: string[] = []
   const configPath = join(root, 'tsconfig.json')
   if (existsSync(configPath)) {
-    const { config } = ts.readConfigFile(configPath, ts.sys.readFile)
-    if (config) {
-      options = ts.parseJsonConfigFileContent(config, ts.sys, root, undefined, configPath).options
+    const parsed = parseConfigFile(configPath)
+    if (parsed) {
+      options = parsed.options
+      fileNames.push(...parsed.fileNames)
+      if (fileNames.length === 0 && parsed.projectReferences) {
+        for (const ref of parsed.projectReferences) {
+          const refPath = ts.resolveProjectReferencePath(ref)
+          if (!existsSync(refPath)) continue
+          const refParsed = parseConfigFile(refPath)
+          if (!refParsed || refParsed.fileNames.length === 0) continue
+          fileNames.push(...refParsed.fileNames)
+          // Earlier-listed references (the app project) win over later ones;
+          // the root config's own options win over all of them.
+          options = { ...refParsed.options, ...options }
+        }
+      }
     }
   }
   options.jsx ??= ts.JsxEmit.ReactJSX
   options.module ??= ts.ModuleKind.ESNext
   options.moduleResolution ??= ts.ModuleResolutionKind.Bundler
   options.target ??= ts.ScriptTarget.ESNext
-  options.allowJs ??= true
   options.esModuleInterop ??= true
+  // Forced regardless of the target's setting: the walk collects .jsx files
+  // even when the target compiles with allowJs off.
+  options.allowJs = true
   options.skipLibCheck = true
   options.noEmit = true
-  return options
+  // Build-orchestration options from leaf configs don't apply to a scan program.
+  options.composite = false
+  options.incremental = false
+  delete options.tsBuildInfoFile
+  return { options, fileNames }
 }
 
 function toPropSpec(prop: PropItem): PropSpec {
@@ -88,17 +129,29 @@ export function scanProject(root: string): ScanResult {
   const started = Date.now()
   const files = walkComponentFiles(root)
 
-  const compilerOptions = loadCompilerOptions(root)
-  const docgen = withCompilerOptions(compilerOptions, DOCGEN_OPTIONS)
-  const program = ts.createProgram(files, compilerOptions)
+  const { options, fileNames } = loadTargetConfig(root)
+  const docgen = withCompilerOptions(options, DOCGEN_OPTIONS)
+  const program = ts.createProgram({
+    rootNames: [...new Set([...fileNames, ...files])],
+    options,
+  })
 
   const entries: RegistryEntry[] = []
+  const errors: ScanError[] = []
   for (const file of files) {
-    const docs = docgen.parseWithProgramProvider(file, () => program)
+    const relPath = relative(root, file).split(sep).join('/')
+    let docs
+    let flags
+    try {
+      docs = docgen.parseWithProgramProvider(file, () => program)
+      flags = detectRuntimeFlags(readFileSync(file, 'utf-8'))
+    } catch (err) {
+      // One hostile file must not abort the whole scan (review finding).
+      errors.push({ filePath: relPath, message: err instanceof Error ? err.message : String(err) })
+      continue
+    }
     if (docs.length === 0) continue
 
-    const flags = detectRuntimeFlags(readFileSync(file, 'utf-8'))
-    const relPath = relative(root, file).split(sep).join('/')
     const category = categoryFor(relPath, root, file)
 
     for (const doc of docs) {
@@ -135,5 +188,6 @@ export function scanProject(root: string): ScanResult {
       durationMs: Date.now() - started,
     },
     entries,
+    ...(errors.length > 0 ? { errors } : {}),
   }
 }

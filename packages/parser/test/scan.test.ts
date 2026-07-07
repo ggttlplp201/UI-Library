@@ -60,6 +60,14 @@ describe('detectRuntimeFlags', () => {
     })
   })
 
+  it('detects member-expression context calls (React.useContext)', () => {
+    const source = [
+      "import * as React from 'react'",
+      'export function C() { const t = React.useContext(Ctx); return null }',
+    ].join('\n')
+    expect(detectRuntimeFlags(source).usesContext).toBe(true)
+  })
+
   it('catches aliased, default-imported, mixed, and package data hooks', () => {
     const source = [
       "import { useQuery as useData } from '@tanstack/react-query'",

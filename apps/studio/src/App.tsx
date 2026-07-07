@@ -36,6 +36,15 @@ export default function App() {
         <span className="text-[11px] text-muted-foreground ml-auto shrink-0">
           {stats.componentsFound} components · {stats.filesScanned} files ·{' '}
           {stats.flaggedComponents} flagged · {stats.durationMs}ms
+          {result.errors && (
+            <span
+              className="text-destructive"
+              title={result.errors.map((e) => `${e.filePath}: ${e.message}`).join('\n')}
+            >
+              {' '}
+              · {result.errors.length} file{result.errors.length !== 1 && 's'} failed
+            </span>
+          )}
         </span>
         <button
           type="button"
