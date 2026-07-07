@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* Dark theme tokens lifted from the Figma Make prototype (figma-make-prototype-notes.md:
+   keep "the visual/dark-theme styling direction … as a starting point for real design tokens"). */
+@theme {
+  --color-background: #0c0c0f;
+  --color-foreground: #e4e4ea;
+  --color-card: #111115;
+  --color-popover: #18181e;
+  --color-primary: #7c6fff;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #1c1c22;
+  --color-muted: #17171c;
+  --color-muted-foreground: #6b6b7a;
+  --color-accent-foreground: #a78bfa;
+  --color-destructive: #ef4444;
+  --color-border: rgba(255, 255, 255, 0.07);
+  --color-input: #1c1c22;
+  --color-ring: #7c6fff;
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}

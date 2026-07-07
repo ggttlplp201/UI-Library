@@ -1,0 +1,4 @@
+export { scanProject } from './scan.js'
+export { walkComponentFiles } from './walk.js'
+export { detectRuntimeFlags } from './flags.js'
+export { componentScanPlugin, normalizeFolderPath } from './vite-plugin.js'
