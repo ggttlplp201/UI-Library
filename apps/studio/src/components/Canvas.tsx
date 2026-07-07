@@ -100,10 +100,22 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
         const snap = (await frameRefs.current.get(inst.id)?.serialize()) ?? null
         if (!snap) continue
         if (snap.css) cssBlocks.add(snap.css)
-        const transform = `transform:rotate(${inst.rotation ?? 0}deg) scale(${inst.scale ?? 1});transform-origin:top left;`
-        parts.push(
-          `<div style="position:absolute;left:${inst.x}px;top:${inst.y}px;${transform}">${snap.html}</div>`,
-        )
+        const rotation = inst.rotation ?? 0
+        const scale = inst.scale ?? 1
+        const nat = natural[inst.id]
+        // Mirror the on-canvas structure: outer wrapper rotates about its
+        // center at (natural × scale) size; inner wrapper scales from top-left.
+        if (nat) {
+          parts.push(
+            `<div style="position:absolute;left:${inst.x}px;top:${inst.y}px;width:${nat.w * scale}px;height:${nat.h * scale}px;transform:rotate(${rotation}deg);transform-origin:center center;">` +
+              `<div style="width:${nat.w}px;height:${nat.h}px;transform:scale(${scale});transform-origin:top left;">${snap.html}</div>` +
+              `</div>`,
+          )
+        } else {
+          parts.push(
+            `<div style="position:absolute;left:${inst.x}px;top:${inst.y}px;transform:rotate(${rotation}deg) scale(${scale});transform-origin:top left;">${snap.html}</div>`,
+          )
+        }
       }
       return [
         '<!doctype html>',
@@ -153,7 +165,8 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
   }
   const endTransform = (e: React.PointerEvent, id: string) => {
     if (transformRef.current?.id === id) transformRef.current = null
-    ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+    const el = e.currentTarget as HTMLElement
+    if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId)
   }
 
   return (
@@ -232,7 +245,8 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
               }}
               onPointerUp={(e) => {
                 if (moveRef.current?.id === inst.id) moveRef.current = null
-                e.currentTarget.releasePointerCapture(e.pointerId)
+                if (e.currentTarget.hasPointerCapture(e.pointerId))
+                  e.currentTarget.releasePointerCapture(e.pointerId)
               }}
             >
               {/* Scale wrapper: sizes to (natural × scale) so handles sit at the

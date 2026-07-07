@@ -48,14 +48,18 @@ function playAnim(anim) {
   })
 }
 
+let renderToken = 0
+let erroredToken = -1
+
 class ErrorBoundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null } }
   static getDerivedStateFromError(err) { return { err } }
-  componentDidCatch(err) { post({ type: 'error', message: String((err && err.message) || err) }) }
+  componentDidCatch(err) {
+    erroredToken = this.props.token
+    post({ type: 'error', message: String((err && err.message) || err) })
+  }
   render() { return this.state.err ? null : this.props.children }
 }
-
-let renderToken = 0
 
 async function renderComponent({ module, exportName, props, anim }) {
   const token = ++renderToken
@@ -64,9 +68,11 @@ async function renderComponent({ module, exportName, props, anim }) {
     if (token !== renderToken) return
     const Comp = mod[exportName] || mod.default
     if (!Comp) { post({ type: 'error', message: 'Export "' + exportName + '" not found in ' + module }); return }
-    root.render(React.createElement(ErrorBoundary, { key: token }, React.createElement(Comp, props || {})))
+    root.render(React.createElement(ErrorBoundary, { key: token, token }, React.createElement(Comp, props || {})))
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (token !== renderToken) return
+      // The error boundary already reported this render — don't overwrite it.
+      if (erroredToken === token) return
       playAnim(anim)
       const r = rootEl.getBoundingClientRect()
       post({ type: 'rendered', width: Math.ceil(r.width), height: Math.ceil(r.height) })

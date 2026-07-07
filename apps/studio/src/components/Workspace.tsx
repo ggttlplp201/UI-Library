@@ -75,22 +75,17 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     setInstances((prev) => prev.filter((i) => i.id !== id))
     setSelectedId((cur) => (cur === id ? null : cur))
   }
-  const setArg = (name: string, value: unknown) => {
-    if (!selected) return
-    patchInstance(selected.id, { args: { ...selected.args, [name]: value } })
+  // Nested updates read from `prev` (not the captured `selected`) so rapid /
+  // batched edits can't clobber each other.
+  const updateSelected = (fn: (inst: Instance) => Instance) => {
+    if (!selectedId) return
+    setInstances((prev) => prev.map((i) => (i.id === selectedId ? fn(i) : i)))
   }
-  const setStyle = (next: StyleOverride) => {
-    if (!selected) return
-    patchInstance(selected.id, { style: next })
-  }
-  const setAnim = (next: AnimConfig) => {
-    if (!selected) return
-    patchInstance(selected.id, { anim: next })
-  }
-  const replayAnim = () => {
-    if (!selected) return
-    patchInstance(selected.id, { replay: (selected.replay ?? 0) + 1 })
-  }
+  const setArg = (name: string, value: unknown) =>
+    updateSelected((i) => ({ ...i, args: { ...i.args, [name]: value } }))
+  const setStyle = (next: StyleOverride) => updateSelected((i) => ({ ...i, style: next }))
+  const setAnim = (next: AnimConfig) => updateSelected((i) => ({ ...i, anim: next }))
+  const replayAnim = () => updateSelected((i) => ({ ...i, replay: (i.replay ?? 0) + 1 }))
 
   // The primary editable-text prop of a component: children (injected or real),
   // else its first text control. Used for double-click inline text editing.
@@ -105,12 +100,16 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     return name ? String(inst.args[name] ?? '') : ''
   }
   const setInstanceText = (id: string, text: string) => {
-    const inst = instances.find((i) => i.id === id)
-    const entry = inst ? entryById(inst.entryId) : undefined
-    if (!inst || !entry) return
-    const name = primaryTextName(entry)
-    if (name) patchInstance(id, { args: { ...inst.args, [name]: text } })
-    else patchInstance(id, { style: { ...inst.style, text } })
+    setInstances((prev) =>
+      prev.map((i) => {
+        if (i.id !== id) return i
+        const entry = entryById(i.entryId)
+        const name = entry ? primaryTextName(entry) : undefined
+        return name
+          ? { ...i, args: { ...i.args, [name]: text } }
+          : { ...i, style: { ...i.style, text } }
+      }),
+    )
   }
 
   const handleExport = async () => {
