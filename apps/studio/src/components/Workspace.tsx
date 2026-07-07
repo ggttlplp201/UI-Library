@@ -6,6 +6,7 @@ import {
   initialArgs,
   type StyleOverride,
 } from '../lib/controls'
+import { fetchPresets, type PresetLibrary } from '../lib/api'
 import { LibraryPanel } from './LibraryPanel'
 import { EditPanel } from './EditPanel'
 import { PreviewFrame } from './PreviewFrame'
@@ -13,13 +14,29 @@ import { PreviewFrame } from './PreviewFrame'
 // Stable fallbacks so memoization isn't defeated by fresh `{}` each render.
 const EMPTY_ARGS: Record<string, unknown> = {}
 const EMPTY_STYLE: StyleOverride = {}
+const NO_PRESETS: PresetLibrary = { root: '', entries: [] }
 
 export function Workspace({ result, onReset }: { result: ScanResult; onReset: () => void }) {
+  const [presets, setPresets] = useState<PresetLibrary>(NO_PRESETS)
   const [selectedId, setSelectedId] = useState<string | null>(result.entries[0]?.id ?? null)
   const [argsById, setArgsById] = useState<Record<string, Record<string, unknown>>>({})
   const [styleById, setStyleById] = useState<Record<string, StyleOverride>>({})
 
-  const entry = result.entries.find((e) => e.id === selectedId) ?? null
+  useEffect(() => {
+    let alive = true
+    fetchPresets().then((p) => alive && setPresets(p))
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  // Imported components first, then the curated presets.
+  const entries = useMemo(
+    () => [...result.entries, ...presets.entries],
+    [result.entries, presets.entries],
+  )
+  const entry = entries.find((e) => e.id === selectedId) ?? null
+  const previewRoot = entry?.source === 'preset' ? presets.root : result.root
   const controls = useMemo(() => (entry ? deriveControls(entry) : []), [entry])
 
   // Seed args from control defaults the first time a component is opened.
@@ -58,7 +75,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
           {result.root}
         </span>
         <span className="text-[11px] text-muted-foreground ml-auto shrink-0">
-          {stats.componentsFound} components · {stats.flaggedComponents} flagged
+          {stats.componentsFound} imported · {presets.entries.length} presets
         </span>
         <button
           type="button"
@@ -70,14 +87,14 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       </header>
 
       <div className="flex-1 flex overflow-hidden min-h-0">
-        <LibraryPanel entries={result.entries} selectedId={selectedId} onSelect={setSelectedId} />
+        <LibraryPanel entries={entries} selectedId={selectedId} onSelect={setSelectedId} />
 
         <main className="flex-1 min-w-0 flex items-center justify-center p-8 bg-background overflow-auto">
           {entry ? (
             <div className="flex flex-col items-center gap-3">
               <PreviewFrame
                 key={entry.id}
-                root={result.root}
+                root={previewRoot}
                 filePath={entry.filePath}
                 exportName={entry.exportName}
                 renderProps={renderProps}

@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+/* Preset palette, lifted from the Figma Make prototype's dark direction. */
+@theme {
+  --color-bg: #0c0c0f;
+  --color-fg: #e8e8ed;
+  --color-muted: #a8a8b8;
+  --color-primary: #7c6fff;
+  --color-card: #1c1c24;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-success: #22c55e;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: transparent;
+  font-family: var(--font-sans);
+}

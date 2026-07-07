@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -6,8 +8,18 @@ import tailwindcss from '@tailwindcss/vite'
 // the packages' TS source directly. The relative path makes esbuild
 // bundle+compile it instead, keeping workspace packages build-step-free.
 import { componentScanPlugin } from '../../packages/parser/src/vite-plugin'
+import { presetsApiPlugin } from '../../packages/parser/src/presets-plugin'
 import { previewApiPlugin } from '../../packages/preview/src/api-plugin'
 
+const here = dirname(fileURLToPath(import.meta.url))
+const presetsRoot = resolve(here, '../../packages/presets')
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), componentScanPlugin(), previewApiPlugin()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    componentScanPlugin(),
+    presetsApiPlugin(presetsRoot),
+    previewApiPlugin(),
+  ],
 })

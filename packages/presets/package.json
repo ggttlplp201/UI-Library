@@ -1,0 +1,18 @@
+{
+  "name": "@component-style-studio/presets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Curated preset component library (source: preset), served to the Studio like an imported project.",
+  "dependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/react": "^19.2.17",
+    "@vitejs/plugin-react": "^6.0.3",
+    "tailwindcss": "^4.3.2",
+    "vite": "^8.1.1"
+  }
+}

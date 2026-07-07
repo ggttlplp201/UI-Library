@@ -70,6 +70,11 @@ export function LibraryPanel({
             >
               <span className="flex items-center gap-1.5">
                 <span className="text-xs font-medium truncate">{entry.name}</span>
+                {entry.source === 'preset' && (
+                  <span className="text-[8px] font-semibold uppercase tracking-wider px-1 py-px rounded bg-primary/20 text-accent-foreground shrink-0">
+                    preset
+                  </span>
+                )}
                 {entry.flags.needsMocking && (
                   <span
                     title="Uses context or external hooks — preview will mock"

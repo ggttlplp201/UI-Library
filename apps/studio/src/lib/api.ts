@@ -1,4 +1,21 @@
-import type { ScanResult } from '@component-style-studio/registry'
+import type { RegistryEntry, ScanResult } from '@component-style-studio/registry'
+
+/** The bundled preset library, scanned server-side and tagged source: 'preset'. */
+export interface PresetLibrary {
+  root: string
+  entries: RegistryEntry[]
+}
+
+export async function fetchPresets(): Promise<PresetLibrary> {
+  try {
+    const res = await fetch('/api/presets', { method: 'GET' })
+    const data: { ok: boolean; root?: string; entries?: RegistryEntry[] } = await res.json()
+    if (!data.ok || !data.root) return { root: '', entries: [] }
+    return { root: data.root, entries: data.entries ?? [] }
+  } catch {
+    return { root: '', entries: [] }
+  }
+}
 
 export async function scanFolder(path: string): Promise<ScanResult> {
   const res = await fetch('/api/scan', {
