@@ -16,11 +16,37 @@ export function harnessModule(cssImportLines: string): string {
   return `${cssImportLines}
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { gsap } from 'gsap'
 
 const rootEl = document.getElementById('preview-root')
 const root = createRoot(rootEl)
 
 function post(msg) { parent.postMessage({ source: 'preview', ...msg }, '*') }
+
+// GSAP animation presets — mirror lib/animation.ts in the Studio. Each returns
+// a from-vars object; 'bounce' overrides the ease.
+const ANIM_FROM = {
+  fade: { opacity: 0 },
+  'slide-up': { opacity: 0, y: 24 },
+  scale: { opacity: 0, scale: 0.8 },
+  bounce: { opacity: 0, y: -24 },
+}
+
+function playAnim(anim) {
+  const target = rootEl.firstElementChild
+  if (!target || !anim || !anim.preset || anim.preset === 'none') return
+  const from = ANIM_FROM[anim.preset]
+  if (!from) return
+  gsap.fromTo(target, from, {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    scale: 1,
+    duration: anim.duration ?? 0.5,
+    delay: anim.delay ?? 0,
+    ease: anim.preset === 'bounce' ? 'bounce.out' : (anim.easing ?? 'power2.out'),
+  })
+}
 
 class ErrorBoundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null } }
@@ -31,7 +57,7 @@ class ErrorBoundary extends React.Component {
 
 let renderToken = 0
 
-async function renderComponent({ module, exportName, props }) {
+async function renderComponent({ module, exportName, props, anim }) {
   const token = ++renderToken
   try {
     const mod = await import(/* @vite-ignore */ '/' + module)
@@ -41,6 +67,7 @@ async function renderComponent({ module, exportName, props }) {
     root.render(React.createElement(ErrorBoundary, { key: token }, React.createElement(Comp, props || {})))
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (token !== renderToken) return
+      playAnim(anim)
       const r = rootEl.getBoundingClientRect()
       post({ type: 'rendered', width: Math.ceil(r.width), height: Math.ceil(r.height) })
     }))

@@ -1,7 +1,27 @@
 import { existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import type { Plugin } from 'vite'
 import { harnessModule, PREVIEW_HTML } from './harness.js'
+
+const require_ = createRequire(import.meta.url)
+
+/**
+ * Resolve GSAP (and @gsap/react) from the Studio's own node_modules so the
+ * harness — and seed components converted to GSAP — can `import 'gsap'` even
+ * when the scanned project doesn't depend on it. Aliased into the child
+ * server below.
+ */
+function gsapAliases(): Record<string, string> {
+  const alias: Record<string, string> = {}
+  try {
+    alias.gsap = require_.resolve('gsap')
+    alias['@gsap/react'] = require_.resolve('@gsap/react')
+  } catch {
+    // GSAP not installed yet — harness animation degrades gracefully.
+  }
+  return alias
+}
 
 const HARNESS_ID = 'virtual:preview-harness'
 
@@ -34,6 +54,12 @@ export function previewPlugin(root: string): Plugin {
 
   return {
     name: 'component-style-studio:preview',
+    config() {
+      return {
+        resolve: { alias: gsapAliases() },
+        optimizeDeps: { include: ['gsap'] },
+      }
+    },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const path = (req.url ?? '').split('?')[0]

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ensurePreviewUrl, type PreviewMessage } from '../lib/preview'
+import type { AnimConfig } from '../lib/canvas'
 
 export interface PreviewFrameProps {
   /** Imported-project root (the scan result's root) */
@@ -9,6 +10,10 @@ export interface PreviewFrameProps {
   exportName: string
   /** Props posted to the harness; changing this re-renders the component in place */
   renderProps: Record<string, unknown>
+  /** GSAP animation the harness replays after each render */
+  anim?: AnimConfig
+  /** Bump to replay the animation without other changes */
+  replayKey?: number
   className?: string
   /** Called with rendered content size, for size-to-content hosts (canvas) */
   onSize?: (size: { width: number; height: number }) => void
@@ -36,6 +41,8 @@ export function PreviewFrame({
   filePath,
   exportName,
   renderProps,
+  anim,
+  replayKey,
   className,
   onSize,
   autoSize = true,
@@ -49,6 +56,8 @@ export function PreviewFrame({
   const readyRef = useRef(false)
   const propsRef = useRef(renderProps)
   propsRef.current = renderProps
+  const animRef = useRef(anim)
+  animRef.current = anim
   const onSizeRef = useRef(onSize)
   onSizeRef.current = onSize
 
@@ -70,7 +79,14 @@ export function PreviewFrame({
     const win = iframeRef.current?.contentWindow
     if (!win || !readyRef.current) return
     win.postMessage(
-      { source: 'studio', type: 'render', module: filePath, exportName, props: propsRef.current },
+      {
+        source: 'studio',
+        type: 'render',
+        module: filePath,
+        exportName,
+        props: propsRef.current,
+        anim: animRef.current,
+      },
       '*',
     )
   }, [filePath, exportName])
@@ -97,10 +113,11 @@ export function PreviewFrame({
     return () => window.removeEventListener('message', onMessage)
   }, [postRender])
 
-  // Re-post whenever the component or its props change.
+  // Re-post whenever the component, its props, or the animation change; a
+  // replayKey bump re-posts to replay the animation.
   useEffect(() => {
     postRender()
-  }, [postRender, renderProps])
+  }, [postRender, renderProps, anim, replayKey])
 
   const sizeStyle =
     autoSize && size ? { width: size.width, height: size.height } : undefined

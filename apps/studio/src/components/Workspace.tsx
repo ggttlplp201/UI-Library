@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { RegistryEntry, ScanResult } from '@component-style-studio/registry'
 import { deriveControls, initialArgs, type StyleOverride } from '../lib/controls'
-import { type Instance, newInstanceId } from '../lib/canvas'
+import { type AnimConfig, type Instance, newInstanceId } from '../lib/canvas'
 import { fetchPresets, type PresetLibrary } from '../lib/api'
 import { LibraryPanel } from './LibraryPanel'
 import { EditPanel } from './EditPanel'
+import { AnimationTab } from './AnimationTab'
 import { Canvas } from './Canvas'
 
 const NO_PRESETS: PresetLibrary = { root: '', entries: [] }
@@ -71,6 +72,14 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     if (!selected) return
     patchInstance(selected.id, { style: next })
   }
+  const setAnim = (next: AnimConfig) => {
+    if (!selected) return
+    patchInstance(selected.id, { anim: next })
+  }
+  const replayAnim = () => {
+    if (!selected) return
+    patchInstance(selected.id, { replay: (selected.replay ?? 0) + 1 })
+  }
 
   return (
     <div className="h-svh flex flex-col">
@@ -132,6 +141,9 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
             onStyleChange={setStyle}
             position={{ x: selected.x, y: selected.y }}
             onPositionChange={(x, y) => patchInstance(selected.id, { x, y })}
+            animationSlot={
+              <AnimationTab value={selected.anim} onChange={setAnim} onReplay={replayAnim} />
+            }
           />
         )}
       </div>

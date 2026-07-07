@@ -23,6 +23,8 @@ export interface Instance {
   args: Record<string, unknown>
   style: StyleOverride
   anim?: AnimConfig
+  /** Bumped to replay the animation without other edits */
+  replay?: number
 }
 
 let counter = 0

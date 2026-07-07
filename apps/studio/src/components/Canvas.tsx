@@ -124,6 +124,8 @@ export function Canvas({
                 filePath={entry.filePath}
                 exportName={entry.exportName}
                 renderProps={composeRenderProps(inst.args, inst.style)}
+                anim={inst.anim}
+                replayKey={inst.replay}
                 interactive={false}
                 className="cursor-grab active:cursor-grabbing"
               />
