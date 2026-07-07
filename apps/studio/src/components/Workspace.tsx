@@ -1,26 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { ScanResult } from '@component-style-studio/registry'
-import {
-  composeRenderProps,
-  deriveControls,
-  initialArgs,
-  type StyleOverride,
-} from '../lib/controls'
+import type { RegistryEntry, ScanResult } from '@component-style-studio/registry'
+import { deriveControls, initialArgs, type StyleOverride } from '../lib/controls'
+import { type Instance, newInstanceId } from '../lib/canvas'
 import { fetchPresets, type PresetLibrary } from '../lib/api'
 import { LibraryPanel } from './LibraryPanel'
 import { EditPanel } from './EditPanel'
-import { PreviewFrame } from './PreviewFrame'
+import { Canvas } from './Canvas'
 
-// Stable fallbacks so memoization isn't defeated by fresh `{}` each render.
-const EMPTY_ARGS: Record<string, unknown> = {}
-const EMPTY_STYLE: StyleOverride = {}
 const NO_PRESETS: PresetLibrary = { root: '', entries: [] }
 
 export function Workspace({ result, onReset }: { result: ScanResult; onReset: () => void }) {
   const [presets, setPresets] = useState<PresetLibrary>(NO_PRESETS)
-  const [selectedId, setSelectedId] = useState<string | null>(result.entries[0]?.id ?? null)
-  const [argsById, setArgsById] = useState<Record<string, Record<string, unknown>>>({})
-  const [styleById, setStyleById] = useState<Record<string, StyleOverride>>({})
+  const [instances, setInstances] = useState<Instance[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -30,36 +22,55 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     }
   }, [])
 
-  // Imported components first, then the curated presets.
   const entries = useMemo(
     () => [...result.entries, ...presets.entries],
     [result.entries, presets.entries],
   )
-  const entry = entries.find((e) => e.id === selectedId) ?? null
-  const rootFor = (e: { source: string }) => (e.source === 'preset' ? presets.root : result.root)
-  const previewRoot = entry ? rootFor(entry) : result.root
-  const controls = useMemo(() => (entry ? deriveControls(entry) : []), [entry])
+  const entryById = useMemo(() => {
+    const map = new Map(entries.map((e) => [e.id, e]))
+    return (id: string) => map.get(id)
+  }, [entries])
+  const rootFor = (e: RegistryEntry) => (e.source === 'preset' ? presets.root : result.root)
 
-  // Seed args from control defaults the first time a component is opened.
-  useEffect(() => {
+  const selected = instances.find((i) => i.id === selectedId) ?? null
+  const selectedEntry = selected ? (entryById(selected.entryId) ?? null) : null
+  const controls = useMemo(
+    () => (selectedEntry ? deriveControls(selectedEntry) : []),
+    [selectedEntry],
+  )
+
+  const addInstance = (entryId: string, x: number, y: number) => {
+    const entry = entryById(entryId)
     if (!entry) return
-    setArgsById((prev) => (prev[entry.id] ? prev : { ...prev, [entry.id]: initialArgs(controls) }))
-  }, [entry, controls])
-
-  const args = (entry && argsById[entry.id]) ?? EMPTY_ARGS
-  const style = (entry && styleById[entry.id]) ?? EMPTY_STYLE
-  const renderProps = useMemo(() => composeRenderProps(args, style), [args, style])
-
+    const inst: Instance = {
+      id: newInstanceId(),
+      entryId,
+      x,
+      y,
+      args: initialArgs(deriveControls(entry)),
+      style: {},
+    }
+    setInstances((prev) => [...prev, inst])
+    setSelectedId(inst.id)
+  }
+  const addFromLibrary = (entryId: string) => {
+    const offset = 40 + (instances.length % 6) * 28
+    addInstance(entryId, offset, offset)
+  }
+  const patchInstance = (id: string, patch: Partial<Instance>) =>
+    setInstances((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)))
+  const removeInstance = (id: string) => {
+    setInstances((prev) => prev.filter((i) => i.id !== id))
+    setSelectedId((cur) => (cur === id ? null : cur))
+  }
   const setArg = (name: string, value: unknown) => {
-    if (!entry) return
-    setArgsById((prev) => ({ ...prev, [entry.id]: { ...prev[entry.id], [name]: value } }))
+    if (!selected) return
+    patchInstance(selected.id, { args: { ...selected.args, [name]: value } })
   }
   const setStyle = (next: StyleOverride) => {
-    if (!entry) return
-    setStyleById((prev) => ({ ...prev, [entry.id]: next }))
+    if (!selected) return
+    patchInstance(selected.id, { style: next })
   }
-
-  const { stats } = result
 
   return (
     <div className="h-svh flex flex-col">
@@ -70,13 +81,18 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         </div>
         <div className="w-px h-4 bg-border" />
         <span
-          className="text-[11px] font-mono text-muted-foreground truncate max-w-96"
+          className="text-[11px] font-mono text-muted-foreground truncate max-w-80"
           title={result.root}
         >
           {result.root}
         </span>
+        {instances.length > 0 && (
+          <span className="text-[11px] text-muted-foreground">
+            {instances.length} on canvas
+          </span>
+        )}
         <span className="text-[11px] text-muted-foreground ml-auto shrink-0">
-          {stats.componentsFound} imported · {presets.entries.length} presets
+          {result.stats.componentsFound} imported · {presets.entries.length} presets
         </span>
         <button
           type="button"
@@ -90,38 +106,29 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       <div className="flex-1 flex overflow-hidden min-h-0">
         <LibraryPanel
           entries={entries}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
+          selectedId={selectedEntry?.id ?? null}
+          onSelect={addFromLibrary}
           rootFor={rootFor}
         />
 
-        <main className="flex-1 min-w-0 flex items-center justify-center p-8 bg-background overflow-auto">
-          {entry ? (
-            <div className="flex flex-col items-center gap-3">
-              <PreviewFrame
-                key={entry.id}
-                root={previewRoot}
-                filePath={entry.filePath}
-                exportName={entry.exportName}
-                renderProps={renderProps}
-                className="min-w-[120px] min-h-[80px] rounded-lg border border-border bg-white"
-              />
-              <span className="text-[11px] text-muted-foreground">
-                live preview · edits apply instantly
-              </span>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">Select a component.</p>
-          )}
-        </main>
+        <Canvas
+          instances={instances}
+          entryById={entryById}
+          rootFor={rootFor}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onAdd={addInstance}
+          onMove={(id, x, y) => patchInstance(id, { x, y })}
+          onRemove={removeInstance}
+        />
 
-        {entry && (
+        {selected && selectedEntry && (
           <EditPanel
-            entry={entry}
+            entry={selectedEntry}
             controls={controls}
-            args={args}
+            args={selected.args}
             onArgChange={setArg}
-            style={style}
+            style={selected.style}
             onStyleChange={setStyle}
           />
         )}
