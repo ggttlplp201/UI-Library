@@ -30,8 +30,20 @@ export interface StyleOverride {
 // Props that are styling/rendering plumbing, not meaningful content controls.
 const SKIP_PROPS = new Set(['className', 'style', 'ref', 'key', 'asChild'])
 
-// Type fragments that mark a prop as non-trivially editable (functions, elements).
-const UNEDITABLE = ['=>', 'ReactElement', 'ComponentRenderFn', 'EventHandler', 'MouseEvent', 'ReactNode']
+// Type fragments that mark a prop as non-trivially editable: functions,
+// elements, and arrays/object literals (which must not be mocked as strings —
+// e.g. an `items: {…}[]` prop whose type text merely contains "string").
+const UNEDITABLE = [
+  '=>',
+  'ReactElement',
+  'ComponentRenderFn',
+  'EventHandler',
+  'MouseEvent',
+  'ReactNode',
+  '[]',
+  'Array<',
+  '{',
+]
 
 // Components that render a void/childless host element — don't inject children.
 const VOID_LIKE = /input|image|img|avatar|separator|divider|^hr$|^br$|icon$/i

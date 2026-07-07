@@ -23,6 +23,12 @@ export interface PreviewFrameProps {
    */
   autoSize?: boolean
   /**
+   * Thumbnail mode: render the component at its natural size, then scale it
+   * down (never up) to fit this container, centered. Prevents squishing/
+   * clipping in the fixed-size library cards. Overrides autoSize.
+   */
+  fit?: boolean
+  /**
    * When false, the iframe ignores pointer events so the host (card) receives
    * hover/drag instead. Default true.
    */
@@ -46,13 +52,16 @@ export function PreviewFrame({
   className,
   onSize,
   autoSize = true,
+  fit = false,
   interactive = true,
 }: PreviewFrameProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [url, setUrl] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>('loading')
   const [error, setError] = useState<string | null>(null)
   const [size, setSize] = useState<{ width: number; height: number } | null>(null)
+  const [box, setBox] = useState<{ width: number; height: number } | null>(null)
   const readyRef = useRef(false)
   const propsRef = useRef(renderProps)
   propsRef.current = renderProps
@@ -119,24 +128,58 @@ export function PreviewFrame({
     postRender()
   }, [postRender, renderProps, anim, replayKey])
 
+  // Track the container size for fit (thumbnail) scaling.
+  useEffect(() => {
+    if (!fit) return
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      const r = el.getBoundingClientRect()
+      setBox({ width: r.width, height: r.height })
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [fit])
+
   const sizeStyle =
-    autoSize && size ? { width: size.width, height: size.height } : undefined
+    autoSize && !fit && size ? { width: size.width, height: size.height } : undefined
+
+  // In fit mode, size the iframe to the content and scale it to fit, centered.
+  const fitScale =
+    fit && size && box && size.width > 0 && size.height > 0
+      ? Math.min(box.width / size.width, box.height / size.height, 1)
+      : 1
+  const iframeStyle: React.CSSProperties = fit
+    ? {
+        width: size?.width ?? '100%',
+        height: size?.height ?? '100%',
+        border: 0,
+        colorScheme: 'light',
+        pointerEvents: interactive ? 'auto' : 'none',
+        transform: `scale(${fitScale})`,
+        transformOrigin: 'center center',
+      }
+    : {
+        width: '100%',
+        height: '100%',
+        border: 0,
+        colorScheme: 'light',
+        pointerEvents: interactive ? 'auto' : 'none',
+      }
 
   return (
-    <div className={className} style={{ position: 'relative', overflow: 'hidden', ...sizeStyle }}>
+    <div
+      ref={containerRef}
+      className={className}
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        ...(fit ? { display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}),
+        ...sizeStyle,
+      }}
+    >
       {url && (
-        <iframe
-          ref={iframeRef}
-          src={`${url}__preview__`}
-          title={`${exportName} preview`}
-          style={{
-            width: '100%',
-            height: '100%',
-            border: 0,
-            colorScheme: 'light',
-            pointerEvents: interactive ? 'auto' : 'none',
-          }}
-        />
+        <iframe ref={iframeRef} src={`${url}__preview__`} title={`${exportName} preview`} style={iframeStyle} />
       )}
       {status === 'loading' && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

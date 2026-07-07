@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import { composeRenderProps, deriveControls, initialArgs } from '../lib/controls'
 import { PreviewFrame } from './PreviewFrame'
@@ -18,6 +18,26 @@ export function LibraryCard({
   onSelect: () => void
 }) {
   const [hovered, setHovered] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+  // Mount the preview iframe once the card scrolls near the viewport, so we
+  // don't boot dozens of iframes at once — visible cards render without hover.
+  const [inView, setInView] = useState(false)
+
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el || inView) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setInView(true)
+          io.disconnect()
+        }
+      },
+      { rootMargin: '200px' },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [inView])
 
   const defaultProps = useMemo(
     () => composeRenderProps(initialArgs(deriveControls(entry))),
@@ -26,6 +46,7 @@ export function LibraryCard({
 
   return (
     <div
+      ref={cardRef}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData(DRAG_MIME, entry.id)
@@ -41,19 +62,20 @@ export function LibraryCard({
       }`}
       title={`${entry.name} — drag onto the canvas`}
     >
+      {/* Always render the live component (auto-animations like border-beam /
+          shimmer play continuously); hovering makes it interactive so
+          mouse-driven animations (wobble, hover-highlight) respond too. */}
       <div className="h-[84px] flex items-center justify-center overflow-hidden bg-white">
-        {hovered ? (
+        {inView && (
           <PreviewFrame
             root={root}
             filePath={entry.filePath}
             exportName={entry.exportName}
             renderProps={defaultProps}
-            autoSize={false}
-            interactive={false}
+            fit
+            interactive={hovered}
             className="w-full h-full"
           />
-        ) : (
-          <span className="text-[10px] text-muted-foreground select-none">hover to preview</span>
         )}
       </div>
       <div className="px-2 py-1.5 border-t border-border/50">

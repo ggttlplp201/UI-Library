@@ -7,20 +7,26 @@ import { harnessModule, PREVIEW_HTML } from './harness.js'
 const require_ = createRequire(import.meta.url)
 
 /**
- * Resolve GSAP (and @gsap/react) from the Studio's own node_modules so the
- * harness — and seed components converted to GSAP — can `import 'gsap'` even
- * when the scanned project doesn't depend on it. Aliased into the child
- * server below.
+ * GSAP-core alias for a child server. The harness's animation system needs
+ * `gsap`, but the scanned project may not depend on it — so fall back to the
+ * Studio's own copy. When the project HAS its own gsap we use that and add no
+ * alias: aliasing a hook-adjacent package (or its @gsap/react peer) across the
+ * project-root boundary pulls in a second React instance and breaks hooks
+ * (useGSAP → "Cannot read properties of null"). We never alias @gsap/react —
+ * components that use it must install it themselves.
  */
-function gsapAliases(): Record<string, string> {
-  const alias: Record<string, string> = {}
+function gsapAlias(root: string): Record<string, string> {
   try {
-    alias.gsap = require_.resolve('gsap')
-    alias['@gsap/react'] = require_.resolve('@gsap/react')
+    createRequire(join(root, 'noop.js')).resolve('gsap')
+    return {} // project has its own gsap; leave resolution alone
   } catch {
-    // GSAP not installed yet — harness animation degrades gracefully.
+    // fall through
   }
-  return alias
+  try {
+    return { gsap: require_.resolve('gsap') }
+  } catch {
+    return {} // GSAP unavailable — harness animation degrades gracefully
+  }
 }
 
 const HARNESS_ID = 'virtual:preview-harness'
@@ -56,8 +62,7 @@ export function previewPlugin(root: string): Plugin {
     name: 'component-style-studio:preview',
     config() {
       return {
-        resolve: { alias: gsapAliases() },
-        optimizeDeps: { include: ['gsap'] },
+        resolve: { alias: gsapAlias(root) },
       }
     },
     configureServer(server) {
