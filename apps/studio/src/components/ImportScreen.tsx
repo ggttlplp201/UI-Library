@@ -2,7 +2,13 @@ import { useState } from 'react'
 import type { ScanResult } from '@component-style-studio/registry'
 import { getRecentPaths, rememberPath, scanFolder } from '../lib/api'
 
-export function ImportScreen({ onScanned }: { onScanned: (result: ScanResult) => void }) {
+export function ImportScreen({
+  onScanned,
+  onUsePresets,
+}: {
+  onScanned: (result: ScanResult) => void
+  onUsePresets: () => void
+}) {
   const [path, setPath] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -60,6 +66,19 @@ export function ImportScreen({ onScanned }: { onScanned: (result: ScanResult) =>
             </button>
           </div>
         </form>
+
+        <div className="flex items-center gap-3 my-4">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">or</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
+        <button
+          type="button"
+          onClick={onUsePresets}
+          className="w-full px-4 py-2 rounded-md text-xs font-medium bg-secondary text-foreground hover:bg-secondary/70 transition-colors"
+        >
+          Start with the preset library — no folder needed
+        </button>
 
         {error && (
           <p className="mt-3 text-xs text-destructive rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2">

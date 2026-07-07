@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { ensurePreviewUrl, type PreviewMessage } from '../lib/preview'
 import type { AnimConfig } from '../lib/canvas'
+
+/** Imperative handle for exporting a static snapshot of the rendered component. */
+export interface PreviewHandle {
+  serialize: () => Promise<{ html: string; css: string } | null>
+}
 
 export interface PreviewFrameProps {
   /** Imported-project root (the scan result's root) */
@@ -42,19 +47,22 @@ type Status = 'loading' | 'ready' | 'error'
  * drives it over postMessage. A single iframe can switch component/props
  * without reloading — the harness handles successive render messages.
  */
-export function PreviewFrame({
-  root,
-  filePath,
-  exportName,
-  renderProps,
-  anim,
-  replayKey,
-  className,
-  onSize,
-  autoSize = true,
-  fit = false,
-  interactive = true,
-}: PreviewFrameProps) {
+export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(function PreviewFrame(
+  {
+    root,
+    filePath,
+    exportName,
+    renderProps,
+    anim,
+    replayKey,
+    className,
+    onSize,
+    autoSize = true,
+    fit = false,
+    interactive = true,
+  },
+  ref,
+) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [url, setUrl] = useState<string | null>(null)
@@ -141,6 +149,29 @@ export function PreviewFrame({
     return () => ro.disconnect()
   }, [fit])
 
+  useImperativeHandle(ref, () => ({
+    serialize: () =>
+      new Promise((resolve) => {
+        const win = iframeRef.current?.contentWindow
+        if (!win) return resolve(null)
+        const nonce = Math.random().toString(36).slice(2)
+        const onMsg = (ev: MessageEvent) => {
+          if (ev.source !== win) return
+          const d = ev.data
+          if (d?.source === 'preview' && d.type === 'serialized' && d.nonce === nonce) {
+            window.removeEventListener('message', onMsg)
+            resolve({ html: d.html, css: d.css })
+          }
+        }
+        window.addEventListener('message', onMsg)
+        win.postMessage({ source: 'studio', type: 'serialize', nonce }, '*')
+        setTimeout(() => {
+          window.removeEventListener('message', onMsg)
+          resolve(null)
+        }, 2500)
+      }),
+  }))
+
   const sizeStyle =
     autoSize && !fit && size ? { width: size.width, height: size.height } : undefined
 
@@ -195,4 +226,4 @@ export function PreviewFrame({
       )}
     </div>
   )
-}
+})

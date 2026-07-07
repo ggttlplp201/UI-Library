@@ -76,9 +76,27 @@ async function renderComponent({ module, exportName, props, anim }) {
   }
 }
 
+// Collect the document's generated CSS (Tailwind utilities/theme) so an export
+// snapshot is self-contained.
+function collectCss() {
+  let css = ''
+  for (const sheet of document.styleSheets) {
+    try {
+      for (const rule of sheet.cssRules) css += rule.cssText + '\\n'
+    } catch (e) {
+      // cross-origin sheet — skip
+    }
+  }
+  return css
+}
+
 window.addEventListener('message', (ev) => {
   const d = ev.data
-  if (d && d.source === 'studio' && d.type === 'render') renderComponent(d)
+  if (!d || d.source !== 'studio') return
+  if (d.type === 'render') renderComponent(d)
+  else if (d.type === 'serialize') {
+    post({ type: 'serialized', nonce: d.nonce, html: rootEl.innerHTML, css: collectCss() })
+  }
 })
 
 post({ type: 'ready' })

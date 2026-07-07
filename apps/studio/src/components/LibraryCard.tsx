@@ -17,7 +17,6 @@ export function LibraryCard({
   selected: boolean
   onSelect: () => void
 }) {
-  const [hovered, setHovered] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
   // Mount the preview iframe once the card scrolls near the viewport, so we
   // don't boot dozens of iframes at once — visible cards render without hover.
@@ -53,8 +52,6 @@ export function LibraryCard({
         e.dataTransfer.effectAllowed = 'copy'
       }}
       onClick={onSelect}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       className={`group rounded-lg border cursor-grab active:cursor-grabbing transition-colors overflow-hidden ${
         selected
           ? 'border-primary/40 bg-secondary'
@@ -63,9 +60,9 @@ export function LibraryCard({
       title={`${entry.name} — drag onto the canvas`}
     >
       {/* Always render the live component (auto-animations like border-beam /
-          shimmer play continuously); hovering makes it interactive so
-          mouse-driven animations (wobble, hover-highlight) respond too. */}
-      <div className="h-[84px] flex items-center justify-center overflow-hidden bg-white">
+          shimmer play continuously). Non-interactive so the whole card —
+          preview included — stays draggable. */}
+      <div className="h-[84px] flex items-center justify-center overflow-hidden bg-white pointer-events-none">
         {inView && (
           <PreviewFrame
             root={root}
@@ -73,7 +70,7 @@ export function LibraryCard({
             exportName={entry.exportName}
             renderProps={defaultProps}
             fit
-            interactive={hovered}
+            interactive={false}
             className="w-full h-full"
           />
         )}

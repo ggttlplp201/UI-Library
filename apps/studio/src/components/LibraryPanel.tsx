@@ -1,17 +1,22 @@
 import { useMemo, useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import { LibraryCard } from './LibraryCard'
+import { PanelSideToggle, type PanelSide } from './PanelSideToggle'
 
 export function LibraryPanel({
   entries,
   selectedId,
   onSelect,
   rootFor,
+  side,
+  onToggleSide,
 }: {
   entries: RegistryEntry[]
   selectedId: string | null
   onSelect: (id: string) => void
   rootFor: (entry: RegistryEntry) => string
+  side: PanelSide
+  onToggleSide: () => void
 }) {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string>('all')
@@ -29,11 +34,16 @@ export function LibraryPanel({
   })
 
   return (
-    <div className="w-[260px] border-r border-border flex flex-col shrink-0 bg-card">
+    <div
+      className={`w-[260px] ${side === 'left' ? 'border-r' : 'border-l'} border-border flex flex-col shrink-0 bg-card`}
+    >
       <div className="px-3 pt-3 pb-2 shrink-0">
-        <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5">
-          Components
-        </p>
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest">
+            Components
+          </p>
+          <PanelSideToggle side={side} onToggle={onToggleSide} />
+        </div>
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
