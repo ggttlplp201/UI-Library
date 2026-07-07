@@ -6,11 +6,16 @@ import type { TransformResult } from './types.js'
 const b = types.builders
 const n = types.namedTypes
 
-/** Canvas transform state; identity values (0 / scale 1) are omitted from output. */
+/**
+ * Canvas transform state (mirrors `Instance` in the Studio: per-axis scale
+ * from the side/corner handles); identity values (0 / scale 1) are omitted
+ * from output.
+ */
 export interface PositionEdit {
   x?: number
   y?: number
-  scale?: number
+  scaleX?: number
+  scaleY?: number
   rotation?: number
 }
 
@@ -19,7 +24,11 @@ function transformValue(pos: PositionEdit): string {
   if ((pos.x ?? 0) !== 0 || (pos.y ?? 0) !== 0) {
     parts.push(`translate(${pos.x ?? 0}px, ${pos.y ?? 0}px)`)
   }
-  if (pos.scale != null && pos.scale !== 1) parts.push(`scale(${pos.scale})`)
+  const sx = pos.scaleX ?? 1
+  const sy = pos.scaleY ?? 1
+  if (sx !== 1 || sy !== 1) {
+    parts.push(sx === sy ? `scale(${sx})` : `scale(${sx}, ${sy})`)
+  }
   if (pos.rotation != null && pos.rotation !== 0) parts.push(`rotate(${pos.rotation}deg)`)
   return parts.join(' ')
 }

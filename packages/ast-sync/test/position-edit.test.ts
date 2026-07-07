@@ -17,9 +17,15 @@ const DYNAMIC = injectStableIds(`export const Card = ({ s }: { s: object }) => <
 
 describe('applyPositionEdit', () => {
   it('writes scale and rotation as a transform style', () => {
-    const res = applyPositionEdit(PLAIN, 'c0', { scale: 1.25, rotation: 15 })
+    const res = applyPositionEdit(PLAIN, 'c0', { scaleX: 1.25, scaleY: 1.25, rotation: 15 })
     expect(res.changed).toBe(true)
     expect(res.code).toContain('transform: "scale(1.25) rotate(15deg)"')
+  })
+
+  it('writes non-uniform scale with both axes', () => {
+    const res = applyPositionEdit(PLAIN, 'c0', { scaleX: 2, scaleY: 0.5 })
+    expect(res.changed).toBe(true)
+    expect(res.code).toContain('transform: "scale(2, 0.5)"')
   })
 
   it('writes x/y as a translate', () => {
@@ -44,13 +50,13 @@ describe('applyPositionEdit', () => {
 
   it('identity values remove a previously written transform', () => {
     const rotated = applyPositionEdit(PLAIN, 'c0', { rotation: 15 }).code
-    const reset = applyPositionEdit(rotated, 'c0', { rotation: 0, scale: 1 })
+    const reset = applyPositionEdit(rotated, 'c0', { rotation: 0, scaleX: 1, scaleY: 1 })
     expect(reset.changed).toBe(true)
     expect(reset.code).not.toContain('transform')
   })
 
   it('no-ops on identity values when nothing was written', () => {
-    const res = applyPositionEdit(PLAIN, 'c0', { scale: 1, rotation: 0 })
+    const res = applyPositionEdit(PLAIN, 'c0', { scaleX: 1, scaleY: 1, rotation: 0 })
     expect(res.changed).toBe(false)
   })
 
