@@ -131,10 +131,16 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   }, [postRender])
 
   // Re-post whenever the component, its props, or the animation change; a
-  // replayKey bump re-posts to replay the animation.
+  // replayKey bump re-posts to replay the animation. renderProps/anim are
+  // rebuilt on every canvas render, so we key off their serialized *values* —
+  // otherwise an unrelated instance re-rendering the canvas would hand this
+  // frame a new object reference and needlessly re-post (replaying the
+  // animation on every unrelated edit).
+  const propsKey = JSON.stringify(renderProps)
+  const animKey = JSON.stringify(anim ?? null)
   useEffect(() => {
     postRender()
-  }, [postRender, renderProps, anim, replayKey])
+  }, [postRender, propsKey, animKey, replayKey])
 
   // Track the container size for fit (thumbnail) scaling.
   useEffect(() => {
