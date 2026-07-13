@@ -28,7 +28,7 @@ const WEIGHT_UTILITIES: Record<string, string> = {
 }
 
 /** Arbitrary values can't contain whitespace — Tailwind uses `_` instead. */
-const arb = (value: string) => value.replace(/\s+/g, '')
+const arb = (value: string) => value.replace(/\s+/g, '_')
 
 // `bg-*` utilities that are NOT background-color — everything else bg- is
 // treated as a color (covers custom theme colors like `bg-primary`).

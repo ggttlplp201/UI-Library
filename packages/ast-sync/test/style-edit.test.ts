@@ -56,9 +56,18 @@ describe('applyStyleEdit', () => {
 
   it('sets an arbitrary font family', () => {
     const res = applyStyleEdit(BUTTON, 'c0', { fontFamily: 'Georgia, serif' })
-    expect(res.code).toContain('font-[family-name:Georgia,serif]')
+    expect(res.code).toContain('font-[family-name:Georgia,_serif]')
     // weight utility is not a family utility — it stays
     expect(res.code).toContain('font-medium')
+  })
+
+  it('encodes whitespace in arbitrary values as underscores', () => {
+    const res = applyStyleEdit(BUTTON, 'c0', {
+      color: 'rgb(255 0 0 / 0.5)',
+      fontFamily: 'Comic Sans MS',
+    })
+    expect(res.code).toContain('text-[rgb(255_0_0_/_0.5)]')
+    expect(res.code).toContain('font-[family-name:Comic_Sans_MS]')
   })
 
   it('creates a className attribute when the element has none', () => {

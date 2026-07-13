@@ -75,6 +75,55 @@ describe('applyAnimationAttach', () => {
     expect(res.code).toMatch(/import \{ useState, useRef \} from ['"]react['"]/)
   })
 
+  it('adds a separate import when react is namespace-imported', () => {
+    const src = `import * as React from 'react'
+
+export function Box() {
+  return <div className="box">hi</div>
+}
+`
+    const res = applyAnimationAttach(src, 'Box', FADE)
+    expect(res.code).toContain("import * as React from 'react'")
+    expect(res.code).toMatch(/import \{ useRef \} from ['"]react['"]/)
+  })
+
+  it('treats a default gsap import as already providing the binding', () => {
+    const src = `import gsap from 'gsap'
+
+export function Box() {
+  return <div>hi</div>
+}
+`
+    const res = applyAnimationAttach(src, 'Box', FADE)
+    expect(res.code.match(/from ['"]gsap['"]/g)).toHaveLength(1)
+    expect(res.code).toContain("import gsap from 'gsap'")
+    expect(res.code).not.toContain('{ gsap }')
+  })
+
+  it('adds the plain binding alongside an aliased import', () => {
+    const src = `import { useRef as usePin } from 'react'
+
+export function Box() {
+  const pin = usePin(null)
+  return <div>hi</div>
+}
+`
+    const res = applyAnimationAttach(src, 'Box', FADE)
+    expect(res.code).toMatch(/import \{ useRef as usePin, useRef \} from ['"]react['"]/)
+  })
+
+  it('picks a non-colliding ref name', () => {
+    const src = `export function Box() {
+  const animRef = 1
+  return <div>{animRef}</div>
+}
+`
+    const res = applyAnimationAttach(src, 'Box', FADE)
+    expect(res.code).toContain('const animRef2 = useRef<HTMLDivElement>(null)')
+    expect(res.code).toContain('ref={animRef2}')
+    expect(res.code).toMatch(/gsap\.fromTo\(animRef2\.current/)
+  })
+
   it('converts an expression-body arrow component to a block', () => {
     const res = applyAnimationAttach(ARROW, 'Chip', FADE)
     expect(res.changed).toBe(true)

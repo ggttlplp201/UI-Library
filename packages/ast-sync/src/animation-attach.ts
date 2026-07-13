@@ -72,18 +72,40 @@ function stmt(code: string): StatementKind {
   return node
 }
 
-/** Add `import { name } from mod`, merging into an existing declaration. */
+/** The local binding a specifier introduces (default/named/namespace). */
+function localNameOf(sp: unknown): string | null {
+  if (n.ImportSpecifier.check(sp)) {
+    if (sp.local) return sp.local.name as string
+    return n.Identifier.check(sp.imported) ? sp.imported.name : null
+  }
+  if (n.ImportDefaultSpecifier.check(sp) || n.ImportNamespaceSpecifier.check(sp)) {
+    return sp.local ? (sp.local.name as string) : null
+  }
+  return null
+}
+
+/**
+ * Add `import { name } from mod`. A specifier whose *local* binding is
+ * already `name` (named, aliased-to, or default) satisfies it; otherwise the
+ * specifier merges into an existing value import — unless that import is a
+ * namespace import, which can't hold named specifiers, so a separate
+ * declaration is added instead.
+ */
 function ensureNamedImport(ast: ReturnType<typeof parseModule>, mod: string, name: string): void {
   const body: unknown[] = ast.program.body
-  const existing = body.find(
+  const sameModule = body.filter(
     (s): s is types.namedTypes.ImportDeclaration =>
-      n.ImportDeclaration.check(s) && n.StringLiteral.check(s.source) && s.source.value === mod,
+      n.ImportDeclaration.check(s) &&
+      n.StringLiteral.check(s.source) &&
+      s.source.value === mod &&
+      (s.importKind == null || s.importKind === 'value'),
   )
-  if (existing) {
-    const has = (existing.specifiers ?? []).some(
-      (sp) => n.ImportSpecifier.check(sp) && n.Identifier.check(sp.imported) && sp.imported.name === name,
-    )
-    if (!has) (existing.specifiers ??= []).push(b.importSpecifier(b.identifier(name)))
+  if (sameModule.some((d) => (d.specifiers ?? []).some((sp) => localNameOf(sp) === name))) return
+  const mergeable = sameModule.find(
+    (d) => !(d.specifiers ?? []).some((sp) => n.ImportNamespaceSpecifier.check(sp)),
+  )
+  if (mergeable) {
+    ;(mergeable.specifiers ??= []).push(b.importSpecifier(b.identifier(name)))
     return
   }
   let lastImport = -1
@@ -91,6 +113,19 @@ function ensureNamedImport(ast: ReturnType<typeof parseModule>, mod: string, nam
     if (n.ImportDeclaration.check(s)) lastImport = i
   })
   body.splice(lastImport + 1, 0, stmt(`import { ${name} } from "${mod}"`))
+}
+
+/** First of `base`, `base2`, `base3`… not used as an identifier anywhere. */
+function unusedName(ast: ReturnType<typeof parseModule>, base: string): string {
+  const used = new Set<string>()
+  types.visit(ast, {
+    visitIdentifier(path) {
+      used.add(path.node.name)
+      this.traverse(path)
+    },
+  })
+  if (!used.has(base)) return base
+  for (let i = 2; ; i++) if (!used.has(`${base}${i}`)) return `${base}${i}`
 }
 
 function hasRegisterPlugin(ast: ReturnType<typeof parseModule>): boolean {
@@ -180,7 +215,7 @@ export function applyAnimationAttach(
   }
   const needsRef = refName == null
   if (refName == null) {
-    refName = 'animRef'
+    refName = unusedName(ast, 'animRef')
     root.openingElement.attributes ??= []
     root.openingElement.attributes.push(
       b.jsxAttribute(b.jsxIdentifier('ref'), b.jsxExpressionContainer(b.identifier(refName))),
