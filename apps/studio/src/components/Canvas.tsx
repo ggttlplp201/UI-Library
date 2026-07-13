@@ -367,7 +367,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                       }}
                       onPointerDown={(e) => e.stopPropagation()}
                       className="absolute -top-8 left-1/2 -translate-x-1/2 z-10 w-5 h-5 rounded-sm border border-border bg-card text-foreground hover:bg-secondary text-xs leading-none flex items-center justify-center shadow-sm"
-                      title="Remove"
+                      title="Remove (Delete) — Esc deselects, arrows nudge"
                     >
                       ×
                     </button>

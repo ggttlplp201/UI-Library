@@ -49,6 +49,48 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     }
   }, [])
 
+  // Canvas keyboard shortcuts (ignored while typing in a field): Escape
+  // deselects, Delete/Backspace removes the selection, arrows nudge it
+  // (Shift = 10px). Uses the stable state setters so it depends only on which
+  // instance is selected.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      // Leave browser/OS shortcuts (Cmd/Ctrl/Alt combos) alone.
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key === 'Escape') {
+        setSelectedId(null)
+        return
+      }
+      if (!selectedId) return
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault()
+        setInstances((prev) => prev.filter((i) => i.id !== selectedId))
+        setSelectedId(null)
+        return
+      }
+      const step = e.shiftKey ? 10 : 1
+      const delta: Record<string, [number, number]> = {
+        ArrowLeft: [-step, 0],
+        ArrowRight: [step, 0],
+        ArrowUp: [0, -step],
+        ArrowDown: [0, step],
+      }
+      const d = delta[e.key]
+      if (d) {
+        e.preventDefault()
+        setInstances((prev) =>
+          prev.map((i) =>
+            i.id === selectedId ? { ...i, x: Math.max(0, i.x + d[0]), y: Math.max(0, i.y + d[1]) } : i,
+          ),
+        )
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedId])
+
   const entries = useMemo(
     () => [...result.entries, ...presets.entries],
     [result.entries, presets.entries],
