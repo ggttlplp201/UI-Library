@@ -78,6 +78,57 @@ export async function fetchGeneratedCode(payload: CodeSyncPayload): Promise<Gene
   return { code: data.code, changed: data.changed, skipped: data.skipped ?? [] }
 }
 
+/** One edited instance in an export request — a CodeSyncPayload without `root`. */
+export type ExportInstancePayload = Omit<CodeSyncPayload, 'root'>
+
+export interface ExportConflict {
+  filePath: string
+  exportName: string
+  reason: string
+}
+export interface ExportSkip {
+  filePath: string
+  step: string
+  reason: string
+}
+export interface ExportSourceResult {
+  /** Changed file paths (relative to root) included in the zip */
+  files: string[]
+  conflicts: ExportConflict[]
+  skipped: ExportSkip[]
+  /** base64 store-only zip of the changed files; absent when nothing changed */
+  zipBase64?: string
+}
+
+/**
+ * POST /api/export: send every edited instance for one project root; the server
+ * applies the edits to each component's source and returns the changed files as
+ * a zip (base64) plus a conflict/skip report (Phase 8).
+ */
+export async function exportSource(payload: {
+  root: string
+  instances: ExportInstancePayload[]
+}): Promise<ExportSourceResult> {
+  const res = await fetch('/api/export', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  let data: (ExportSourceResult & { ok: boolean; error?: string }) | null = null
+  try {
+    data = await res.json()
+  } catch {
+    throw new Error(`Export failed (${res.status})`)
+  }
+  if (!data?.ok) throw new Error(data?.error ?? `Export failed (${res.status})`)
+  return {
+    files: data.files ?? [],
+    conflicts: data.conflicts ?? [],
+    skipped: data.skipped ?? [],
+    ...(data.zipBase64 ? { zipBase64: data.zipBase64 } : {}),
+  }
+}
+
 const RECENTS_KEY = 'css.recentPaths'
 const RECENTS_MAX = 5
 

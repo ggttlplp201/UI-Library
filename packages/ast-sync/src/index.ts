@@ -11,4 +11,13 @@ export { applyPositionEdit, type PositionEdit } from './position-edit.js'
 export { applyAnimationAttach, type AnimAttach } from './animation-attach.js'
 export { syncInstance, type InstanceSync, type SyncOutcome, type SyncSkip } from './sync.js'
 export { VirtualFS, type VirtualFile } from './virtual-fs.js'
+export {
+  collectChanges,
+  type ExportInstance,
+  type ExportConflict,
+  type ExportSkip,
+  type ExportChange,
+  type ExportResult,
+} from './export.js'
+export { buildZip, crc32, type ZipEntry } from './zip.js'
 export type { TransformResult } from './types.js'

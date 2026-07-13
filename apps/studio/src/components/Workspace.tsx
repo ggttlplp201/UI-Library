@@ -2,7 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RegistryEntry, ScanResult } from '@component-style-studio/registry'
 import { deriveControls, initialArgs, type ControlSpec, type StyleOverride } from '../lib/controls'
 import { type AnimConfig, type Instance, newInstanceId } from '../lib/canvas'
-import { fetchPresets, type CodeSyncPayload, type PresetLibrary } from '../lib/api'
+import {
+  exportSource,
+  fetchPresets,
+  type CodeSyncPayload,
+  type ExportConflict,
+  type ExportInstancePayload,
+  type ExportSkip,
+  type PresetLibrary,
+} from '../lib/api'
 import { CodePane } from './CodePane'
 import { LibraryPanel } from './LibraryPanel'
 import { EditPanel } from './EditPanel'
@@ -24,6 +32,13 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   const [librarySide, setLibrarySide] = useState<PanelSide>('right')
   const [configSide, setConfigSide] = useState<PanelSide>('left')
   const [showCode, setShowCode] = useState(true)
+  const [exportMenuOpen, setExportMenuOpen] = useState(false)
+  const [exportReport, setExportReport] = useState<{
+    files: number
+    conflicts: ExportConflict[]
+    skipped: ExportSkip[]
+    error?: string
+  } | null>(null)
   const canvasRef = useRef<CanvasHandle>(null)
 
   useEffect(() => {
@@ -117,46 +132,105 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     )
   }
 
-  // The selected instance's edit state as a code-sync request (Phase 7).
-  // Canvas x/y stay composition-level and are not written into the
-  // component's source; text is sent only when it differs from the default.
-  const codePayload = useMemo<CodeSyncPayload | null>(() => {
-    if (!selected || !selectedEntry) return null
-    const root = rootFor(selectedEntry)
-    if (!root) return null
-    const { text: styleText, ...style } = selected.style
-    const textName = primaryTextName(selectedEntry)
-    const textControl = controls.find((c) => c.name === textName)
-    const argText =
-      textName != null && textControl && selected.args[textName] !== textControl.defaultValue
-        ? String(selected.args[textName] ?? '')
-        : undefined
-    const text = styleText ?? argText
-    return {
-      root,
-      filePath: selectedEntry.filePath,
-      exportName: selectedEntry.exportName,
-      ...(text != null ? { text } : {}),
-      style,
-      position: {
-        ...(selected.scaleX != null ? { scaleX: selected.scaleX } : {}),
-        ...(selected.scaleY != null ? { scaleY: selected.scaleY } : {}),
-        ...(selected.rotation != null ? { rotation: selected.rotation } : {}),
-      },
-      ...(selected.anim ? { anim: selected.anim } : {}),
-    }
-  }, [selected, selectedEntry, controls, rootFor])
+  // An instance's edit state as a code-sync request (Phase 7). Canvas x/y stay
+  // composition-level and are not written into the component's source; text is
+  // sent only when it differs from the component's default.
+  const payloadFor = useCallback(
+    (inst: Instance): CodeSyncPayload | null => {
+      const entry = entryById(inst.entryId)
+      if (!entry) return null
+      const root = rootFor(entry)
+      if (!root) return null
+      const { text: styleText, ...style } = inst.style
+      const ctrls = deriveControls(entry)
+      const textName = primaryTextName(entry)
+      const textControl = ctrls.find((c) => c.name === textName)
+      const argText =
+        textName != null && textControl && inst.args[textName] !== textControl.defaultValue
+          ? String(inst.args[textName] ?? '')
+          : undefined
+      const text = styleText ?? argText
+      return {
+        root,
+        filePath: entry.filePath,
+        exportName: entry.exportName,
+        ...(text != null ? { text } : {}),
+        style,
+        position: {
+          ...(inst.scaleX != null ? { scaleX: inst.scaleX } : {}),
+          ...(inst.scaleY != null ? { scaleY: inst.scaleY } : {}),
+          ...(inst.rotation != null ? { rotation: inst.rotation } : {}),
+        },
+        ...(inst.anim ? { anim: inst.anim } : {}),
+      }
+    },
+    [entryById, rootFor],
+  )
 
-  const handleExport = async () => {
-    const html = await canvasRef.current?.exportComposition()
-    if (!html) return
-    const blob = new Blob([html], { type: 'text/html' })
+  const codePayload = useMemo<CodeSyncPayload | null>(
+    () => (selected ? payloadFor(selected) : null),
+    [selected, payloadFor],
+  )
+
+  const downloadBlob = (blob: Blob, name: string) => {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'style-studio-export.html'
+    a.download = name
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  // Export the composition as a self-contained static HTML demo (front-end only).
+  const handleExportDemo = async () => {
+    setExportMenuOpen(false)
+    const html = await canvasRef.current?.exportComposition()
+    if (!html) return
+    downloadBlob(new Blob([html], { type: 'text/html' }), 'style-studio-export.html')
+  }
+
+  // Export the edited component *source files* as a zip (Phase 8). Instances are
+  // grouped by project root (a canvas can mix imported + preset components), and
+  // each root's changed files download as their own zip.
+  const handleExportSource = async () => {
+    setExportMenuOpen(false)
+    const byRoot = new Map<string, ExportInstancePayload[]>()
+    for (const inst of instances) {
+      const p = payloadFor(inst)
+      if (!p) continue
+      const { root, ...rest } = p
+      const arr = byRoot.get(root)
+      if (arr) arr.push(rest)
+      else byRoot.set(root, [rest])
+    }
+    if (byRoot.size === 0) return
+    try {
+      let files = 0
+      const conflicts: ExportConflict[] = []
+      const skipped: ExportSkip[] = []
+      for (const [root, insts] of byRoot) {
+        const res = await exportSource({ root, instances: insts })
+        files += res.files.length
+        conflicts.push(...res.conflicts)
+        skipped.push(...res.skipped)
+        if (res.zipBase64) {
+          const base = root.replace(/\/+$/, '').split('/').pop() || 'project'
+          const name = byRoot.size > 1 ? `style-studio-source-${base}.zip` : 'style-studio-source.zip'
+          const bin = atob(res.zipBase64)
+          const bytes = new Uint8Array(bin.length)
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+          downloadBlob(new Blob([bytes], { type: 'application/zip' }), name)
+        }
+      }
+      setExportReport({ files, conflicts, skipped })
+    } catch (err) {
+      setExportReport({
+        files: 0,
+        conflicts: [],
+        skipped: [],
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
   }
 
   const configPanel = (
@@ -230,14 +304,39 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         >
           {canvasTheme === 'dark' ? '☾' : '☀'}
         </button>
-        <button
-          type="button"
-          onClick={handleExport}
-          disabled={instances.length === 0}
-          className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-default transition-colors"
-        >
-          Export
-        </button>
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => setExportMenuOpen((o) => !o)}
+            disabled={instances.length === 0}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-default transition-colors"
+          >
+            Export ▾
+          </button>
+          {exportMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setExportMenuOpen(false)} />
+              <div className="absolute right-0 top-full mt-1 z-40 w-56 rounded-lg border border-border bg-popover shadow-xl p-1">
+                <button
+                  type="button"
+                  onClick={handleExportDemo}
+                  className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-secondary transition-colors"
+                >
+                  <div className="text-xs font-medium">Demo (HTML)</div>
+                  <div className="text-[10px] text-muted-foreground">Self-contained front-end snapshot</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportSource}
+                  className="w-full text-left px-2.5 py-1.5 rounded-md hover:bg-secondary transition-colors"
+                >
+                  <div className="text-xs font-medium">Source files (.zip)</div>
+                  <div className="text-[10px] text-muted-foreground">Edited component source, ready to diff</div>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
         <button
           type="button"
           onClick={onReset}
@@ -279,6 +378,55 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         {librarySide === 'right' && libraryPanel}
         {configSide === 'right' && configPanel}
       </div>
+
+      {exportReport && (
+        <div className="fixed bottom-4 right-4 z-50 w-80 rounded-lg border border-border bg-popover shadow-xl p-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-semibold">Source export</span>
+            <button
+              type="button"
+              onClick={() => setExportReport(null)}
+              className="w-5 h-5 rounded flex items-center justify-center text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          {exportReport.error ? (
+            <p className="text-[11px] text-red-400">{exportReport.error}</p>
+          ) : (
+            <p className="text-[11px] text-muted-foreground">
+              {exportReport.files > 0
+                ? `${exportReport.files} file${exportReport.files === 1 ? '' : 's'} exported.`
+                : 'No edits to export yet — style a component first.'}
+            </p>
+          )}
+          {exportReport.conflicts.length > 0 && (
+            <div className="mt-1.5 border-t border-border pt-1.5">
+              <p className="text-[10px] font-medium text-amber-500 mb-0.5">
+                {exportReport.conflicts.length} conflict
+                {exportReport.conflicts.length === 1 ? '' : 's'} (last edit kept)
+              </p>
+              {exportReport.conflicts.map((c, i) => (
+                <p key={i} className="text-[10px] text-muted-foreground truncate" title={c.reason}>
+                  {c.exportName} — {c.filePath}
+                </p>
+              ))}
+            </div>
+          )}
+          {exportReport.skipped.length > 0 && (
+            <div className="mt-1.5 border-t border-border pt-1.5">
+              <p className="text-[10px] font-medium text-amber-500 mb-0.5">
+                {exportReport.skipped.length} skipped
+              </p>
+              {exportReport.skipped.map((s, i) => (
+                <p key={i} className="text-[10px] text-muted-foreground truncate" title={s.reason}>
+                  {s.step}: {s.reason}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

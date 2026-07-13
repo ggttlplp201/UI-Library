@@ -1,8 +1,11 @@
 import { readFileSync, statSync } from 'node:fs'
-import { isAbsolute, relative, resolve } from 'node:path'
+import { isAbsolute, relative, resolve, sep } from 'node:path'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { Plugin } from 'vite'
 import { syncInstance, type InstanceSync } from './sync.js'
 import { VirtualFS } from './virtual-fs.js'
+import { collectChanges, type ExportInstance } from './export.js'
+import { buildZip } from './zip.js'
 
 /** POST /api/code body: which file/export to sync plus the instance's edits. */
 export interface CodeSyncRequest extends InstanceSync {
@@ -47,6 +50,49 @@ export function invalidSyncField(request: CodeSyncRequest): string | null {
 
 const MAX_BODY_BYTES = 1024 * 1024
 
+/** POST /api/export body: the whole canvas's edited instances for one project. */
+export interface CodeExportRequest {
+  /** Absolute root of the scanned project */
+  root: string
+  instances: ExportInstance[]
+}
+
+type Send = (status: number, payload: unknown) => void
+
+/**
+ * Read a bounded POST JSON body, then hand the raw string plus a JSON
+ * responder to the handler. Shared by /api/code and /api/export.
+ */
+function readJsonBody(
+  req: IncomingMessage,
+  res: ServerResponse,
+  onBody: (raw: string, send: Send) => void,
+): void {
+  const send: Send = (status, payload) => {
+    res.statusCode = status
+    res.setHeader('content-type', 'application/json')
+    res.end(JSON.stringify(payload))
+  }
+  if (req.method !== 'POST') {
+    send(405, { ok: false, error: 'POST a JSON body' })
+    return
+  }
+  let body = ''
+  let overflowed = false
+  req.on('data', (chunk) => {
+    if (overflowed) return
+    body += chunk
+    if (body.length > MAX_BODY_BYTES) {
+      overflowed = true
+      send(413, { ok: false, error: 'Body too large' })
+      req.destroy()
+    }
+  })
+  req.on('end', () => {
+    if (!overflowed) onBody(body, send)
+  })
+}
+
 /**
  * Dev-server sync endpoint (plan §5.6): the browser posts a canvas instance's
  * edit state; Node reads the component's source from disk (snapshotted into a
@@ -61,31 +107,10 @@ export function codeSyncPlugin(): Plugin {
     name: 'component-style-studio:code-sync',
     configureServer(server) {
       server.middlewares.use('/api/code', (req, res) => {
-        const send = (status: number, payload: unknown) => {
-          res.statusCode = status
-          res.setHeader('content-type', 'application/json')
-          res.end(JSON.stringify(payload))
-        }
-        if (req.method !== 'POST') {
-          send(405, { ok: false, error: 'POST a CodeSyncRequest JSON body' })
-          return
-        }
-        let body = ''
-        let overflowed = false
-        req.on('data', (chunk) => {
-          if (overflowed) return
-          body += chunk
-          if (body.length > MAX_BODY_BYTES) {
-            overflowed = true
-            send(413, { ok: false, error: 'Body too large' })
-            req.destroy()
-          }
-        })
-        req.on('end', () => {
-          if (overflowed) return
+        readJsonBody(req, res, (raw, send) => {
           let request: CodeSyncRequest
           try {
-            request = JSON.parse(body || '{}')
+            request = JSON.parse(raw || '{}')
           } catch {
             send(400, { ok: false, error: 'Body is not valid JSON' })
             return
@@ -130,6 +155,76 @@ export function codeSyncPlugin(): Plugin {
             send(200, { ok: true, ...outcome })
           } catch (err) {
             server.config.logger.error(`[code-sync] ${String(err)}`)
+            send(500, { ok: false, error: err instanceof Error ? err.message : String(err) })
+          }
+        })
+      })
+
+      // Phase 8 export: apply every edited instance to its component source and
+      // return the changed files as a store-only zip (base64) plus a report of
+      // any same-export conflicts / skips. Reads from disk; never writes.
+      server.middlewares.use('/api/export', (req, res) => {
+        readJsonBody(req, res, (raw, send) => {
+          let request: CodeExportRequest
+          try {
+            request = JSON.parse(raw || '{}')
+          } catch {
+            send(400, { ok: false, error: 'Body is not valid JSON' })
+            return
+          }
+          const { root, instances } = request
+          if (typeof root !== 'string' || !isAbsolute(root)) {
+            send(400, { ok: false, error: 'Missing absolute "root"' })
+            return
+          }
+          if (!Array.isArray(instances)) {
+            send(400, { ok: false, error: 'Missing "instances" array' })
+            return
+          }
+          // Normalize every filePath to a safe in-root relative posix path so a
+          // ".."-containing or absolute path can't escape the root or land as an
+          // unsafe archive entry. The normalized path is what we read and zip.
+          const safe: ExportInstance[] = []
+          for (const inst of instances) {
+            if (!inst || typeof inst.filePath !== 'string' || typeof inst.exportName !== 'string') {
+              send(400, { ok: false, error: 'Each instance needs "filePath" and "exportName"' })
+              return
+            }
+            const rel = relative(root, resolve(root, inst.filePath))
+            if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) {
+              send(400, { ok: false, error: `filePath escapes the project root: ${inst.filePath}` })
+              return
+            }
+            const invalid = invalidSyncField(inst as CodeSyncRequest)
+            if (invalid) {
+              send(400, { ok: false, error: `Invalid field on "${inst.exportName}": ${invalid}` })
+              return
+            }
+            safe.push({ ...inst, filePath: rel.split(sep).join('/') })
+          }
+          try {
+            const readSource = (relPath: string): string => {
+              const abs = resolve(root, relPath)
+              if (!statSync(abs, { throwIfNoEntry: false })?.isFile()) {
+                throw new Error(`Not a file: ${relPath}`)
+              }
+              return readFileSync(abs, 'utf-8')
+            }
+            const result = collectChanges(safe, readSource)
+            const zipBase64 = result.files.length
+              ? Buffer.from(
+                  buildZip(result.files.map((f) => ({ path: f.path, content: f.code }))),
+                ).toString('base64')
+              : undefined
+            send(200, {
+              ok: true,
+              files: result.files.map((f) => f.path),
+              conflicts: result.conflicts,
+              skipped: result.skipped,
+              ...(zipBase64 ? { zipBase64 } : {}),
+            })
+          } catch (err) {
+            server.config.logger.error(`[code-export] ${String(err)}`)
             send(500, { ok: false, error: err instanceof Error ? err.message : String(err) })
           }
         })
