@@ -35,6 +35,49 @@ export async function scanFolder(path: string): Promise<ScanResult> {
   return payload.result
 }
 
+/**
+ * Request/response of POST /api/code (the AST sync engine endpoint, Phase 7).
+ * Shapes mirror `CodeSyncRequest` / `SyncOutcome` in
+ * packages/ast-sync — kept local so browser code doesn't import the engine.
+ */
+export interface CodeSyncPayload {
+  root: string
+  filePath: string
+  exportName: string
+  text?: string
+  style?: {
+    color?: string
+    backgroundColor?: string
+    fontFamily?: string
+    fontWeight?: string
+    fontSize?: number
+  }
+  position?: { scaleX?: number; scaleY?: number; rotation?: number }
+  anim?: { preset: string; duration: number; delay: number; easing: string }
+}
+
+export interface GeneratedCode {
+  code: string
+  changed: boolean
+  skipped: { step: string; reason: string }[]
+}
+
+export async function fetchGeneratedCode(payload: CodeSyncPayload): Promise<GeneratedCode> {
+  const res = await fetch('/api/code', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  let data: (GeneratedCode & { ok: boolean; error?: string }) | null = null
+  try {
+    data = await res.json()
+  } catch {
+    throw new Error(`Code sync failed (${res.status})`)
+  }
+  if (!data?.ok) throw new Error(data?.error ?? `Code sync failed (${res.status})`)
+  return { code: data.code, changed: data.changed, skipped: data.skipped ?? [] }
+}
+
 const RECENTS_KEY = 'css.recentPaths'
 const RECENTS_MAX = 5
 

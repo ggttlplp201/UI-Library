@@ -10,6 +10,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { componentScanPlugin } from '../../packages/parser/src/vite-plugin'
 import { presetsApiPlugin } from '../../packages/parser/src/presets-plugin'
 import { previewApiPlugin } from '../../packages/preview/src/api-plugin'
+import { codeSyncPlugin } from '../../packages/ast-sync/src/vite-plugin'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const presetsRoot = resolve(here, '../../packages/presets')
@@ -21,5 +22,6 @@ export default defineConfig({
     componentScanPlugin(),
     presetsApiPlugin(presetsRoot),
     previewApiPlugin(),
+    codeSyncPlugin(),
   ],
 })

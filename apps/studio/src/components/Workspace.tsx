@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RegistryEntry, ScanResult } from '@component-style-studio/registry'
 import { deriveControls, initialArgs, type ControlSpec, type StyleOverride } from '../lib/controls'
 import { type AnimConfig, type Instance, newInstanceId } from '../lib/canvas'
-import { fetchPresets, type PresetLibrary } from '../lib/api'
+import { fetchPresets, type CodeSyncPayload, type PresetLibrary } from '../lib/api'
+import { CodePane } from './CodePane'
 import { LibraryPanel } from './LibraryPanel'
 import { EditPanel } from './EditPanel'
 import { AnimationTab } from './AnimationTab'
@@ -22,6 +23,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>('dark')
   const [librarySide, setLibrarySide] = useState<PanelSide>('right')
   const [configSide, setConfigSide] = useState<PanelSide>('left')
+  const [showCode, setShowCode] = useState(true)
   const canvasRef = useRef<CanvasHandle>(null)
 
   useEffect(() => {
@@ -40,7 +42,10 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     const map = new Map(entries.map((e) => [e.id, e]))
     return (id: string) => map.get(id)
   }, [entries])
-  const rootFor = (e: RegistryEntry) => (e.source === 'preset' ? presets.root : result.root)
+  const rootFor = useCallback(
+    (e: RegistryEntry) => (e.source === 'preset' ? presets.root : result.root),
+    [presets.root, result.root],
+  )
 
   const selected = instances.find((i) => i.id === selectedId) ?? null
   const selectedEntry = selected ? (entryById(selected.entryId) ?? null) : null
@@ -112,6 +117,36 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     )
   }
 
+  // The selected instance's edit state as a code-sync request (Phase 7).
+  // Canvas x/y stay composition-level and are not written into the
+  // component's source; text is sent only when it differs from the default.
+  const codePayload = useMemo<CodeSyncPayload | null>(() => {
+    if (!selected || !selectedEntry) return null
+    const root = rootFor(selectedEntry)
+    if (!root) return null
+    const { text: styleText, ...style } = selected.style
+    const textName = primaryTextName(selectedEntry)
+    const textControl = controls.find((c) => c.name === textName)
+    const argText =
+      textName != null && textControl && selected.args[textName] !== textControl.defaultValue
+        ? String(selected.args[textName] ?? '')
+        : undefined
+    const text = styleText ?? argText
+    return {
+      root,
+      filePath: selectedEntry.filePath,
+      exportName: selectedEntry.exportName,
+      ...(text != null ? { text } : {}),
+      style,
+      position: {
+        ...(selected.scaleX != null ? { scaleX: selected.scaleX } : {}),
+        ...(selected.scaleY != null ? { scaleY: selected.scaleY } : {}),
+        ...(selected.rotation != null ? { rotation: selected.rotation } : {}),
+      },
+      ...(selected.anim ? { anim: selected.anim } : {}),
+    }
+  }, [selected, selectedEntry, controls, rootFor])
+
   const handleExport = async () => {
     const html = await canvasRef.current?.exportComposition()
     if (!html) return
@@ -179,6 +214,16 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         </span>
         <button
           type="button"
+          onClick={() => setShowCode((v) => !v)}
+          title={showCode ? 'Hide generated code' : 'Show generated code'}
+          className={`shrink-0 px-2 h-7 rounded-lg flex items-center justify-center text-[11px] font-mono transition-colors ${
+            showCode ? 'bg-secondary text-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+          }`}
+        >
+          {'</>'}
+        </button>
+        <button
+          type="button"
           onClick={() => setCanvasTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
           title={`Canvas: ${canvasTheme} — click for ${canvasTheme === 'dark' ? 'light' : 'dark'}`}
           className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs bg-secondary hover:bg-secondary/70 transition-colors"
@@ -206,21 +251,30 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         {configSide === 'left' && configPanel}
         {librarySide === 'left' && libraryPanel}
 
-        <Canvas
-          ref={canvasRef}
-          instances={instances}
-          entryById={entryById}
-          rootFor={rootFor}
-          theme={canvasTheme}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-          onAdd={addInstance}
-          onMove={(id, x, y) => patchInstance(id, { x, y })}
-          onTransform={(id, patch) => patchInstance(id, patch)}
-          onRemove={removeInstance}
-          textOf={textOf}
-          onEditText={setInstanceText}
-        />
+        <div className="flex-1 flex flex-col min-w-0">
+          <Canvas
+            ref={canvasRef}
+            instances={instances}
+            entryById={entryById}
+            rootFor={rootFor}
+            theme={canvasTheme}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onAdd={addInstance}
+            onMove={(id, x, y) => patchInstance(id, { x, y })}
+            onTransform={(id, patch) => patchInstance(id, patch)}
+            onRemove={removeInstance}
+            textOf={textOf}
+            onEditText={setInstanceText}
+          />
+          {showCode && (
+            <CodePane
+              payload={codePayload}
+              title={selectedEntry ? `${selectedEntry.name} — ${selectedEntry.filePath}` : null}
+              onClose={() => setShowCode(false)}
+            />
+          )}
+        </div>
 
         {librarySide === 'right' && libraryPanel}
         {configSide === 'right' && configPanel}
