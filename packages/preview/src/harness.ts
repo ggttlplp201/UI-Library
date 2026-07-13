@@ -51,6 +51,56 @@ function playAnim(anim) {
 let renderToken = 0
 let erroredToken = -1
 
+// A component "previews" meaningfully only if it paints something — a fill,
+// border, shadow, image, or form control. Compound wrappers (DialogHeader,
+// DropdownMenuGroup, …) with no standalone chrome render as bare text (usually
+// just our injected placeholder), which looks broken in the library grid. We
+// flag those so the host can show a calm placeholder instead of raw text.
+const VISUAL_TAGS = new Set([
+  'IMG', 'SVG', 'CANVAS', 'VIDEO', 'PICTURE', 'INPUT', 'TEXTAREA', 'SELECT', 'BUTTON',
+])
+// Walk el and every descendant (querySelectorAll('*') spans all roots, so a
+// fragment with sibling roots is covered), skipping nodes that paint nothing
+// because they're hidden.
+function eachVisible(el, visit) {
+  if (!el) return false
+  const nodes = [el]
+  for (const n of el.querySelectorAll('*')) nodes.push(n)
+  for (const n of nodes) {
+    let cs
+    try { cs = getComputedStyle(n) } catch (e) { continue }
+    if (cs.display === 'none' || cs.visibility === 'hidden') continue
+    if (visit(n, cs)) return true
+  }
+  return false
+}
+
+function hasVisualSubstance(el) {
+  return eachVisible(el, (n, cs) => {
+    if (VISUAL_TAGS.has((n.tagName || '').toUpperCase())) return true
+    const bg = cs.backgroundColor
+    if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return true
+    if (cs.backgroundImage && cs.backgroundImage !== 'none') return true
+    if (cs.boxShadow && cs.boxShadow !== 'none') return true
+    const bw =
+      parseFloat(cs.borderTopWidth) + parseFloat(cs.borderRightWidth) +
+      parseFloat(cs.borderBottomWidth) + parseFloat(cs.borderLeftWidth)
+    return bw > 0 && cs.borderStyle !== 'none'
+  })
+}
+
+// A filled surface or media/control — the stuff that makes a preview worth
+// showing. Deliberately excludes borders/shadows: a hairline divider on an
+// otherwise text-only wrapper (e.g. DialogFooter's border-t) shouldn't save it.
+function hasFillOrMedia(el) {
+  return eachVisible(el, (n, cs) => {
+    if (VISUAL_TAGS.has((n.tagName || '').toUpperCase())) return true
+    const bg = cs.backgroundColor
+    if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return true
+    return cs.backgroundImage && cs.backgroundImage !== 'none'
+  })
+}
+
 class ErrorBoundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null } }
   static getDerivedStateFromError(err) { return { err } }
@@ -73,9 +123,14 @@ async function renderComponent({ module, exportName, props, anim }) {
       if (token !== renderToken) return
       // The error boundary already reported this render — don't overwrite it.
       if (erroredToken === token) return
+      const text = (rootEl.textContent || '').trim()
+      // Blank when it paints nothing, or when it just echoes its own export
+      // name (our injected placeholder) with no real surface behind it.
+      const echoesName = text !== '' && text === exportName && !hasFillOrMedia(rootEl)
+      const blank = echoesName || !hasVisualSubstance(rootEl)
       playAnim(anim)
       const r = rootEl.getBoundingClientRect()
-      post({ type: 'rendered', width: Math.ceil(r.width), height: Math.ceil(r.height) })
+      post({ type: 'rendered', width: Math.ceil(r.width), height: Math.ceil(r.height), blank })
     }))
   } catch (e) {
     if (token === renderToken) post({ type: 'error', message: String((e && e.message) || e) })

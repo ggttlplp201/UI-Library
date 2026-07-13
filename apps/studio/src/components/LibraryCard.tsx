@@ -71,7 +71,8 @@ export function LibraryCard({
             renderProps={defaultProps}
             fit
             interactive={false}
-            className="w-full h-full"
+            placeholderOnBlank
+            className="w-full h-full group-hover:animate-[preview-float_1.3s_ease-in-out_infinite] motion-reduce:group-hover:animate-none"
           />
         )}
       </div>

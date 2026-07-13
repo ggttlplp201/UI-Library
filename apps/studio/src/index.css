@@ -28,3 +28,12 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Default hover motion for a library card's preview: a lift-and-bob so every
+   component visibly "moves" when hovered, even ones with no animation of their
+   own. Kept in-bounds of the card's clipped preview area. */
+@keyframes preview-float {
+  0%   { transform: translateY(0) scale(1); }
+  50%  { transform: translateY(-8px) scale(1.06); }
+  100% { transform: translateY(0) scale(1); }
+}

@@ -29,5 +29,5 @@ export async function ensurePreviewUrl(root: string): Promise<string> {
 /** Message the harness posts back to the Studio. */
 export type PreviewMessage =
   | { source: 'preview'; type: 'ready' }
-  | { source: 'preview'; type: 'rendered'; width: number; height: number }
+  | { source: 'preview'; type: 'rendered'; width: number; height: number; blank?: boolean }
   | { source: 'preview'; type: 'error'; message: string }

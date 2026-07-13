@@ -38,6 +38,13 @@ export interface PreviewFrameProps {
    * hover/drag instead. Default true.
    */
   interactive?: boolean
+  /**
+   * When true, a component that renders no visual chrome (bare text — usually a
+   * structural wrapper showing only its injected name) is replaced by a calm
+   * name placeholder instead of raw text. Used by the library grid; the canvas
+   * leaves it off so a dropped component always renders as-is.
+   */
+  placeholderOnBlank?: boolean
 }
 
 type Status = 'loading' | 'ready' | 'error'
@@ -60,6 +67,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     autoSize = true,
     fit = false,
     interactive = true,
+    placeholderOnBlank = false,
   },
   ref,
 ) {
@@ -70,6 +78,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   const [error, setError] = useState<string | null>(null)
   const [size, setSize] = useState<{ width: number; height: number } | null>(null)
   const [box, setBox] = useState<{ width: number; height: number } | null>(null)
+  const [blank, setBlank] = useState(false)
   const readyRef = useRef(false)
   const propsRef = useRef(renderProps)
   propsRef.current = renderProps
@@ -119,6 +128,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
       } else if (data.type === 'rendered') {
         setStatus('ready')
         setError(null)
+        setBlank(Boolean(data.blank))
         setSize({ width: data.width, height: data.height })
         onSizeRef.current?.({ width: data.width, height: data.height })
       } else if (data.type === 'error') {
@@ -223,15 +233,20 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
           <span className="text-[10px] text-muted-foreground">rendering…</span>
         </div>
       )}
-      {status === 'error' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 pointer-events-none">
-          {/* Compound sub-components (Dialog/DropdownMenu parts) can't render in
-              isolation — show a calm name label, with the reason on hover. */}
-          <span className="text-[11px] text-muted-foreground text-center" title={error ?? ''}>
+      {(status === 'error' || (placeholderOnBlank && status === 'ready' && blank)) && (
+        <div
+          className={`absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 pointer-events-none ${
+            placeholderOnBlank ? 'bg-white' : ''
+          }`}
+        >
+          {/* Two cases share this calm placeholder: components that error in
+              isolation (compound Dialog/DropdownMenu parts), and structural
+              wrappers that render as bare text. Both beat showing raw text. */}
+          <span className="text-[11px] text-neutral-500 text-center" title={error ?? ''}>
             {exportName}
           </span>
-          <span className="text-[8px] text-muted-foreground/60 uppercase tracking-wider">
-            needs context
+          <span className="text-[8px] text-neutral-400 uppercase tracking-wider">
+            {status === 'error' ? 'needs context' : 'no preview'}
           </span>
         </div>
       )}
