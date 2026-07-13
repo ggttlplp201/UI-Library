@@ -1,24 +1,40 @@
 @import "tailwindcss";
 
-/* Dark theme tokens lifted from the Figma Make prototype (figma-make-prototype-notes.md:
-   keep "the visual/dark-theme styling direction … as a starting point for real design tokens"). */
+/* ─────────────────────────────────────────────────────────────────────────
+   Technical Dark / Dev-Tool direction — a precision instrument, not a toy.
+   Near-black tinted surfaces, hairline borders, one signal accent, crisp
+   near-square radii, mono for all chrome/metadata. No purple, no soft shadows.
+   ───────────────────────────────────────────────────────────────────────── */
 @theme {
-  --color-background: #0c0c0f;
-  --color-foreground: #e4e4ea;
-  --color-card: #111115;
-  --color-popover: #18181e;
-  --color-primary: #7c6fff;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #1c1c22;
-  --color-muted: #17171c;
-  --color-muted-foreground: #6b6b7a;
-  --color-accent-foreground: #a78bfa;
-  --color-destructive: #ef4444;
-  --color-border: rgba(255, 255, 255, 0.07);
-  --color-input: #1c1c22;
-  --color-ring: #7c6fff;
-  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
+  /* Surfaces — black with a faint green cast, never #000 */
+  --color-background: #0b0f0e;
+  --color-foreground: #e7eae8;
+  --color-card: #101413;
+  --color-popover: #151b19;
+  --color-secondary: #1b211f;
+  --color-muted: #141a18;
+  --color-muted-foreground: #8b938d;
+
+  /* The one accent — signal green, used sparingly (rings, primary actions, state) */
+  --color-primary: #10e39b;
+  --color-primary-foreground: #04140d;
+  --color-accent-foreground: #62ecc2;
+
+  --color-destructive: #ff5c5c;
+  --color-border: rgba(231, 240, 236, 0.09);
+  --color-input: #171e1b;
+  --color-ring: #10e39b;
+
+  --font-sans: "Inter Tight", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Radius — crisp, near-square. Overrides Tailwind's default mid-range scale
+     so nothing on the page reads as the templated rounded-2xl look. */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
 }
 
 body {
@@ -27,6 +43,17 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.006em;
+}
+
+/* Visible keyboard focus on every interactive element (a11y floor). */
+:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 1px;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-primary) 30%, transparent);
 }
 
 /* Default hover motion for a library card's preview: a lift-and-bob so every
@@ -36,4 +63,12 @@ body {
   0%   { transform: translateY(0) scale(1); }
   50%  { transform: translateY(-8px) scale(1.06); }
   100% { transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

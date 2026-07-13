@@ -310,8 +310,10 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     <div className="h-svh flex flex-col">
       <header className="h-11 shrink-0 border-b border-border bg-card flex items-center gap-3 px-3">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded bg-primary" />
-          <span className="text-sm font-semibold tracking-tight">Style Studio</span>
+          <div className="w-4 h-4 rounded-sm bg-primary flex items-center justify-center">
+            <span className="font-mono text-[9px] font-bold text-primary-foreground leading-none">S</span>
+          </div>
+          <span className="text-sm font-semibold tracking-[-0.02em]">Style Studio</span>
         </div>
         <div className="w-px h-4 bg-border" />
         <span
