@@ -11,11 +11,14 @@ export function LibraryCard({
   root,
   selected,
   onSelect,
+  onOutcome,
 }: {
   entry: RegistryEntry
   root: string
   selected: boolean
   onSelect: () => void
+  /** Reports whether this component produced a real preview (for library curation). */
+  onOutcome?: (previewable: boolean) => void
 }) {
   const cardRef = useRef<HTMLDivElement>(null)
   // Mount the preview iframe once the card scrolls near the viewport, so we
@@ -72,7 +75,8 @@ export function LibraryCard({
             fit
             interactive={false}
             placeholderOnBlank
-            className="w-full h-full group-hover:animate-[preview-float_1.3s_ease-in-out_infinite] motion-reduce:group-hover:animate-none"
+            onOutcome={onOutcome}
+            className="w-full h-full"
           />
         )}
       </div>

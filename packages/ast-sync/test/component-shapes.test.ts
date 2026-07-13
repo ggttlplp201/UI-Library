@@ -56,10 +56,10 @@ const SHAPES: Shape[] = [
 `,
   },
   {
-    name: 'dynamic className via cn() — style skips, text still applies',
+    name: 'dynamic className via cn() — style edits the base classes, text applies',
     exportName: 'Card',
     edits: true,
-    contains: ['Hello world'],
+    contains: ['Hello world', 'bg-[#00aaff]', 'cn('],
     source: `import { cn } from './cn'
 export function Card({ className, children = 'Body' }: { className?: string; children?: React.ReactNode }) {
   return <div className={cn('p-4', className)}>{children}</div>

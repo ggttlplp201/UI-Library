@@ -22,6 +22,19 @@ const DYNAMIC = injectStableIds(`export const Fancy = ({ cls }: { cls: string })
 )
 `).code
 
+// The shadcn/Tailwind convention: base classes in a cn() call's first arg.
+const CN = injectStableIds(`import { cn } from './cn'
+export function Card({ className }: { className?: string }) {
+  return <div className={cn("bg-white text-black rounded-lg p-4", className)}>body</div>
+}
+`).code
+
+const CN_NO_LITERAL = injectStableIds(`import { cn } from './cn'
+export function Card({ className }: { className?: string }) {
+  return <div className={cn(className)}>body</div>
+}
+`).code
+
 describe('applyStyleEdit', () => {
   it('replaces the text color class, keeping unrelated classes', () => {
     const res = applyStyleEdit(BUTTON, 'c0', { color: '#ff0000' })
@@ -83,10 +96,29 @@ describe('applyStyleEdit', () => {
     expect(res.code).toContain('text-[20px]')
   })
 
-  it('skips dynamic className expressions with a reason', () => {
+  it('skips a bare dynamic className expression with a reason', () => {
     const res = applyStyleEdit(DYNAMIC, 'c0', { color: '#fff' })
     expect(res.changed).toBe(false)
-    expect(res.reason).toMatch(/dynamic/i)
+    expect(res.reason).toMatch(/computed|dynamic/i)
+  })
+
+  it('edits the base classes inside a cn() call (shadcn convention)', () => {
+    const res = applyStyleEdit(CN, 'c0', { backgroundColor: '#001122', color: '#ffffff' })
+    expect(res.changed).toBe(true)
+    expect(res.code).toContain('bg-[#001122]')
+    expect(res.code).not.toContain('bg-white')
+    expect(res.code).toContain('text-[#ffffff]')
+    // the dynamic className arg is preserved
+    expect(res.code).toContain('className')
+    expect(res.code).toContain('cn(')
+    expect(res.code).toContain('rounded-lg') // untouched base classes survive
+  })
+
+  it('inserts a base-class literal when cn() has only dynamic args', () => {
+    const res = applyStyleEdit(CN_NO_LITERAL, 'c0', { backgroundColor: '#abcdef' })
+    expect(res.changed).toBe(true)
+    expect(res.code).toContain('bg-[#abcdef]')
+    expect(res.code).toContain('cn(')
   })
 
   it('no-ops on an empty override', () => {

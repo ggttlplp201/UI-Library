@@ -23,6 +23,12 @@ export interface PreviewFrameProps {
   /** Called with rendered content size, for size-to-content hosts (canvas) */
   onSize?: (size: { width: number; height: number }) => void
   /**
+   * Fires once the render outcome is known: `true` if the component produced a
+   * real visual preview, `false` if it errored (needs context) or is blank
+   * (bare text). The library uses this to drop non-previewable components.
+   */
+  onOutcome?: (previewable: boolean) => void
+  /**
    * When true (default), the frame sizes itself to the rendered content. Set
    * false for fixed-size hosts (e.g. library cards that clip/scale).
    */
@@ -68,6 +74,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     fit = false,
     interactive = true,
     placeholderOnBlank = false,
+    onOutcome,
   },
   ref,
 ) {
@@ -86,6 +93,15 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   animRef.current = anim
   const onSizeRef = useRef(onSize)
   onSizeRef.current = onSize
+  const onOutcomeRef = useRef(onOutcome)
+  onOutcomeRef.current = onOutcome
+  // Only report a *changed* outcome, so re-renders don't churn the host.
+  const outcomeRef = useRef<boolean | null>(null)
+  const reportOutcome = useCallback((previewable: boolean) => {
+    if (outcomeRef.current === previewable) return
+    outcomeRef.current = previewable
+    onOutcomeRef.current?.(previewable)
+  }, [])
 
   useEffect(() => {
     let alive = true
@@ -95,6 +111,10 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         if (!alive) return
         setStatus('error')
         setError(e instanceof Error ? e.message : String(e))
+        // Deliberately don't reportOutcome(false) here: a preview-server load
+        // failure is infrastructure, not a broken component. Marking it broken
+        // would let a transient hiccup filter good components out of the
+        // library permanently. Only genuine render errors/blank mark broken.
       })
     return () => {
       alive = false
@@ -131,14 +151,16 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         setBlank(Boolean(data.blank))
         setSize({ width: data.width, height: data.height })
         onSizeRef.current?.({ width: data.width, height: data.height })
+        reportOutcome(!data.blank)
       } else if (data.type === 'error') {
         setStatus('error')
         setError(data.message)
+        reportOutcome(false)
       }
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [postRender])
+  }, [postRender, reportOutcome])
 
   // Re-post whenever the component, its props, or the animation change; a
   // replayKey bump re-posts to replay the animation. renderProps/anim are

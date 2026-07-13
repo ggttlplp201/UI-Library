@@ -6,6 +6,11 @@ import type { TransformResult } from './types.js'
 const b = types.builders
 const n = types.namedTypes
 
+// className helpers whose first string-literal argument holds the base classes
+// (`cn("flex items-center", className)` — the shadcn/Tailwind convention). We
+// edit that literal in place so components using them stay editable.
+const CLASS_HELPERS = new Set(['cn', 'clsx', 'classNames', 'cx', 'twMerge', 'twJoin', 'cva', 'tw'])
+
 /** Style-tab overrides that map to Tailwind classes (`text` is applyTextEdit's job). */
 export interface StyleEdit {
   color?: string
@@ -102,15 +107,51 @@ export function applyStyleEdit(source: string, csid: string, style: StyleEdit): 
       n.JSXAttribute.check(a) && n.JSXIdentifier.check(a.name) && a.name.name === 'className',
   )
 
-  if (attr && !(attr.value && n.StringLiteral.check(attr.value))) {
+  // Locate the editable class string: a plain string-literal className, or the
+  // first string-literal argument of a cn()/clsx()/cva() call. Template
+  // literals and other computed values can't be edited safely.
+  let getClasses: () => string
+  let setClasses: (value: string) => void
+
+  if (!attr) {
+    getClasses = () => ''
+    setClasses = (value) =>
+      attrs.push(b.jsxAttribute(b.jsxIdentifier('className'), b.stringLiteral(value)))
+  } else if (attr.value && n.StringLiteral.check(attr.value)) {
+    const lit = attr.value
+    getClasses = () => lit.value
+    setClasses = (value) => {
+      lit.value = value
+    }
+  } else if (
+    attr.value &&
+    n.JSXExpressionContainer.check(attr.value) &&
+    n.CallExpression.check(attr.value.expression) &&
+    n.Identifier.check(attr.value.expression.callee) &&
+    CLASS_HELPERS.has(attr.value.expression.callee.name)
+  ) {
+    const call = attr.value.expression
+    const litArg = call.arguments.find((a): a is types.namedTypes.StringLiteral =>
+      n.StringLiteral.check(a),
+    )
+    if (litArg) {
+      getClasses = () => litArg.value
+      setClasses = (value) => {
+        litArg.value = value
+      }
+    } else {
+      getClasses = () => ''
+      setClasses = (value) => call.arguments.unshift(b.stringLiteral(value))
+    }
+  } else {
     return {
       code: source,
       changed: false,
-      reason: 'className is a dynamic expression — edit the source directly',
+      reason: 'className is a computed expression — edit the source directly',
     }
   }
 
-  const existing = attr?.value && n.StringLiteral.check(attr.value) ? attr.value.value : ''
+  const existing = getClasses()
   let classes = existing.split(/\s+/).filter(Boolean)
   for (const op of ops) {
     classes = classes.filter((c) => !op.conflicts(c) && c !== op.add)
@@ -119,10 +160,6 @@ export function applyStyleEdit(source: string, csid: string, style: StyleEdit): 
   const value = classes.join(' ')
   if (value === existing) return { code: source, changed: false }
 
-  if (attr) {
-    attr.value = b.stringLiteral(value)
-  } else {
-    attrs.push(b.jsxAttribute(b.jsxIdentifier('className'), b.stringLiteral(value)))
-  }
+  setClasses(value)
   return { code: printModule(ast), changed: true }
 }

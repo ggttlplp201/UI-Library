@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import { LibraryCard } from './LibraryCard'
 import { PanelSideToggle, type PanelSide } from './PanelSideToggle'
@@ -20,18 +20,44 @@ export function LibraryPanel({
 }) {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string>('all')
+  // Ids of components that can't produce a real preview (error / bare text).
+  // A card reports this once it renders; we drop those from the grid so every
+  // visible component has a working preview.
+  const [broken, setBroken] = useState<Set<string>>(new Set())
+
+  const markOutcome = useCallback((id: string, previewable: boolean) => {
+    setBroken((prev) => {
+      if (previewable === !prev.has(id)) return prev
+      const next = new Set(prev)
+      if (previewable) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
   const categories = useMemo(() => {
     const set = new Set(entries.map((e) => e.category ?? 'other'))
     return ['all', ...[...set].sort()]
   }, [entries])
 
-  const filtered = entries.filter((entry) => {
+  const matches = entries.filter((entry) => {
     if (category !== 'all' && (entry.category ?? 'other') !== category) return false
     const query = search.trim().toLowerCase()
     if (!query) return true
     return entry.name.toLowerCase().includes(query) || entry.filePath.toLowerCase().includes(query)
   })
+
+  // Drop non-previewable components, then de-duplicate by name (a component name
+  // exported from several files, or shared between imported + presets, appears
+  // once). Broken entries are skipped before a name is claimed, so a working
+  // same-named component can still take the slot.
+  const seenNames = new Set<string>()
+  const filtered: RegistryEntry[] = []
+  for (const entry of matches) {
+    if (broken.has(entry.id) || seenNames.has(entry.name)) continue
+    seenNames.add(entry.name)
+    filtered.push(entry)
+  }
 
   return (
     <div
@@ -77,6 +103,7 @@ export function LibraryPanel({
             root={rootFor(entry)}
             selected={selectedId === entry.id}
             onSelect={() => onSelect(entry.id)}
+            onOutcome={(previewable) => markOutcome(entry.id, previewable)}
           />
         ))}
         {filtered.length === 0 && (
