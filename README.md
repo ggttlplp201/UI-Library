@@ -4,9 +4,18 @@ A standalone visual tool for importing an existing React codebase, browsing its 
 
 ## Status
 
+All 10 phases (0–9) are complete.
+
 - **Phase 0 — Scaffold**: done (lean: npm workspaces, no CI remote yet)
 - **Phase 1 — Import & component detection**: done
-- Phases 2–9: not started
+- **Phase 2 — Controls / Style**: done
+- **Phase 3 — Library panel**: done
+- **Phase 4 — Canvas**: done (move / scale / stretch / rotate, keyboard nudge & delete)
+- **Phase 5 — Edit panel**: done
+- **Phase 6 — Animation system**: done (GSAP)
+- **Phase 7 — AST sync engine**: done (narrow transforms write canvas edits back to source)
+- **Phase 8 — Export**: done (HTML demo export + edited-source zip export)
+- **Phase 9 — Polish & test**: done (cross-component AST regression matrix, canvas keyboard UX)
 
 ## Layout
 
