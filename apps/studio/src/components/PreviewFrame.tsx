@@ -236,7 +236,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
       {(status === 'error' || (placeholderOnBlank && status === 'ready' && blank)) && (
         <div
           className={`absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 pointer-events-none ${
-            placeholderOnBlank ? 'bg-white' : ''
+            placeholderOnBlank ? 'bg-artboard' : ''
           }`}
         >
           {/* Two cases share this calm placeholder: components that error in

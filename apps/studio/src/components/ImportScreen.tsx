@@ -40,10 +40,10 @@ export function ImportScreen({
           </span>
         </div>
 
-        <h1 className="text-4xl font-semibold tracking-[-0.03em] leading-[1.05] mb-3">
+        <h1 className="text-4xl font-semibold tracking-[-0.03em] leading-[1.08] mb-3">
           Style any React component,
           <br />
-          <span className="text-accent-foreground">visually.</span>
+          <span className="italic font-normal">visually.</span>
         </h1>
         <p className="text-sm text-muted-foreground max-w-md mb-8 leading-relaxed">
           Point at a folder and its components populate the library. Compose them on a

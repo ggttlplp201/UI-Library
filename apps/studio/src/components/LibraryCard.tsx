@@ -62,7 +62,7 @@ export function LibraryCard({
       {/* Always render the live component (auto-animations like border-beam /
           shimmer play continuously). Non-interactive so the whole card —
           preview included — stays draggable. */}
-      <div className="h-[84px] flex items-center justify-center overflow-hidden bg-white pointer-events-none">
+      <div className="h-[84px] flex items-center justify-center overflow-hidden bg-artboard pointer-events-none">
         {inView && (
           <PreviewFrame
             root={root}

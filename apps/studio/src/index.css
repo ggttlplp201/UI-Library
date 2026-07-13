@@ -6,24 +6,30 @@
    near-square radii, mono for all chrome/metadata. No purple, no soft shadows.
    ───────────────────────────────────────────────────────────────────────── */
 @theme {
-  /* Surfaces — black with a faint green cast, never #000 */
-  --color-background: #0b0f0e;
-  --color-foreground: #e7eae8;
-  --color-card: #101413;
-  --color-popover: #151b19;
-  --color-secondary: #1b211f;
-  --color-muted: #141a18;
-  --color-muted-foreground: #8b938d;
+  /* Surfaces — cool graphite, tinted near-black, never #000 */
+  --color-background: #0c0d0f;
+  --color-foreground: #e9eaec;
+  --color-card: #131519;
+  --color-popover: #191c21;
+  --color-secondary: #1d2026;
+  --color-muted: #16181d;
+  --color-muted-foreground: #8a8f97;
 
-  /* The one accent — signal green, used sparingly (rings, primary actions, state) */
-  --color-primary: #10e39b;
-  --color-primary-foreground: #04140d;
-  --color-accent-foreground: #62ecc2;
+  /* Near-mono: the only "accent" is a near-white, spent on the primary action,
+     selection, and active state. Everything else is graduated graphite. */
+  --color-primary: #f1f3f5;
+  --color-primary-foreground: #0c0d0f;
+  --color-accent-foreground: #cdd1d7;
 
-  --color-destructive: #ff5c5c;
-  --color-border: rgba(231, 240, 236, 0.09);
-  --color-input: #171e1b;
-  --color-ring: #10e39b;
+  --color-destructive: #ff5c5c; /* semantic error only, not a decorative accent */
+  --color-border: rgba(233, 238, 244, 0.09);
+  --color-input: #171a20;
+  --color-ring: #e9eaec;
+
+  /* Preview "artboard" surface behind a rendered component — a neutral light
+     graphite, not stark white, so both dark and light components stay legible
+     without clashing with the dark chrome. */
+  --color-artboard: #d3d6db;
 
   --font-sans: "Inter Tight", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
