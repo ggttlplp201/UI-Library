@@ -40,6 +40,12 @@ export interface Instance {
   replay?: number
   /** Page this instance navigates to when clicked (exported as a real link) */
   linkTo?: string
+  /**
+   * Per-button navigation: components can expose named link slots
+   * (data-link-slot on individual buttons) — each slot can lead to its own
+   * page. Falls back to `linkTo` for clicks outside any slot.
+   */
+  links?: Record<string, string>
 }
 
 /**

@@ -23,6 +23,7 @@ export const CtaSection = ({
       <p className="text-sm opacity-80">{subtitle}</p>
       <button
         type="button"
+        data-link-slot="cta"
         className="mt-2 rounded-xl bg-background px-5 py-2.5 text-sm font-semibold text-foreground transition-transform hover:scale-[1.03] active:scale-95"
       >
         {cta}

@@ -252,6 +252,22 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   const replayAnim = () => updateSelected((i) => ({ ...i, replay: (i.replay ?? 0) + 1 }))
   const setLinkTo = (pageId: string | undefined) =>
     updateSelected((i) => ({ ...i, linkTo: pageId }))
+  const setLinkSlot = (slot: string, pageId: string | undefined) =>
+    updateSelected((i) => {
+      const links = { ...i.links }
+      if (pageId) links[slot] = pageId
+      else delete links[slot]
+      return { ...i, links: Object.keys(links).length > 0 ? links : undefined }
+    })
+  // Which named button slots each rendered instance exposes (harness-reported).
+  const [slotsByInstance, setSlotsByInstance] = useState<Record<string, string[]>>({})
+  const reportSlots = useCallback((instanceId: string, slots: string[]) => {
+    setSlotsByInstance((prev) => {
+      const cur = prev[instanceId]
+      if (cur && cur.length === slots.length && cur.every((s, i) => s === slots[i])) return prev
+      return { ...prev, [instanceId]: slots }
+    })
+  }, [])
 
   // ---- Pages ---------------------------------------------------------------
   const addPage = () => {
@@ -273,7 +289,15 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       // Clear dangling links into the removed page.
       return next.map((p) => ({
         ...p,
-        instances: p.instances.map((i) => (i.linkTo === id ? { ...i, linkTo: undefined } : i)),
+        instances: p.instances.map((i) => {
+          let inst = i
+          if (inst.linkTo === id) inst = { ...inst, linkTo: undefined }
+          if (inst.links && Object.values(inst.links).includes(id)) {
+            const links = Object.fromEntries(Object.entries(inst.links).filter(([, v]) => v !== id))
+            inst = { ...inst, links: Object.keys(links).length > 0 ? links : undefined }
+          }
+          return inst
+        }),
       }))
     })
     setActivePageId((cur) => (cur === id ? null : cur))
@@ -324,6 +348,13 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   }, [pages])
   const linkHrefFor = useCallback(
     (inst: Instance) => (inst.linkTo && slugById.has(inst.linkTo) ? `#/${slugById.get(inst.linkTo)}` : null),
+    [slugById],
+  )
+  const slotHrefFor = useCallback(
+    (inst: Instance, slot: string) => {
+      const target = inst.links?.[slot]
+      return target && slugById.has(target) ? `#/${slugById.get(target)}` : null
+    },
     [slugById],
   )
 
@@ -477,6 +508,11 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     });
   }
   window.addEventListener('hashchange', show);
+  // Per-button links: components stamp data-nav="#/slug" on individual buttons.
+  document.addEventListener('click', function (e) {
+    var el = e.target && e.target.closest ? e.target.closest('[data-nav]') : null;
+    if (el) { e.preventDefault(); location.hash = el.getAttribute('data-nav'); }
+  });
   show();
 })();
 `
@@ -558,6 +594,9 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       pages={pages.map((p) => ({ id: p.id, name: p.name }))}
       linkTo={selected?.linkTo}
       onLinkToChange={setLinkTo}
+      linkSlots={selected ? (slotsByInstance[selected.id] ?? []) : []}
+      links={selected?.links ?? {}}
+      onLinkSlotChange={setLinkSlot}
       animationSlot={
         <AnimationTab value={selected?.anim} onChange={setAnim} onReplay={replayAnim} />
       }
@@ -788,6 +827,8 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
               textOf={textOf}
               onEditText={setInstanceText}
               linkHrefFor={linkHrefFor}
+              slotHrefFor={slotHrefFor}
+              onSlotsReported={reportSlots}
             />
           )}
           {showCode && view === 'canvas' && (

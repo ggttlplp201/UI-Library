@@ -23,8 +23,11 @@ export interface PreviewFrameProps {
   className?: string
   /** Called with rendered content size, for size-to-content hosts (canvas) */
   onSize?: (size: { width: number; height: number }) => void
-  /** Fires when the user really clicks inside the live component */
-  onUserClick?: () => void
+  /** Fires when the user really clicks inside the live component; `slot` names
+   * the data-link-slot button that was hit, if any. */
+  onUserClick?: (slot?: string | null) => void
+  /** Reports the component's named link slots after each render */
+  onSlots?: (slots: string[]) => void
   /**
    * Fires once the render outcome is known: `true` if the component produced a
    * real visual preview, `false` if it errored (needs context) or is blank
@@ -74,6 +77,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     className,
     onSize,
     onUserClick,
+    onSlots,
     autoSize = true,
     fit = false,
     interactive = true,
@@ -99,6 +103,8 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   onSizeRef.current = onSize
   const onUserClickRef = useRef(onUserClick)
   onUserClickRef.current = onUserClick
+  const onSlotsRef = useRef(onSlots)
+  onSlotsRef.current = onSlots
   const onOutcomeRef = useRef(onOutcome)
   onOutcomeRef.current = onOutcome
   // Only report a *changed* outcome, so re-renders don't churn the host.
@@ -165,7 +171,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         readyRef.current = true
         postRender()
       } else if (data.type === 'clicked') {
-        onUserClickRef.current?.()
+        onUserClickRef.current?.(data.slot)
       } else if (data.type === 'size') {
         setSize({ width: data.width, height: data.height })
         onSizeRef.current?.({ width: data.width, height: data.height })
@@ -173,6 +179,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         setStatus('ready')
         setError(null)
         setBlank(Boolean(data.blank))
+        if (data.slots) onSlotsRef.current?.(data.slots)
         setSize({ width: data.width, height: data.height })
         onSizeRef.current?.({ width: data.width, height: data.height })
         reportOutcome(!data.blank)

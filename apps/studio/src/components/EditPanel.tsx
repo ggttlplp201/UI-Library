@@ -21,6 +21,9 @@ export function EditPanel({
   pages,
   linkTo,
   onLinkToChange,
+  linkSlots = [],
+  links = {},
+  onLinkSlotChange,
   animationSlot,
 }: {
   side: PanelSide
@@ -38,6 +41,11 @@ export function EditPanel({
   pages: { id: string; name: string }[]
   linkTo?: string
   onLinkToChange: (pageId: string | undefined) => void
+  /** Named button slots the component exposes (data-link-slot) */
+  linkSlots?: string[]
+  /** Per-slot page targets */
+  links?: Record<string, string>
+  onLinkSlotChange?: (slot: string, pageId: string | undefined) => void
   animationSlot?: React.ReactNode
 }) {
   const [tab, setTab] = useState<Tab>('controls')
@@ -108,6 +116,30 @@ export function EditPanel({
                 ))}
               </select>
             </div>
+            {/* Per-button links: one picker per named slot the component exposes.
+                A slot target beats the whole-component link for that button. */}
+            {linkSlots.map((slot) => (
+              <div key={slot} className="flex items-center gap-2 mt-1.5">
+                <span
+                  className="text-[9px] font-semibold text-primary/80 uppercase tracking-widest shrink-0 max-w-[88px] truncate"
+                  title={`Where the "${slot}" button navigates (overrides Links to for that button)`}
+                >
+                  ↳ {slot}
+                </span>
+                <select
+                  value={links[slot] ?? ''}
+                  onChange={(e) => onLinkSlotChange?.(slot, e.target.value || undefined)}
+                  className={posClass}
+                >
+                  <option value="">— no link —</option>
+                  {pages.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
           </>
         ) : null}
       </div>

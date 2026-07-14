@@ -31,6 +31,7 @@ export const SiteNavbar = ({
         {items.map((item) => (
           <span
             key={item}
+            data-link-slot={item}
             className="cursor-pointer text-[13px] text-muted-foreground transition-colors hover:text-foreground"
           >
             {item}
@@ -39,6 +40,7 @@ export const SiteNavbar = ({
       </div>
       <button
         type="button"
+        data-link-slot="cta"
         className="ml-auto rounded-lg bg-primary px-3.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-transform hover:scale-[1.03] active:scale-95"
       >
         {cta}

@@ -110,8 +110,12 @@ interface CanvasProps {
   onEditText: (id: string, text: string) => void
   /** Export href for an instance's page link (e.g. "#/pricing"), if any */
   linkHrefFor?: (inst: Instance) => string | null
+  /** Export href for one of an instance's named button slots, if configured */
+  slotHrefFor?: (inst: Instance, slot: string) => string | null
   /** Follow an instance's page link (clicked live on the canvas) */
   onNavigate?: (pageId: string) => void
+  /** A component reported its named link slots (data-link-slot buttons) */
+  onSlotsReported?: (instanceId: string, slots: string[]) => void
 }
 
 export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
@@ -131,7 +135,9 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     textOf,
     onEditText,
     linkHrefFor,
+    slotHrefFor,
     onNavigate,
+    onSlotsReported,
   },
   ref,
 ) {
@@ -166,6 +172,23 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
         if (!snap) continue
         serialized += 1
         if (snap.css) cssBlocks.add(snap.css)
+        // Per-button links: stamp configured slots with data-nav="#/slug" so
+        // the export runtime can navigate them (a nested <a> can't wrap just
+        // one button of serialized markup safely).
+        let html = snap.html
+        if (inst.links && slotHrefFor && html.includes('data-link-slot')) {
+          const doc = new DOMParser().parseFromString(`<div id="__slot-wrap">${html}</div>`, 'text/html')
+          let touched = false
+          doc.querySelectorAll('[data-link-slot]').forEach((el) => {
+            const slot = el.getAttribute('data-link-slot')
+            const href = slot ? slotHrefFor(inst, slot) : null
+            if (href) {
+              el.setAttribute('data-nav', href)
+              touched = true
+            }
+          })
+          if (touched) html = doc.getElementById('__slot-wrap')?.innerHTML ?? html
+        }
         const rotation = inst.rotation ?? 0
         const sx = inst.scaleX ?? 1
         const sy = inst.scaleY ?? 1
@@ -191,11 +214,11 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           markup =
             `<div style="position:absolute;left:${inst.x}px;top:${inst.y}px;width:${nat.w * sx}px;height:${nat.h * sy}px;transform:rotate(${rotation}deg);transform-origin:center center;">` +
             animated(
-              `<div style="width:${nat.w}px;height:${nat.h}px;transform:scale(${sx},${sy});transform-origin:top left;">${snap.html}</div>`,
+              `<div style="width:${nat.w}px;height:${nat.h}px;transform:scale(${sx},${sy});transform-origin:top left;">${html}</div>`,
             ) +
             `</div>`
         } else {
-          markup = `<div style="position:absolute;left:${inst.x}px;top:${inst.y}px;transform:rotate(${rotation}deg) scale(${sx},${sy});transform-origin:top left;">${animated(snap.html)}</div>`
+          markup = `<div style="position:absolute;left:${inst.x}px;top:${inst.y}px;transform:rotate(${rotation}deg) scale(${sx},${sy});transform-origin:top left;">${animated(html)}</div>`
         }
 
         // Page link: wrap in a real anchor so the exported site navigates.
@@ -484,7 +507,15 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                     anim={inst.anim}
                     replayKey={inst.replay}
                     interactive={live}
-                    onUserClick={inst.linkTo && onNavigate ? () => onNavigate(inst.linkTo!) : undefined}
+                    onUserClick={
+                      onNavigate && (inst.linkTo || inst.links)
+                        ? (slot) => {
+                            const target = (slot && inst.links?.[slot]) || inst.linkTo
+                            if (target) onNavigate(target)
+                          }
+                        : undefined
+                    }
+                    onSlots={onSlotsReported ? (sl) => onSlotsReported(inst.id, sl) : undefined}
                     onSize={(s) => {
                       setNatural((prev) =>
                         prev[inst.id]?.w === s.width && prev[inst.id]?.h === s.height

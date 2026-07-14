@@ -33,8 +33,11 @@ document.addEventListener('click', (e) => {
   const a = e.target && e.target.closest && e.target.closest('a')
   if (a) e.preventDefault()
   // Tell the Studio a real click landed inside the component — used to run
-  // "navigates to page X" links right on the canvas.
-  post({ type: 'clicked' })
+  // "navigates to page X" links right on the canvas. Components can mark
+  // individual buttons with data-link-slot="name" so each one can lead to a
+  // different page; the slot rides along with the click.
+  const slotEl = e.target && e.target.closest && e.target.closest('[data-link-slot]')
+  post({ type: 'clicked', slot: slotEl ? slotEl.getAttribute('data-link-slot') : null })
 }, true)
 document.addEventListener('submit', (e) => e.preventDefault(), true)
 
@@ -207,7 +210,14 @@ async function renderComponent({ module, exportName, props, anim }) {
       applyStyleOverride(props && props.style)
       applyAnim(anim)
       const r = rootEl.getBoundingClientRect()
-      post({ type: 'rendered', width: Math.ceil(r.width), height: Math.ceil(r.height), blank })
+      // Report the component's named link slots (buttons marked with
+      // data-link-slot) so the Studio can offer a per-button "links to" picker.
+      const slots = []
+      rootEl.querySelectorAll('[data-link-slot]').forEach((el) => {
+        const s = el.getAttribute('data-link-slot')
+        if (s && slots.indexOf(s) === -1) slots.push(s)
+      })
+      post({ type: 'rendered', width: Math.ceil(r.width), height: Math.ceil(r.height), blank, slots })
     })
   } catch (e) {
     if (token === renderToken) post({ type: 'error', message: String((e && e.message) || e) })

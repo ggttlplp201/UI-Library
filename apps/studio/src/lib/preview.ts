@@ -45,7 +45,15 @@ export function invalidatePreviewUrl(root: string): void {
 /** Message the harness posts back to the Studio. */
 export type PreviewMessage =
   | { source: 'preview'; type: 'ready'; root?: string }
-  | { source: 'preview'; type: 'rendered'; width: number; height: number; blank?: boolean }
+  | {
+      source: 'preview'
+      type: 'rendered'
+      width: number
+      height: number
+      blank?: boolean
+      /** Named per-button link slots the component exposes (data-link-slot) */
+      slots?: string[]
+    }
   | { source: 'preview'; type: 'error'; message: string }
   | { source: 'preview'; type: 'size'; width: number; height: number }
-  | { source: 'preview'; type: 'clicked' }
+  | { source: 'preview'; type: 'clicked'; slot?: string | null }
