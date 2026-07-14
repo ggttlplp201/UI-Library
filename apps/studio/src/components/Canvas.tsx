@@ -52,9 +52,23 @@ interface MoveState {
   id: string
   pointerX: number
   pointerY: number
-  originX: number
-  originY: number
+  /** Drag origin of every instance moving with this gesture (group move). */
+  origins: [string, { x: number; y: number }][]
+  moved: boolean
 }
+
+interface MarqueeState {
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+  moved: boolean
+}
+
+// Components that render tiny (icon buttons, dots) get auto-upscaled on insert
+// so they're visible/grabbable; the user can always rescale afterwards.
+const TINY_DIM = 64
+const TINY_MAX_SCALE = 3
 interface TransformState {
   id: string
   mode: 'scale' | 'rotate' | 'resize'
@@ -85,6 +99,9 @@ interface CanvasProps {
   theme: CanvasTheme
   selectedId: string | null
   onSelect: (id: string | null) => void
+  /** Full (possibly multi) selection; marquee select reports through this. */
+  selectedIds: string[]
+  onSelectMany: (ids: string[]) => void
   onAdd: (entryId: string, x: number, y: number) => void
   onMove: (id: string, x: number, y: number) => void
   onTransform: (id: string, patch: TransformPatch) => void
@@ -93,6 +110,8 @@ interface CanvasProps {
   onEditText: (id: string, text: string) => void
   /** Export href for an instance's page link (e.g. "#/pricing"), if any */
   linkHrefFor?: (inst: Instance) => string | null
+  /** Follow an instance's page link (clicked live on the canvas) */
+  onNavigate?: (pageId: string) => void
 }
 
 export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
@@ -103,6 +122,8 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     theme,
     selectedId,
     onSelect,
+    selectedIds,
+    onSelectMany,
     onAdd,
     onMove,
     onTransform,
@@ -110,15 +131,24 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     textOf,
     onEditText,
     linkHrefFor,
+    onNavigate,
   },
   ref,
 ) {
   const surfaceRef = useRef<HTMLDivElement>(null)
   const moveRef = useRef<MoveState | null>(null)
+  // Whether the last pointer gesture actually dragged (suppresses the click).
+  const moveRefMoved = useRef(false)
   const transformRef = useRef<TransformState | null>(null)
   const frameRefs = useRef(new Map<string, PreviewHandle>())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [natural, setNatural] = useState<Record<string, { w: number; h: number }>>({})
+  // Live mode: the selected instance receives real pointer events (toggles
+  // toggle, links navigate). Off by default so dragging anywhere moves it.
+  const [liveId, setLiveId] = useState<string | null>(null)
+  const [marquee, setMarquee] = useState<MarqueeState | null>(null)
+  const marqueeRef = useRef<MarqueeState | null>(null)
+  const autoScaled = useRef(new Set<string>())
 
   const localPoint = (clientX: number, clientY: number) => {
     const rect = surfaceRef.current?.getBoundingClientRect()
@@ -265,7 +295,55 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           backgroundSize: '20px 20px',
           backgroundPosition: '-1px -1px',
         }}
-        onClick={() => onSelect(null)}
+        onPointerDown={(e) => {
+          // Marquee select: drag on empty canvas draws a selection box.
+          if (e.target !== e.currentTarget) return
+          const { x, y } = localPoint(e.clientX, e.clientY)
+          const m: MarqueeState = { x0: x, y0: y, x1: x, y1: y, moved: false }
+          marqueeRef.current = m
+          e.currentTarget.setPointerCapture(e.pointerId)
+        }}
+        onPointerMove={(e) => {
+          const m = marqueeRef.current
+          if (!m) return
+          const { x, y } = localPoint(e.clientX, e.clientY)
+          m.x1 = x
+          m.y1 = y
+          if (Math.abs(x - m.x0) + Math.abs(y - m.y0) > 4) m.moved = true
+          setMarquee(m.moved ? { ...m } : null)
+        }}
+        onPointerUp={(e) => {
+          const m = marqueeRef.current
+          marqueeRef.current = null
+          setMarquee(null)
+          if (e.currentTarget.hasPointerCapture(e.pointerId))
+            e.currentTarget.releasePointerCapture(e.pointerId)
+          if (!m) return
+          setLiveId(null)
+          if (!m.moved) {
+            // Plain click on empty canvas: clear the selection.
+            onSelectMany([])
+            return
+          }
+          // Select every instance whose box intersects the marquee.
+          const surfRect = surfaceRef.current?.getBoundingClientRect()
+          if (!surfRect) return
+          const L = Math.min(m.x0, m.x1)
+          const R = Math.max(m.x0, m.x1)
+          const T = Math.min(m.y0, m.y1)
+          const B = Math.max(m.y0, m.y1)
+          const hits: string[] = []
+          surfaceRef.current?.querySelectorAll<HTMLElement>('[data-inst]').forEach((el) => {
+            const r = el.getBoundingClientRect()
+            const l = r.left - surfRect.left
+            const t = r.top - surfRect.top
+            if (l < R && l + r.width > L && t < B && t + r.height > T) {
+              const id = el.dataset.inst
+              if (id) hits.push(id)
+            }
+          })
+          onSelectMany(hits)
+        }}
         onDragOver={(e) => {
           e.preventDefault()
           e.dataTransfer.dropEffect = 'copy'
@@ -278,6 +356,17 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           onAdd(entryId, Math.max(0, x - 20), Math.max(0, y - 16))
         }}
       >
+        {marquee && (
+          <div
+            className="absolute z-20 border border-primary/70 bg-primary/10 rounded-sm pointer-events-none"
+            style={{
+              left: Math.min(marquee.x0, marquee.x1),
+              top: Math.min(marquee.y0, marquee.y1),
+              width: Math.abs(marquee.x1 - marquee.x0),
+              height: Math.abs(marquee.y1 - marquee.y0),
+            }}
+          />
+        )}
         {instances.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <p className="text-xs text-muted-foreground text-center">
@@ -290,6 +379,8 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           const entry = entryById(inst.entryId)
           if (!entry) return null
           const selected = inst.id === selectedId
+          const multiSelected = selectedIds.includes(inst.id)
+          const live = selected && liveId === inst.id
           const sx = inst.scaleX ?? 1
           const sy = inst.scaleY ?? 1
           const rotation = inst.rotation ?? 0
@@ -297,6 +388,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           return (
             <div
               key={inst.id}
+              data-inst={inst.id}
               className="absolute"
               style={{
                 left: inst.x,
@@ -307,6 +399,9 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
               }}
               onClick={(e) => {
                 e.stopPropagation()
+                // A drag that moved shouldn't collapse a multi-selection.
+                if (moveRefMoved.current) return
+                if (inst.id !== selectedId) setLiveId(null)
                 onSelect(inst.id)
               }}
               onDoubleClick={(e) => {
@@ -317,24 +412,39 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
               onPointerDown={(e) => {
                 if (editingId === inst.id) return
                 e.stopPropagation()
-                onSelect(inst.id)
+                moveRefMoved.current = false
+                const group =
+                  multiSelected && selectedIds.length > 1
+                    ? selectedIds
+                    : [inst.id]
+                if (!multiSelected) {
+                  if (inst.id !== selectedId) setLiveId(null)
+                  onSelect(inst.id)
+                }
                 e.currentTarget.setPointerCapture(e.pointerId)
                 moveRef.current = {
                   id: inst.id,
                   pointerX: e.clientX,
                   pointerY: e.clientY,
-                  originX: inst.x,
-                  originY: inst.y,
+                  origins: group.map((gid) => {
+                    const gi = instances.find((i) => i.id === gid)
+                    return [gid, { x: gi?.x ?? 0, y: gi?.y ?? 0 }]
+                  }),
+                  moved: false,
                 }
               }}
               onPointerMove={(e) => {
                 const m = moveRef.current
                 if (!m || m.id !== inst.id) return
-                onMove(
-                  inst.id,
-                  Math.max(0, m.originX + (e.clientX - m.pointerX)),
-                  Math.max(0, m.originY + (e.clientY - m.pointerY)),
-                )
+                const dx = e.clientX - m.pointerX
+                const dy = e.clientY - m.pointerY
+                if (Math.abs(dx) + Math.abs(dy) > 2) {
+                  m.moved = true
+                  moveRefMoved.current = true
+                }
+                for (const [gid, o] of m.origins) {
+                  onMove(gid, Math.max(0, o.x + dx), Math.max(0, o.y + dy))
+                }
               }}
               onPointerUp={(e) => {
                 if (moveRef.current?.id === inst.id) moveRef.current = null
@@ -345,7 +455,13 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
               {/* Scale wrapper: sizes to (natural × scale) so handles sit at the
                   visual edges without themselves scaling. */}
               <div
-                className={`relative rounded-md ${selected ? 'ring-2 ring-primary' : 'ring-1 ring-transparent hover:ring-border'}`}
+                className={`relative rounded-md ${
+                  selected
+                    ? 'ring-2 ring-primary'
+                    : multiSelected
+                      ? 'ring-2 ring-primary/50'
+                      : 'ring-1 ring-transparent hover:ring-border'
+                }`}
                 style={nat ? { width: nat.w * sx, height: nat.h * sy } : undefined}
               >
                 <div
@@ -367,14 +483,29 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                     renderProps={composeRenderProps(inst.args, inst.style)}
                     anim={inst.anim}
                     replayKey={inst.replay}
-                    interactive={selected}
-                    onSize={(s) =>
+                    interactive={live}
+                    onUserClick={inst.linkTo && onNavigate ? () => onNavigate(inst.linkTo!) : undefined}
+                    onSize={(s) => {
                       setNatural((prev) =>
                         prev[inst.id]?.w === s.width && prev[inst.id]?.h === s.height
                           ? prev
                           : { ...prev, [inst.id]: { w: s.width, h: s.height } },
                       )
-                    }
+                      // Auto-upscale tiny inserts once, and only while the user
+                      // hasn't set a scale of their own.
+                      const dim = Math.max(s.width, s.height)
+                      if (
+                        dim > 0 &&
+                        dim < TINY_DIM &&
+                        inst.scaleX === undefined &&
+                        inst.scaleY === undefined &&
+                        !autoScaled.current.has(inst.id)
+                      ) {
+                        autoScaled.current.add(inst.id)
+                        const f = Math.min(TINY_DIM / dim, TINY_MAX_SCALE)
+                        onTransform(inst.id, { scaleX: f, scaleY: f })
+                      }
+                    }}
                     className="cursor-grab active:cursor-grabbing"
                   />
                 </div>
@@ -396,15 +527,30 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
 
                 {selected && (
                   <>
-                    {/* Selected = live: real clicks/scroll/hover go into the
-                        component, so moving happens from this grab frame (the
-                        strips just outside the ring) or the handles. */}
-                    <div
-                      className="absolute -top-8 left-0 z-10 rounded-sm border border-border bg-card px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground shadow-sm pointer-events-none select-none"
-                      aria-hidden
+                    {/* Move mode (default): drag anywhere on the component to
+                        move it. Live mode: real clicks/scroll/hover go into the
+                        component, so moving happens from the grab strips just
+                        outside the ring, or the handles. */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setLiveId((cur) => (cur === inst.id ? null : inst.id))
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      title={
+                        live
+                          ? 'Live: clicks go into the component — press to go back to moving'
+                          : 'Try the component for real (toggles toggle, links navigate)'
+                      }
+                      className={`absolute -top-8 left-0 z-10 rounded-sm border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider shadow-sm select-none transition-colors ${
+                        live
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border bg-card text-muted-foreground hover:text-foreground'
+                      }`}
                     >
-                      live · drag frame to move
-                    </div>
+                      {live ? '■ live · drag frame to move' : '▶ live'}
+                    </button>
                     {[
                       '-top-2.5 left-0 right-0 h-2.5',
                       '-bottom-2.5 left-0 right-0 h-2.5',

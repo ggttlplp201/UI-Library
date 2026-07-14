@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchGeneratedCode, type CodeSyncPayload, type GeneratedCode } from '../lib/api'
 
+const MIN_H = 120
+const MAX_H = () => Math.round(window.innerHeight * 0.75)
+
 /**
  * Live "generated code" pane (plan §5.6): shows the selected instance's
  * component source with its canvas edits written back by the AST sync
@@ -21,6 +24,27 @@ export function CodePane({
   const [syncing, setSyncing] = useState(false)
   const [copied, setCopied] = useState(false)
   const lastSent = useRef('')
+  // Resizable: drag the top edge; the height persists across sessions.
+  const [height, setHeight] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem('css-codepane-height'))
+      return Number.isFinite(saved) && saved >= MIN_H ? saved : 256
+    } catch {
+      return 256
+    }
+  })
+  const resizeRef = useRef<{ startY: number; startH: number } | null>(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem('css-codepane-height', String(height))
+      } catch {
+        // blocked storage — persistence is best-effort
+      }
+    }, 300)
+    return () => clearTimeout(t)
+  }, [height])
 
   useEffect(() => {
     if (!payload) {
@@ -66,7 +90,32 @@ export function CodePane({
   }
 
   return (
-    <div className="h-64 shrink-0 border-t border-border bg-card flex flex-col">
+    <div
+      className="relative shrink-0 border-t border-border bg-card flex flex-col"
+      style={{ height }}
+    >
+      {/* Drag handle: resize the pane vertically. */}
+      <div
+        title="Drag to resize the code pane"
+        onPointerDown={(e) => {
+          e.preventDefault()
+          resizeRef.current = { startY: e.clientY, startH: height }
+          ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+        }}
+        onPointerMove={(e) => {
+          const r = resizeRef.current
+          if (!r) return
+          const next = Math.min(MAX_H(), Math.max(MIN_H, r.startH + (r.startY - e.clientY)))
+          setHeight(next)
+        }}
+        onPointerUp={(e) => {
+          resizeRef.current = null
+          ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+        }}
+        className="absolute -top-1 left-0 right-0 h-2 cursor-ns-resize z-10 group"
+      >
+        <div className="mx-auto mt-[3px] h-0.5 w-10 rounded-full bg-border group-hover:bg-primary/60 transition-colors" />
+      </div>
       <div className="h-8 shrink-0 px-3 flex items-center gap-2 border-b border-border">
         <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest">
           Code

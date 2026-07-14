@@ -48,3 +48,4 @@ export type PreviewMessage =
   | { source: 'preview'; type: 'rendered'; width: number; height: number; blank?: boolean }
   | { source: 'preview'; type: 'error'; message: string }
   | { source: 'preview'; type: 'size'; width: number; height: number }
+  | { source: 'preview'; type: 'clicked' }

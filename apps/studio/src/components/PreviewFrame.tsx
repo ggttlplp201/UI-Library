@@ -23,6 +23,8 @@ export interface PreviewFrameProps {
   className?: string
   /** Called with rendered content size, for size-to-content hosts (canvas) */
   onSize?: (size: { width: number; height: number }) => void
+  /** Fires when the user really clicks inside the live component */
+  onUserClick?: () => void
   /**
    * Fires once the render outcome is known: `true` if the component produced a
    * real visual preview, `false` if it errored (needs context) or is blank
@@ -71,6 +73,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     replayKey,
     className,
     onSize,
+    onUserClick,
     autoSize = true,
     fit = false,
     interactive = true,
@@ -94,6 +97,8 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   animRef.current = anim
   const onSizeRef = useRef(onSize)
   onSizeRef.current = onSize
+  const onUserClickRef = useRef(onUserClick)
+  onUserClickRef.current = onUserClick
   const onOutcomeRef = useRef(onOutcome)
   onOutcomeRef.current = onOutcome
   // Only report a *changed* outcome, so re-renders don't churn the host.
@@ -159,6 +164,8 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         }
         readyRef.current = true
         postRender()
+      } else if (data.type === 'clicked') {
+        onUserClickRef.current?.()
       } else if (data.type === 'size') {
         setSize({ width: data.width, height: data.height })
         onSizeRef.current?.({ width: data.width, height: data.height })

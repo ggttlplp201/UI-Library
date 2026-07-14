@@ -32,6 +32,9 @@ function post(msg) { parent.postMessage({ source: 'preview', ...msg }, '*') }
 document.addEventListener('click', (e) => {
   const a = e.target && e.target.closest && e.target.closest('a')
   if (a) e.preventDefault()
+  // Tell the Studio a real click landed inside the component — used to run
+  // "navigates to page X" links right on the canvas.
+  post({ type: 'clicked' })
 }, true)
 document.addEventListener('submit', (e) => e.preventDefault(), true)
 

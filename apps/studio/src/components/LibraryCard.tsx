@@ -52,15 +52,21 @@ export function LibraryCard({
   return (
     <div
       ref={cardRef}
-      className={`group rounded-lg border transition-colors overflow-hidden ${
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData(DRAG_MIME, entry.id)
+        e.dataTransfer.effectAllowed = 'copy'
+      }}
+      onClick={onSelect}
+      title={`${entry.name} — drag anywhere on the card (or click) to add it to the canvas`}
+      className={`group rounded-lg border transition-colors overflow-hidden cursor-grab active:cursor-grabbing select-none ${
         selected
           ? 'border-primary/40 bg-secondary'
           : 'border-border/50 bg-muted/20 hover:border-border'
       }`}
     >
-      {/* The preview is LIVE: real hover/click/scroll goes straight into the
-          component (scroll demos scroll, toggles toggle). Adding to the canvas
-          happens from the name bar below, which stays outside the iframe. */}
+      {/* The WHOLE card is the drag/click handle, so the preview iframe stays
+          pointer-transparent here. Components go live once on the canvas. */}
       <div className="h-[84px] flex items-center justify-center overflow-hidden bg-artboard">
         {inView && (
           <PreviewFrame
@@ -69,23 +75,14 @@ export function LibraryCard({
             exportName={entry.exportName}
             renderProps={defaultProps}
             fit
-            interactive
+            interactive={false}
             placeholderOnBlank
             onOutcome={onOutcome}
             className="w-full h-full"
           />
         )}
       </div>
-      <div
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData(DRAG_MIME, entry.id)
-          e.dataTransfer.effectAllowed = 'copy'
-        }}
-        onClick={onSelect}
-        title={`${entry.name} — try the live preview above; drag or click here to add it to the canvas`}
-        className="px-2 py-1.5 border-t border-border/50 cursor-grab active:cursor-grabbing select-none"
-      >
+      <div className="px-2 py-1.5 border-t border-border/50">
         <div className="flex items-center gap-1">
           <span className="text-[11px] font-medium truncate">{entry.name}</span>
           {entry.source === 'preset' && (

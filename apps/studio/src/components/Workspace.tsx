@@ -54,8 +54,32 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     return [{ id: newPageId(), name: 'Home', instances: [], nodeX: 90, nodeY: 130 }]
   })
   const [activePageId, setActivePageId] = useState<string | null>(null)
+  // Open page tabs (browser-style strip in the header). Opening a page's
+  // canvas adds a tab; closing a tab only closes the tab, never the page.
+  const [openTabs, setOpenTabs] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (raw) {
+        const saved = JSON.parse(raw) as { pages?: Page[]; openTabs?: string[] }
+        const ids = new Set((saved.pages ?? []).map((p) => p.id))
+        const tabs = (saved.openTabs ?? []).filter((id) => ids.has(id))
+        if (tabs.length > 0) return tabs
+        if (saved.pages && saved.pages.length > 0) return [saved.pages[0].id]
+      }
+    } catch {
+      // fall through
+    }
+    return []
+  })
   const [view, setView] = useState<'canvas' | 'pages'>('canvas')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Selection: possibly multiple instances (marquee). The single `selectedId`
+  // drives the config panel/code pane and only exists for a 1-item selection.
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const selectedId = selectedIds.length === 1 ? selectedIds[0] : null
+  const setSelectedId = useCallback(
+    (id: string | null) => setSelectedIds(id ? [id] : []),
+    [],
+  )
 
   const activePage = pages.find((p) => p.id === activePageId) ?? pages[0]
   const instances = activePage.instances
@@ -96,13 +120,13 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   useEffect(() => {
     const t = setTimeout(() => {
       try {
-        localStorage.setItem(storageKey, JSON.stringify({ pages }))
+        localStorage.setItem(storageKey, JSON.stringify({ pages, openTabs }))
       } catch {
         // storage full/unavailable — persistence is best-effort
       }
     }, 400)
     return () => clearTimeout(t)
-  }, [pages, storageKey])
+  }, [pages, openTabs, storageKey])
 
   // Canvas keyboard shortcuts (ignored while typing in a field): Escape
   // deselects, Delete/Backspace removes the selection, arrows nudge it
@@ -111,18 +135,25 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      if (
+        t &&
+        (t.tagName === 'INPUT' ||
+          t.tagName === 'TEXTAREA' ||
+          t.tagName === 'SELECT' ||
+          t.isContentEditable)
+      )
+        return
       // Leave browser/OS shortcuts (Cmd/Ctrl/Alt combos) alone.
       if (e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === 'Escape') {
-        setSelectedId(null)
+        setSelectedIds([])
         return
       }
-      if (!selectedId) return
+      if (selectedIds.length === 0) return
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault()
-        setInstances((prev) => prev.filter((i) => i.id !== selectedId))
-        setSelectedId(null)
+        setInstances((prev) => prev.filter((i) => !selectedIds.includes(i.id)))
+        setSelectedIds([])
         return
       }
       const step = e.shiftKey ? 10 : 1
@@ -137,14 +168,16 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         e.preventDefault()
         setInstances((prev) =>
           prev.map((i) =>
-            i.id === selectedId ? { ...i, x: Math.max(0, i.x + d[0]), y: Math.max(0, i.y + d[1]) } : i,
+            selectedIds.includes(i.id)
+              ? { ...i, x: Math.max(0, i.x + d[0]), y: Math.max(0, i.y + d[1]) }
+              : i,
           ),
         )
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedId, setInstances])
+  }, [selectedIds, setInstances])
 
   const entries = useMemo(
     () => [...result.entries, ...presets.entries],
@@ -190,7 +223,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     setInstances((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)))
   const removeInstance = (id: string) => {
     setInstances((prev) => prev.filter((i) => i.id !== id))
-    setSelectedId((cur) => (cur === id ? null : cur))
+    setSelectedIds((cur) => cur.filter((x) => x !== id))
   }
   // Nested updates read from `prev` (not the captured `selected`) so rapid /
   // batched edits can't clobber each other.
@@ -199,7 +232,21 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     setInstances((prev) => prev.map((i) => (i.id === selectedId ? fn(i) : i)))
   }
   const setArg = (name: string, value: unknown) =>
-    updateSelected((i) => ({ ...i, args: { ...i.args, [name]: value } }))
+    updateSelected((i) => {
+      const next: Instance = { ...i, args: { ...i.args, [name]: value } }
+      // Changing a variant/type select restyles the component from its own
+      // palette — drop any custom color/background override so the new
+      // variant shows its true default look.
+      const control = controls.find((c) => c.name === name)
+      if (control?.kind === 'select') {
+        next.style = {
+          ...i.style,
+          color: CONTRAST_TEXT[canvasTheme],
+          backgroundColor: undefined,
+        }
+      }
+      return next
+    })
   const setStyle = (next: StyleOverride) => updateSelected((i) => ({ ...i, style: next }))
   const setAnim = (next: AnimConfig) => updateSelected((i) => ({ ...i, anim: next }))
   const replayAnim = () => updateSelected((i) => ({ ...i, replay: (i.replay ?? 0) + 1 }))
@@ -218,6 +265,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     }
     setPages((prev) => [...prev, page])
     setActivePageId(page.id)
+    openTab(page.id)
   }
   const removePage = (id: string) => {
     setPages((prev) => {
@@ -229,16 +277,37 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       }))
     })
     setActivePageId((cur) => (cur === id ? null : cur))
+    setOpenTabs((t) => t.filter((x) => x !== id))
     setSelectedId(null)
   }
   const renamePage = (id: string, name: string) =>
     setPages((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)))
   const movePageNode = (id: string, nodeX: number, nodeY: number) =>
     setPages((prev) => prev.map((p) => (p.id === id ? { ...p, nodeX, nodeY } : p)))
+  const openTab = useCallback(
+    (id: string) => setOpenTabs((t) => (t.includes(id) ? t : [...t, id])),
+    [],
+  )
+  // Whatever page the canvas is showing always has a tab (covers first run,
+  // navigation, and removing the active page).
+  useEffect(() => {
+    if (view === 'canvas') openTab(activePageIdResolved)
+  }, [view, activePageIdResolved, openTab])
   const openPageCanvas = (id: string) => {
     setActivePageId(id)
     setSelectedId(null)
     setView('canvas')
+    openTab(id)
+  }
+  const closeTab = (id: string) => {
+    const next = openTabs.filter((x) => x !== id)
+    setOpenTabs(next)
+    // Closing the active page's tab moves focus to the last remaining tab,
+    // or back to the Root graph when none are left.
+    if (activePage.id === id) {
+      if (next.length > 0) setActivePageId(next[next.length - 1])
+      else setView('pages')
+    }
   }
 
   // Unique slug per page (duplicate names get -2, -3, …) for export hrefs.
@@ -542,24 +611,59 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         >
           {result.root || 'Preset library'}
         </span>
-        <div className="flex gap-0.5 rounded-lg bg-secondary/60 p-0.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => setView('canvas')}
-            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
-              view === 'canvas' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {activePage.name}
-          </button>
+        {/* Tab explorer: permanent Root tab (page graph) + one tab per open
+            page. Tabs share the strip width, shrinking as more open and
+            growing back as tabs close. Closing a tab never deletes the page. */}
+        <div className="flex items-center gap-0.5 rounded-lg bg-secondary/60 p-0.5 min-w-0 flex-1 max-w-[560px]">
           <button
             type="button"
             onClick={() => setView('pages')}
-            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+            title="Root — the page graph: see and wire the connections between pages"
+            className={`shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
               view === 'pages' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            Pages ({pages.length})
+            ⌘ Root
+          </button>
+          {openTabs
+            .map((id) => pages.find((pg) => pg.id === id))
+            .filter((pg): pg is Page => Boolean(pg))
+            .map((pg) => {
+              const active = view === 'canvas' && pg.id === activePage.id
+              return (
+                <div
+                  key={pg.id}
+                  onClick={() => openPageCanvas(pg.id)}
+                  title={pg.name}
+                  className={`group/tab flex items-center gap-1 min-w-0 flex-1 basis-0 max-w-40 px-2 py-1 rounded-md text-[11px] font-medium cursor-pointer transition-colors ${
+                    active ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span className="truncate">{pg.name}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      closeTab(pg.id)
+                    }}
+                    title="Close tab (the page stays in Root)"
+                    className="shrink-0 w-3.5 h-3.5 rounded-sm flex items-center justify-center text-[9px] leading-none text-muted-foreground opacity-0 group-hover/tab:opacity-100 hover:text-foreground hover:bg-secondary transition-opacity"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )
+            })}
+          <button
+            type="button"
+            onClick={() => {
+              addPage()
+              setView('canvas')
+            }}
+            title="New page"
+            className="shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-xs text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
+          >
+            +
           </button>
         </div>
         {instances.length > 0 && (
@@ -650,6 +754,20 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
               onRename={renamePage}
               onAddPage={addPage}
               onRemovePage={removePage}
+              onLink={(pageId, instanceId, targetPageId) =>
+                setPages((prev) =>
+                  prev.map((p) =>
+                    p.id === pageId
+                      ? {
+                          ...p,
+                          instances: p.instances.map((i) =>
+                            i.id === instanceId ? { ...i, linkTo: targetPageId } : i,
+                          ),
+                        }
+                      : p,
+                  ),
+                )
+              }
             />
           ) : (
             <Canvas
@@ -660,6 +778,9 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
               theme={canvasTheme}
               selectedId={selectedId}
               onSelect={setSelectedId}
+              selectedIds={selectedIds}
+              onSelectMany={setSelectedIds}
+              onNavigate={openPageCanvas}
               onAdd={addInstance}
               onMove={(id, x, y) => patchInstance(id, { x, y })}
               onTransform={(id, patch) => patchInstance(id, patch)}

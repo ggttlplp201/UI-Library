@@ -1,20 +1,30 @@
 import { useRef, useState } from 'react'
 import type { Page } from '../lib/canvas'
 
-const NODE_W = 190
-const NODE_H = 92
+const NODE_W = 200
+const HEADER_H = 34
+const ROW_H = 20
+const FOOTER_H = 40
+const MAX_ROWS = 5
 
-interface EdgeInfo {
-  from: string
-  to: string
-  labels: string[]
+const rowsShown = (page: Page) =>
+  Math.min(page.instances.length, MAX_ROWS) + (page.instances.length > MAX_ROWS ? 1 : 0)
+const nodeH = (page: Page) => HEADER_H + Math.max(rowsShown(page), 1) * ROW_H + FOOTER_H
+
+interface WireDrag {
+  fromPageId: string
+  instanceId: string
+  x: number
+  y: number
 }
 
 /**
- * Blender-style node view of the composition's pages. Each page is a node;
- * an edge means "some component on page A navigates to page B" (assigned in
- * the Configure panel's "Navigates to" field). Drag nodes to arrange, double-
- * click a name to rename, double-click a node body to open it on the canvas.
+ * Blender-style node view of the composition's pages. Each page node lists
+ * its components; every component row has an output PORT on the right —
+ * drag a wire from a port onto another page node to make that component
+ * navigate there (release on empty space to clear the link). The same
+ * assignment is available as Configure → "Links to". Drag nodes to arrange,
+ * double-click a name to rename, double-click a node to open its canvas.
  */
 export function PagesView({
   pages,
@@ -26,10 +36,11 @@ export function PagesView({
   onRename,
   onAddPage,
   onRemovePage,
+  onLink,
 }: {
   pages: Page[]
   activePageId: string
-  /** Resolve an instance id on a page to a display name for edge labels */
+  /** Resolve an instance id on a page to a display name */
   entryNameFor: (pageId: string, instanceId: string) => string
   onSetActive: (id: string) => void
   onOpenCanvas: (id: string) => void
@@ -37,31 +48,136 @@ export function PagesView({
   onRename: (id: string, name: string) => void
   onAddPage: () => void
   onRemovePage: (id: string) => void
+  /** Assign (or clear, with undefined) an instance's navigation target */
+  onLink: (pageId: string, instanceId: string, targetPageId: string | undefined) => void
 }) {
   const surfaceRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [wire, setWire] = useState<WireDrag | null>(null)
+  const wireRef = useRef<WireDrag | null>(null)
+  wireRef.current = wire
 
   const byId = new Map(pages.map((p) => [p.id, p]))
 
-  // Collect edges: source page -> target page with the linking instances' names.
-  const edgeMap = new Map<string, EdgeInfo>()
-  for (const page of pages) {
-    for (const inst of page.instances) {
-      if (!inst.linkTo || !byId.has(inst.linkTo)) continue
-      const key = `${page.id}->${inst.linkTo}`
-      const edge = edgeMap.get(key) ?? { from: page.id, to: inst.linkTo, labels: [] }
-      edge.labels.push(entryNameFor(page.id, inst.id))
-      edgeMap.set(key, edge)
-    }
+  const toSurface = (clientX: number, clientY: number) => {
+    const rect = surfaceRef.current?.getBoundingClientRect()
+    return { x: clientX - (rect?.left ?? 0), y: clientY - (rect?.top ?? 0) }
   }
-  const edges = [...edgeMap.values()]
 
-  const anchor = (p: Page, side: 'out' | 'in') => ({
-    x: p.nodeX + (side === 'out' ? NODE_W : 0),
-    y: p.nodeY + NODE_H / 2,
+  const portPos = (page: Page, idx: number) => ({
+    x: page.nodeX + NODE_W,
+    y: page.nodeY + HEADER_H + idx * ROW_H + ROW_H / 2,
   })
+  const inputPos = (page: Page) => ({ x: page.nodeX, y: page.nodeY + nodeH(page) / 2 })
+
+  const pageAtPoint = (x: number, y: number): Page | null =>
+    pages.find(
+      (p) => x >= p.nodeX && x <= p.nodeX + NODE_W && y >= p.nodeY && y <= p.nodeY + nodeH(p),
+    ) ?? null
+
+  // Wire dragging: listeners attach synchronously in the port's pointerdown
+  // (not via an effect) so even a same-frame release resolves cleanly — no
+  // dangling wire, no stray pointerup clearing a link later.
+  const startWire = (fromPageId: string, instanceId: string, clientX: number, clientY: number) => {
+    const p = toSurface(clientX, clientY)
+    const w: WireDrag = { fromPageId, instanceId, x: p.x, y: p.y }
+    wireRef.current = w
+    setWire(w)
+    const onMove = (e: PointerEvent) => {
+      const pt = toSurface(e.clientX, e.clientY)
+      setWire((cur) => (cur ? { ...cur, x: pt.x, y: pt.y } : cur))
+    }
+    const onUp = (e: PointerEvent) => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      const pt = toSurface(e.clientX, e.clientY)
+      const target = pageAtPoint(pt.x, pt.y)
+      // Dropping on another page links; dropping anywhere else clears.
+      onLink(fromPageId, instanceId, target && target.id !== fromPageId ? target.id : undefined)
+      wireRef.current = null
+      setWire(null)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
+
+  const bezier = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+    const dx = Math.max(48, Math.abs(b.x - a.x) / 2)
+    return `M ${a.x} ${a.y} C ${a.x + dx} ${a.y}, ${b.x - dx} ${b.y}, ${b.x} ${b.y}`
+  }
+
+  /**
+   * Does the simple bezier from a to b pass through any node box? Samples the
+   * cubic; endpoints sit on box edges, so sampling starts inside the span.
+   */
+  const bezierCrossesNode = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+    const dx = Math.max(48, Math.abs(b.x - a.x) / 2)
+    const p1 = { x: a.x + dx, y: a.y }
+    const p2 = { x: b.x - dx, y: b.y }
+    for (let t = 0.08; t < 0.93; t += 0.06) {
+      const u = 1 - t
+      const x = u * u * u * a.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * b.x
+      const y = u * u * u * a.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * b.y
+      for (const p of pages) {
+        if (
+          x > p.nodeX + 4 &&
+          x < p.nodeX + NODE_W - 4 &&
+          y > p.nodeY + 4 &&
+          y < p.nodeY + nodeH(p) - 4
+        )
+          return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * Edge path that stays OUT of the node boxes. Forward edges (target to the
+   * right) keep the simple bezier unless it would cut through a node. Blocked
+   * or backward edges detour around the outside: out of the source port,
+   * vertically past every node in the crossed span, then back into the
+   * target's input — wires may overlap, boxes may not.
+   */
+  const edgePath = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+    if (b.x >= a.x + 48 && !bezierCrossesNode(a, b)) return bezier(a, b)
+    // Clearance band: consider every node whose x-range the wire crosses.
+    const spanL = Math.min(b.x, a.x) - 24
+    const spanR = Math.max(b.x, a.x) + 24
+    let top = Infinity
+    let bottom = -Infinity
+    for (const p of pages) {
+      if (p.nodeX + NODE_W < spanL || p.nodeX > spanR) continue
+      top = Math.min(top, p.nodeY)
+      bottom = Math.max(bottom, p.nodeY + nodeH(p))
+    }
+    if (!Number.isFinite(top)) return bezier(a, b)
+    const below = bottom + 40
+    const above = top - 40
+    const detourY =
+      Math.abs(a.y - below) + Math.abs(b.y - below) <= Math.abs(a.y - above) + Math.abs(b.y - above)
+        ? below
+        : Math.max(16, above)
+    const midX = (a.x + b.x) / 2
+    return (
+      `M ${a.x} ${a.y} ` +
+      `C ${a.x + 64} ${a.y}, ${a.x + 64} ${detourY}, ${midX} ${detourY} ` +
+      `C ${b.x - 64} ${detourY}, ${b.x - 64} ${b.y}, ${b.x} ${b.y}`
+    )
+  }
+
+  // Edges: one per linked instance, anchored at the instance's row port.
+  const edges: { key: string; from: { x: number; y: number }; to: { x: number; y: number } }[] = []
+  for (const page of pages) {
+    page.instances.forEach((inst, idx) => {
+      if (!inst.linkTo) return
+      const target = byId.get(inst.linkTo)
+      if (!target) return
+      const from = idx < MAX_ROWS ? portPos(page, idx) : { x: page.nodeX + NODE_W, y: page.nodeY + nodeH(page) / 2 }
+      edges.push({ key: `${page.id}:${inst.id}`, from, to: inputPos(target) })
+    })
+  }
 
   return (
     <div
@@ -81,45 +197,59 @@ export function PagesView({
         dragRef.current = null
       }}
     >
-      {/* Edges under the nodes */}
+      {/* Edges + live wire under the nodes */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none">
         <defs>
           <marker id="edge-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
             <path d="M0,0.8 L7,4 L0,7.2 Z" fill="rgba(160,160,180,0.9)" />
           </marker>
         </defs>
-        {edges.map((edge) => {
-          const from = byId.get(edge.from)
-          const to = byId.get(edge.to)
-          if (!from || !to) return null
-          const a = anchor(from, 'out')
-          const b = anchor(to, 'in')
-          const dx = Math.max(48, Math.abs(b.x - a.x) / 2)
-          const path = `M ${a.x} ${a.y} C ${a.x + dx} ${a.y}, ${b.x - dx} ${b.y}, ${b.x} ${b.y}`
-          const midX = (a.x + b.x) / 2
-          const midY = (a.y + b.y) / 2 - 8
+        {edges.map((e) => (
+          <path
+            key={e.key}
+            d={edgePath(e.from, e.to)}
+            fill="none"
+            stroke="rgba(160,160,180,0.6)"
+            strokeWidth="1.5"
+            markerEnd="url(#edge-arrow)"
+          />
+        ))}
+        {wire && (() => {
+          const page = byId.get(wire.fromPageId)
+          if (!page) return null
+          const idx = page.instances.findIndex((i) => i.id === wire.instanceId)
+          const from = idx >= 0 && idx < MAX_ROWS ? portPos(page, idx) : { x: page.nodeX + NODE_W, y: page.nodeY + nodeH(page) / 2 }
           return (
-            <g key={`${edge.from}->${edge.to}`}>
-              <path d={path} fill="none" stroke="rgba(160,160,180,0.55)" strokeWidth="1.5" markerEnd="url(#edge-arrow)" />
-              <text x={midX} y={midY} textAnchor="middle" className="fill-neutral-400" fontSize="9">
-                {edge.labels.slice(0, 2).join(', ')}
-                {edge.labels.length > 2 ? ` +${edge.labels.length - 2}` : ''}
-              </text>
-            </g>
+            <path
+              d={bezier(from, { x: wire.x, y: wire.y })}
+              fill="none"
+              stroke="rgba(124,111,255,0.9)"
+              strokeWidth="1.5"
+              strokeDasharray="4 3"
+            />
           )
-        })}
+        })()}
       </svg>
 
       {pages.map((page) => {
         const active = page.id === activePageId
+        const height = nodeH(page)
+        const shown = page.instances.slice(0, MAX_ROWS)
+        const overflow = page.instances.length - shown.length
+        const isWireTarget = wire != null && wire.fromPageId !== page.id
         return (
           <div
             key={page.id}
             className={`absolute rounded-xl border shadow-lg bg-card ${
-              active ? 'border-primary/60 ring-1 ring-primary/40' : 'border-border hover:border-neutral-600'
+              isWireTarget
+                ? 'border-primary/70 ring-1 ring-primary/50'
+                : active
+                  ? 'border-primary/60 ring-1 ring-primary/40'
+                  : 'border-border hover:border-neutral-600'
             }`}
-            style={{ left: page.nodeX, top: page.nodeY, width: NODE_W, height: NODE_H }}
+            style={{ left: page.nodeX, top: page.nodeY, width: NODE_W, height }}
             onPointerDown={(e) => {
+              if (wireRef.current) return
               onSetActive(page.id)
               dragRef.current = {
                 id: page.id,
@@ -132,8 +262,13 @@ export function PagesView({
             }}
             onDoubleClick={() => onOpenCanvas(page.id)}
           >
-            <div className="px-3 pt-2.5 flex items-center gap-1.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-primary' : 'bg-neutral-600'}`} />
+            {/* Input socket (where wires land) */}
+            <span
+              className="absolute -left-[5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border border-neutral-500 bg-card"
+              aria-hidden
+            />
+            <div className="px-3 pt-2.5 flex items-center gap-1.5" style={{ height: HEADER_H }}>
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${active ? 'bg-primary' : 'bg-neutral-600'}`} />
               {renaming === page.id ? (
                 <input
                   autoFocus
@@ -186,9 +321,47 @@ export function PagesView({
                 </button>
               )}
             </div>
-            <div className="px-3 pt-1.5 text-[10px] text-muted-foreground">
-              {page.instances.length} component{page.instances.length === 1 ? '' : 's'}
-            </div>
+
+            {/* Component rows, each with an output port to wire to a page */}
+            {page.instances.length === 0 ? (
+              <p className="px-3 text-[10px] text-muted-foreground" style={{ lineHeight: `${ROW_H}px` }}>
+                empty page
+              </p>
+            ) : (
+              shown.map((inst) => {
+                const targetName = inst.linkTo ? byId.get(inst.linkTo)?.name : null
+                return (
+                  <div
+                    key={inst.id}
+                    className="relative flex items-center gap-1 px-3 text-[10px]"
+                    style={{ height: ROW_H }}
+                  >
+                    <span className="truncate text-foreground/80">{entryNameFor(page.id, inst.id)}</span>
+                    {targetName && (
+                      <span className="truncate text-primary/80 shrink-0">→ {targetName}</span>
+                    )}
+                    <span
+                      title="Drag onto another page to link this component's click to it (release on empty space to unlink)"
+                      onPointerDown={(e) => {
+                        e.stopPropagation()
+                        startWire(page.id, inst.id, e.clientX, e.clientY)
+                      }}
+                      className={`absolute -right-[5px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border cursor-crosshair transition-colors ${
+                        inst.linkTo
+                          ? 'bg-primary border-primary'
+                          : 'bg-card border-neutral-500 hover:border-primary hover:bg-primary/40'
+                      }`}
+                    />
+                  </div>
+                )
+              })
+            )}
+            {overflow > 0 && (
+              <p className="px-3 text-[9px] text-muted-foreground" style={{ lineHeight: `${ROW_H}px` }}>
+                +{overflow} more — link them from Configure
+              </p>
+            )}
+
             <button
               type="button"
               onPointerDown={(e) => e.stopPropagation()}
@@ -212,7 +385,7 @@ export function PagesView({
         + Add page
       </button>
       <p className="absolute top-3 left-4 text-[10px] text-muted-foreground pointer-events-none">
-        Pages — drag to arrange · double-click a node to open its canvas · assign links in Configure → “Navigates to”
+        Pages — drag a component's ○ port onto another page to link its click there · drag nodes to arrange · double-click to open
       </p>
     </div>
   )
