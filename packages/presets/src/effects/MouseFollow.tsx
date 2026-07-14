@@ -17,9 +17,11 @@ const SPRING = {
 
 /** Dot that tracks the pointer 1:1 inside the panel. */
 export const SimpleMouseFollow = () => {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const opacity = useMotionValue(0);
+  // Rest in the panel center at reduced opacity so the component previews
+  // even before the pointer arrives.
+  const x = useMotionValue(140);
+  const y = useMotionValue(140);
+  const opacity = useMotionValue(0.5);
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const bounds = e.currentTarget.getBoundingClientRect();
@@ -36,10 +38,10 @@ export const SimpleMouseFollow = () => {
         opacity.set(1);
       }}
       onPointerLeave={() => {
-        opacity.set(0);
+        opacity.set(0.5);
       }}
       data-hover-demo="pointer"
-      className="rounded-4xl bg-muted size-[300px] cursor-none overflow-hidden"
+      className="rounded-4xl bg-muted border border-border size-[300px] cursor-none overflow-hidden"
     >
       <motion.div
         style={{
@@ -55,10 +57,12 @@ export const SimpleMouseFollow = () => {
 
 /** Dot that chases the pointer on a spring. */
 export const SpringMouseFollow = () => {
-  const xSpring = useSpring(0, SPRING);
-  const ySpring = useSpring(0, SPRING);
-  const opacitySpring = useSpring(0, SPRING);
-  const scaleSpring = useSpring(0, SPRING);
+  // Rest in the panel center at reduced opacity so the component previews
+  // even before the pointer arrives.
+  const xSpring = useSpring(130, SPRING);
+  const ySpring = useSpring(130, SPRING);
+  const opacitySpring = useSpring(0.5, SPRING);
+  const scaleSpring = useSpring(0.75, SPRING);
 
   return (
     <div
@@ -72,11 +76,11 @@ export const SpringMouseFollow = () => {
         scaleSpring.set(1);
       }}
       onPointerLeave={() => {
-        opacitySpring.set(0);
-        scaleSpring.set(0);
+        opacitySpring.set(0.5);
+        scaleSpring.set(0.75);
       }}
       data-hover-demo="pointer"
-      className="rounded-4xl bg-muted size-[300px] overflow-hidden"
+      className="rounded-4xl bg-muted border border-border size-[300px] overflow-hidden"
     >
       <motion.div
         style={{

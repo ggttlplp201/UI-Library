@@ -127,7 +127,12 @@ export const VideoPlayerContent = ({
   <video className={cn("mb-0 mt-0", className)} {...props} />
 );
 
-export const VideoPopOverDemo = () => {
+export const VideoPopOverDemo = ({
+  /** Video file the tile and popover play */
+  src = "/showreel/skiper-ui-showreel.mp4",
+}: {
+  src?: string;
+}) => {
   const [showVideoPopOver, setShowVideoPopOver] = useState(false);
 
   const SPRING = {
@@ -154,7 +159,7 @@ export const VideoPopOverDemo = () => {
       </div>
       <AnimatePresence>
         {showVideoPopOver && (
-          <VideoPopOver setShowVideoPopOver={setShowVideoPopOver} />
+          <VideoPopOver src={src} setShowVideoPopOver={setShowVideoPopOver} />
         )}
       </AnimatePresence>
       <div
@@ -178,7 +183,7 @@ export const VideoPopOverDemo = () => {
           loop
           className="h-full w-full object-cover"
         >
-          <source src="/showreel/skiper-ui-showreel.mp4" />
+          <source src={src} />
         </video>
       </div>
     </section>
@@ -186,8 +191,10 @@ export const VideoPopOverDemo = () => {
 };
 
 const VideoPopOver = ({
+  src,
   setShowVideoPopOver,
 }: {
+  src: string;
   setShowVideoPopOver: (showVideoPopOver: boolean) => void;
 }) => {
   return (
@@ -224,7 +231,7 @@ const VideoPopOver = ({
       >
         <VideoPlayer style={{ width: "100%", height: "100%" }}>
           <VideoPlayerContent
-            src="/showreel/skiper-ui-showreel.mp4"
+            src={src}
             autoPlay
             slot="media"
             className="w-full object-cover"

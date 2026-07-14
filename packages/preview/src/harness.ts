@@ -75,9 +75,25 @@ function eachVisible(el, visit) {
   return false
 }
 
+// A visual tag only counts when it actually paints something: an SVG that
+// holds nothing but <defs> (filter/clip-path providers), a VIDEO with no
+// source, an IMG with no src, or an empty media-controller shell are all
+// invisible and must not rescue a preview. Returns true/false to count the
+// node, or null to skip the node's remaining checks entirely.
+function visualTagWeight(n) {
+  const tag = (n.tagName || '').toUpperCase()
+  if (tag === 'SVG') return n.querySelector(':scope > *:not(defs):not(title):not(desc):not(metadata)') ? true : null
+  if (tag === 'VIDEO') return (n.currentSrc || n.getAttribute('src') || n.querySelector('source[src]')) ? true : null
+  if (tag === 'IMG') return n.getAttribute('src') ? true : null
+  if (tag === 'MEDIA-CONTROLLER') return n.querySelector('video, audio') ? true : null
+  if (VISUAL_TAGS.has(tag)) return true
+  return false
+}
+
 function hasVisualSubstance(el) {
   return eachVisible(el, (n, cs) => {
-    if (VISUAL_TAGS.has((n.tagName || '').toUpperCase())) return true
+    const w = visualTagWeight(n)
+    if (w !== false) return w === true
     const bg = cs.backgroundColor
     if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return true
     if (cs.backgroundImage && cs.backgroundImage !== 'none') return true
@@ -94,7 +110,8 @@ function hasVisualSubstance(el) {
 // otherwise text-only wrapper (e.g. DialogFooter's border-t) shouldn't save it.
 function hasFillOrMedia(el) {
   return eachVisible(el, (n, cs) => {
-    if (VISUAL_TAGS.has((n.tagName || '').toUpperCase())) return true
+    const w = visualTagWeight(n)
+    if (w !== false) return w === true
     const bg = cs.backgroundColor
     if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') return true
     return cs.backgroundImage && cs.backgroundImage !== 'none'
@@ -114,7 +131,17 @@ class ErrorBoundary extends React.Component {
 async function renderComponent({ module, exportName, props, anim }) {
   const token = ++renderToken
   try {
-    const mod = await import(/* @vite-ignore */ '/' + module)
+    let mod
+    try {
+      mod = await import(/* @vite-ignore */ '/' + module)
+    } catch (e) {
+      // First-load races (dev server still transforming a heavy module chain)
+      // surface as import failures; one retry beats permanently marking the
+      // component broken in the library.
+      await new Promise((r) => setTimeout(r, 1200))
+      if (token !== renderToken) return
+      mod = await import(/* @vite-ignore */ '/' + module)
+    }
     if (token !== renderToken) return
     const Comp = mod[exportName] || mod.default
     if (!Comp) { post({ type: 'error', message: 'Export "' + exportName + '" not found in ' + module }); return }
@@ -129,8 +156,11 @@ async function renderComponent({ module, exportName, props, anim }) {
       const text = (rootEl.textContent || '').trim()
       // Blank when it paints nothing, or when it just echoes its own export
       // name (our injected placeholder) with no real surface behind it.
+      // Genuine text content (rolling headlines, tickers, animated numbers)
+      // IS a preview — only the name-echo placeholder case stays blank.
       const echoesName = text !== '' && text === exportName && !hasFillOrMedia(rootEl)
-      const blank = echoesName || !hasVisualSubstance(rootEl)
+      const hasRealText = text !== '' && text !== exportName
+      const blank = echoesName || (!hasVisualSubstance(rootEl) && !hasRealText)
       // Style-tab overrides must be visible on every component, including ones
       // that never accept/spread a \`style\` prop (most demo components), so
       // apply them straight to the rendered root element as well.

@@ -12,6 +12,7 @@ export function LibraryCard({
   selected,
   onSelect,
   onOutcome,
+  eager = false,
 }: {
   entry: RegistryEntry
   root: string
@@ -19,11 +20,13 @@ export function LibraryCard({
   onSelect: () => void
   /** Reports whether this component produced a real preview (for library curation). */
   onOutcome?: (previewable: boolean) => void
+  /** Mount the preview immediately (used for hidden retry cards that can never intersect). */
+  eager?: boolean
 }) {
   const cardRef = useRef<HTMLDivElement>(null)
   // Mount the preview iframe once the card scrolls near the viewport, so we
   // don't boot dozens of iframes at once — visible cards render without hover.
-  const [inView, setInView] = useState(false)
+  const [inView, setInView] = useState(eager)
   // Hovering the card plays the component's demo (its hover/click/scroll
   // behavior) inside the preview; leaving resets it.
   const [demo, setDemo] = useState(false)

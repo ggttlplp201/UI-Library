@@ -50,11 +50,18 @@ export function LibraryPanel({
   // Drop non-previewable components, then de-duplicate by name (a component name
   // exported from several files, or shared between imported + presets, appears
   // once). Broken entries are skipped before a name is claimed, so a working
-  // same-named component can still take the slot.
+  // same-named component can still take the slot. They stay mounted but hidden
+  // rather than unmounted — a transient first-load failure (dev server still
+  // transforming) can then recover and restore the card.
   const seenNames = new Set<string>()
   const filtered: RegistryEntry[] = []
+  const hiddenRetry: RegistryEntry[] = []
   for (const entry of matches) {
-    if (broken.has(entry.id) || seenNames.has(entry.name)) continue
+    if (broken.has(entry.id)) {
+      hiddenRetry.push(entry)
+      continue
+    }
+    if (seenNames.has(entry.name)) continue
     seenNames.add(entry.name)
     filtered.push(entry)
   }
@@ -105,6 +112,20 @@ export function LibraryPanel({
             onSelect={() => onSelect(entry.id)}
             onOutcome={(previewable) => markOutcome(entry.id, previewable)}
           />
+        ))}
+        {/* Broken previews keep rendering invisibly so a recovered render
+            (harness import retry) can bring the card back. */}
+        {hiddenRetry.map((entry) => (
+          <div key={entry.id} className="hidden">
+            <LibraryCard
+              entry={entry}
+              root={rootFor(entry)}
+              selected={false}
+              eager
+              onSelect={() => onSelect(entry.id)}
+              onOutcome={(previewable) => markOutcome(entry.id, previewable)}
+            />
+          </div>
         ))}
         {filtered.length === 0 && (
           <p className="col-span-2 text-[11px] text-muted-foreground px-2 py-2">No matches.</p>
