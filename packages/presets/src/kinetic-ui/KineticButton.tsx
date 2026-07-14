@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { KUI, KUI_KEYFRAMES } from "../lib/kinetic";
 
 /**
@@ -20,6 +20,9 @@ export const KineticButton = ({
 }) => {
   const [phase, setPhase] = useState<"idle" | "loading" | "done">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
   const startLoading = () => {
     if (phase === "loading") return;
     setPhase("loading");

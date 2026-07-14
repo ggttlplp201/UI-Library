@@ -27,15 +27,21 @@ export const KineticToast = ({
 }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const seq = useRef(0);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
+  const dismiss = (id: number) => {
+    const t = timers.current.get(id);
+    if (t) clearTimeout(t);
+    timers.current.delete(id);
+    setToasts((cur) => cur.filter((x) => x.id !== id));
+  };
   const push = (kind: keyof typeof PRESETS) => {
     const p = PRESETS[kind];
     const id = ++seq.current;
     const color = kind === "info" ? accent : p.color;
     setToasts((cur) => [...cur, { id, title: p.title, msg: p.msg, color }]);
-    timers.current.push(setTimeout(() => setToasts((cur) => cur.filter((t) => t.id !== id)), 3800));
+    timers.current.set(id, setTimeout(() => dismiss(id), 3800));
   };
 
   return (
@@ -107,7 +113,7 @@ export const KineticToast = ({
             </div>
             <button
               type="button"
-              onClick={() => setToasts((cur) => cur.filter((x) => x.id !== t.id))}
+              onClick={() => dismiss(t.id)}
               style={{
                 display: "flex",
                 width: 22,

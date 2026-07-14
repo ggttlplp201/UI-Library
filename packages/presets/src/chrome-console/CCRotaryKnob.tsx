@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ccMaterials, sx } from "../lib/chrome";
 import { ccPanel } from "../lib/chrome-panel";
 
@@ -23,6 +23,8 @@ export const CCRotaryKnob = ({
   const [angle, setAngle] = useState((clamped / 100) * 280 - 140);
   const [value, setValue] = useState(clamped);
   const knobRef = useRef<HTMLDivElement>(null);
+  const dragCleanup = useRef<(() => void) | null>(null);
+  useEffect(() => () => dragCleanup.current?.(), []);
   const m = ccMaterials(accent, finish);
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -42,9 +44,11 @@ export const CCRotaryKnob = ({
     const up = () => {
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
+      dragCleanup.current = null;
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
+    dragCleanup.current = up;
     move(e.nativeEvent);
   };
 

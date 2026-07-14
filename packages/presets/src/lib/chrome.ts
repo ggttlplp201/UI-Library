@@ -52,8 +52,13 @@ export interface CCMaterials {
 /** Build the full material set for an accent + finish (mirrors the handoff). */
 export function ccMaterials(accent: string, finish: CCFinish): CCMaterials {
   const graphite = finish === "graphite";
-  const h = accent.replace("#", "");
-  const rgb = [parseInt(h.slice(0, 2), 16) || 255, parseInt(h.slice(2, 4), 16) || 122, parseInt(h.slice(4, 6), 16) || 26];
+  // Normalize the accent to 6-digit hex; anything unparseable falls back to
+  // the theme default so the glow rgba() stays valid CSS.
+  let h = accent.replace("#", "");
+  if (/^[0-9a-fA-F]{3}$/.test(h)) h = h.replace(/./g, (c) => c + c);
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) h = "FF7A1A";
+  accent = `#${h}`;
+  const rgb = [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
   const A = (a: number) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
   const chromeV = graphite

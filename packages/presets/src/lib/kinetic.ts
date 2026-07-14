@@ -28,8 +28,13 @@ export const KUI = {
   mono: "'IBM Plex Mono', ui-monospace, monospace",
 } as const;
 
-/** Soft 12%-alpha tint of an accent hex (reference uses accent+'1f'). */
-export const kuiSoft = (accent: string) => `${accent}1f`;
+/** Soft 12%-alpha tint of the accent (reference uses accent+'1f'). Non-hex
+ * inputs (rgb(), var(), named colors) get a color-mix fallback instead of an
+ * invalid hex-alpha concat. */
+export const kuiSoft = (accent: string) =>
+  /^#[0-9a-fA-F]{6}$/.test(accent)
+    ? `${accent}1f`
+    : `color-mix(in srgb, ${accent} 12%, transparent)`;
 
 /** Shared keyframes; components render these in a local <style> tag. */
 export const KUI_KEYFRAMES = `
