@@ -1,5 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { ensurePreviewUrl, type PreviewMessage } from '../lib/preview'
+import { ensurePreviewUrl, invalidatePreviewUrl, type PreviewMessage } from '../lib/preview'
+import { compileAnim } from '../lib/animation'
 import type { AnimConfig } from '../lib/canvas'
 
 /** Imperative handle for exporting a static snapshot of the rendered component. */
@@ -15,7 +16,7 @@ export interface PreviewFrameProps {
   exportName: string
   /** Props posted to the harness; changing this re-renders the component in place */
   renderProps: Record<string, unknown>
-  /** GSAP animation the harness replays after each render */
+  /** Animation config; compiled to CSS keyframes + trigger for the harness */
   anim?: AnimConfig
   /** Bump to replay the animation without other changes */
   replayKey?: number
@@ -51,12 +52,6 @@ export interface PreviewFrameProps {
    * leaves it off so a dropped component always renders as-is.
    */
   placeholderOnBlank?: boolean
-  /**
-   * While true, the harness plays the component's hover demo (synthetic
-   * pointer sweep / clicks / auto-scroll, per the component's
-   * data-hover-demo hint). Turning it off re-renders to reset state.
-   */
-  demo?: boolean
 }
 
 type Status = 'loading' | 'ready' | 'error'
@@ -80,7 +75,6 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     fit = false,
     interactive = true,
     placeholderOnBlank = false,
-    demo = false,
     onOutcome,
   },
   ref,
@@ -128,13 +122,10 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     }
   }, [root])
 
-  // Desired demo state; re-asserted after every render post because the
-  // harness stops any running demo when it (re)renders.
-  const demoRef = useRef(false)
-
-  const postRender = useCallback(() => {
+  const postRender = useCallback((playNow = false) => {
     const win = iframeRef.current?.contentWindow
     if (!win || !readyRef.current) return
+    const compiled = compileAnim(animRef.current)
     win.postMessage(
       {
         source: 'studio',
@@ -142,14 +133,16 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         module: filePath,
         exportName,
         props: propsRef.current,
-        anim: animRef.current,
+        anim: compiled ? { ...compiled, playNow } : null,
       },
       '*',
     )
-    if (demoRef.current) {
-      win.postMessage({ source: 'studio', type: 'demo', on: true }, '*')
-    }
   }, [filePath, exportName])
+
+  // Guard against a stale root→URL mapping (child servers can swap ports
+  // across studio restarts): if the harness reports serving a different
+  // project, drop the cached URL and re-resolve. One attempt per mount.
+  const reresolvedRef = useRef(false)
 
   useEffect(() => {
     function onMessage(ev: MessageEvent) {
@@ -157,8 +150,18 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
       const data = ev.data as PreviewMessage
       if (!data || data.source !== 'preview') return
       if (data.type === 'ready') {
+        if (data.root && data.root !== root && !reresolvedRef.current) {
+          reresolvedRef.current = true
+          invalidatePreviewUrl(root)
+          setUrl(null)
+          ensurePreviewUrl(root).then((u) => setUrl(u)).catch(() => {})
+          return
+        }
         readyRef.current = true
         postRender()
+      } else if (data.type === 'size') {
+        setSize({ width: data.width, height: data.height })
+        onSizeRef.current?.({ width: data.width, height: data.height })
       } else if (data.type === 'rendered') {
         setStatus('ready')
         setError(null)
@@ -174,7 +177,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [postRender, reportOutcome])
+  }, [postRender, reportOutcome, root])
 
   // Re-post whenever the component, its props, or the animation change; a
   // replayKey bump re-posts to replay the animation. renderProps/anim are
@@ -184,23 +187,14 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   // animation on every unrelated edit).
   const propsKey = JSON.stringify(renderProps)
   const animKey = JSON.stringify(anim ?? null)
+  // A replayKey bump means "Preview animation": ask the harness to play the
+  // effect immediately even when its trigger is hover/click/scroll.
+  const lastReplayRef = useRef(replayKey)
   useEffect(() => {
-    postRender()
+    const isReplay = replayKey !== lastReplayRef.current
+    lastReplayRef.current = replayKey
+    postRender(isReplay)
   }, [postRender, propsKey, animKey, replayKey])
-
-  // Start/stop the in-iframe hover demo; stopping re-renders to reset any
-  // state the demo mutated (toggles flipped, carousels advanced, …). The
-  // desired state lives in demoRef so postRender (which runs on iframe
-  // ready and after prop changes) can re-assert it — otherwise a demo
-  // requested before the harness is ready would be lost.
-  useEffect(() => {
-    const wasOn = demoRef.current
-    demoRef.current = demo
-    const win = iframeRef.current?.contentWindow
-    if (!win || !readyRef.current || demo === wasOn) return
-    win.postMessage({ source: 'studio', type: 'demo', on: demo }, '*')
-    if (!demo) postRender()
-  }, [demo, postRender])
 
   // Track the container size for fit (thumbnail) scaling.
   useEffect(() => {

@@ -12,40 +12,77 @@
  *                     { type: 'rendered', width, height }
  *                     { type: 'error', message }
  */
-export function harnessModule(cssImportLines: string): string {
+export function harnessModule(cssImportLines: string, root = ''): string {
   return `${cssImportLines}
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { gsap } from 'gsap'
+
+// Which project this harness serves — the Studio checks it against the root
+// it *meant* to render from, so stale port mappings self-heal.
+const SERVED_ROOT = ${JSON.stringify(root)}
 
 const rootEl = document.getElementById('preview-root')
 const root = createRoot(rootEl)
 
 function post(msg) { parent.postMessage({ source: 'preview', ...msg }, '*') }
 
-// GSAP animation presets — mirror lib/animation.ts in the Studio. Each returns
-// a from-vars object; 'bounce' overrides the ease.
-const ANIM_FROM = {
-  fade: { opacity: 0 },
-  'slide-up': { opacity: 0, y: 24 },
-  scale: { opacity: 0, scale: 0.8 },
-  bounce: { opacity: 0, y: -24 },
-}
+// Previews are fully interactive (real hover/click/scroll), but they must
+// never NAVIGATE — a link or form submit would unload the harness and kill
+// the frame. Block navigation while letting the click itself through.
+document.addEventListener('click', (e) => {
+  const a = e.target && e.target.closest && e.target.closest('a')
+  if (a) e.preventDefault()
+}, true)
+document.addEventListener('submit', (e) => e.preventDefault(), true)
 
-function playAnim(anim) {
+// Animation playback. The Studio compiles the instance's AnimConfig into
+// { keyframesCss, animationValue, trigger, once } (see lib/animation.ts) and
+// the harness wires the trigger to a REAL user interaction: entrance plays on
+// render, hover on pointerenter, click on click, scroll via
+// IntersectionObserver. The HTML export generates the same CSS + wiring.
+let animStyleEl = null
+let animCleanup = null
+
+function applyAnim(anim) {
+  if (animCleanup) { animCleanup(); animCleanup = null }
   const target = rootEl.firstElementChild
-  if (!target || !anim || !anim.preset || anim.preset === 'none') return
-  const from = ANIM_FROM[anim.preset]
-  if (!from) return
-  gsap.fromTo(target, from, {
-    opacity: 1,
-    x: 0,
-    y: 0,
-    scale: 1,
-    duration: anim.duration ?? 0.5,
-    delay: anim.delay ?? 0,
-    ease: anim.preset === 'bounce' ? 'bounce.out' : (anim.easing ?? 'power2.out'),
-  })
+  if (!target || !anim || !anim.animationValue) return
+  if (!animStyleEl) {
+    animStyleEl = document.createElement('style')
+    animStyleEl.id = '__anim-keyframes'
+    document.head.appendChild(animStyleEl)
+  }
+  animStyleEl.textContent = anim.keyframesCss || ''
+
+  const run = () => {
+    target.style.animation = 'none'
+    void target.offsetWidth // restartable: flush so re-setting animates again
+    target.style.animation = anim.animationValue
+  }
+
+  if (anim.trigger === 'hover') {
+    target.addEventListener('pointerenter', run)
+    animCleanup = () => target.removeEventListener('pointerenter', run)
+  } else if (anim.trigger === 'click') {
+    target.addEventListener('click', run)
+    animCleanup = () => target.removeEventListener('click', run)
+  } else if (anim.trigger === 'scroll') {
+    const io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          run()
+          if (anim.once) io.disconnect()
+        }
+      }
+    }, { threshold: 0.25 })
+    io.observe(target)
+    animCleanup = () => io.disconnect()
+  } else {
+    run()
+  }
+  // The Studio's "Preview animation" button: play once right now even when
+  // the trigger is an interaction the user hasn't performed yet.
+  if (anim.playNow && anim.trigger !== 'entrance') run()
 }
 
 let renderToken = 0
@@ -165,7 +202,7 @@ async function renderComponent({ module, exportName, props, anim }) {
       // that never accept/spread a \`style\` prop (most demo components), so
       // apply them straight to the rendered root element as well.
       applyStyleOverride(props && props.style)
-      playAnim(anim)
+      applyAnim(anim)
       const r = rootEl.getBoundingClientRect()
       post({ type: 'rendered', width: Math.ceil(r.width), height: Math.ceil(r.height), blank })
     })
@@ -196,6 +233,27 @@ function afterPaint(cb) {
   timer = setTimeout(run, 350)
 }
 
+// Live size reporting: content grows/shrinks after the initial measure
+// (animated numbers, late-loading images, reflowing inputs), and a stale
+// one-shot size leaves the thumbnail clipped or over-zoomed. Report every
+// settled size change; the Studio re-fits.
+let lastW = -1
+let lastH = -1
+let sizeRaf = 0
+const sizeObserver = new ResizeObserver(() => {
+  cancelAnimationFrame(sizeRaf)
+  sizeRaf = requestAnimationFrame(() => {
+    const r = rootEl.getBoundingClientRect()
+    const w = Math.ceil(r.width)
+    const h = Math.ceil(r.height)
+    if (w === lastW && h === lastH) return
+    lastW = w
+    lastH = h
+    post({ type: 'size', width: w, height: h })
+  })
+})
+sizeObserver.observe(rootEl)
+
 // Collect the document's generated CSS (Tailwind utilities/theme) so an export
 // snapshot is self-contained.
 function collectCss() {
@@ -210,241 +268,16 @@ function collectCss() {
   return css
 }
 
-// ---------------------------------------------------------------------------
-// Hover demo (library cards): plays "what the component does" while the host
-// card is hovered. Synthetic pointer events cover framer-motion interactions;
-// CSS :hover rules can't be triggered synthetically, so they are cloned into
-// .__hover-sim equivalents and the class is toggled instead. Scrollable /
-// swiper / typing components get their own drivers. A component can pick its
-// driver with data-hover-demo="hover|pointer|click|scroll|swiper|type|replay";
-// without the attribute the driver is inferred.
-
-let hoverSimBuilt = false
-function buildHoverSimStyles() {
-  if (hoverSimBuilt) return
-  hoverSimBuilt = true
-  let out = ''
-  const visit = (rules) => {
-    for (const rule of rules) {
-      try {
-        if (rule.selectorText && rule.selectorText.includes(':hover')) {
-          const sel = rule.selectorText.split(':hover').join('.__hover-sim')
-          out += sel + '{' + rule.style.cssText + '}\\n'
-        } else if (rule.cssRules && rule.cssRules.length) {
-          // Grouped rules: keep the original @media/@supports condition so a
-          // simulated hover doesn't activate styles gated to other contexts.
-          const cond = rule.conditionText
-          if (rule.media || rule instanceof CSSMediaRule) {
-            out += '@media ' + (cond || 'all') + '{'
-            visit(rule.cssRules)
-            out += '}'
-          } else if (typeof CSSSupportsRule !== 'undefined' && rule instanceof CSSSupportsRule) {
-            out += '@supports ' + cond + '{'
-            visit(rule.cssRules)
-            out += '}'
-          } else if (!rule.selectorText) {
-            // @layer and other transparent groups — recurse without a wrapper
-            visit(rule.cssRules)
-          }
-        }
-      } catch (e) { /* skip hostile rules */ }
-    }
-  }
-  for (const sheet of document.styleSheets) {
-    try { visit(sheet.cssRules) } catch (e) { /* cross-origin */ }
-  }
-  const el = document.createElement('style')
-  el.id = '__hover-sim-styles'
-  el.textContent = out
-  document.head.appendChild(el)
-}
-
-const demo = { timers: [], tweens: [], lastTarget: null, active: false, blockNav: null }
-
-function demoDispatchPointer(el, type, x, y) {
-  const common = { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, view: window }
-  try { el.dispatchEvent(new PointerEvent('pointer' + type, { ...common, pointerId: 9, pointerType: 'mouse', isPrimary: true })) } catch (e) {}
-  const mouseType = type === 'enter' ? 'enter' : type === 'leave' ? 'leave' : type === 'over' ? 'over' : type === 'out' ? 'out' : 'move'
-  try { el.dispatchEvent(new MouseEvent('mouse' + mouseType, { ...common, ...(mouseType === 'enter' || mouseType === 'leave' ? { bubbles: false } : {}) })) } catch (e) {}
-}
-
-function demoClick(el, x, y) {
-  const common = { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, view: window }
-  try {
-    el.dispatchEvent(new PointerEvent('pointerdown', { ...common, pointerId: 9, pointerType: 'mouse', isPrimary: true }))
-    el.dispatchEvent(new MouseEvent('mousedown', common))
-    el.dispatchEvent(new PointerEvent('pointerup', { ...common, pointerId: 9, pointerType: 'mouse', isPrimary: true }))
-    el.dispatchEvent(new MouseEvent('mouseup', common))
-    el.dispatchEvent(new MouseEvent('click', common))
-  } catch (e) {}
-}
-
-function findScrollable(rootNode) {
-  const nodes = [rootNode, ...rootNode.querySelectorAll('*')]
-  for (const n of nodes) {
-    if (!(n instanceof Element)) continue
-    if (n.scrollHeight > n.clientHeight + 8) {
-      const cs = getComputedStyle(n)
-      if (/(auto|scroll)/.test(cs.overflowY)) return n
-    }
-  }
-  return null
-}
-
-function startDemo() {
-  if (demo.active) return
-  const rootNode = rootEl.firstElementChild
-  if (!rootNode) return
-  demo.active = true
-
-  // Never let demo clicks navigate away (links or form submits).
-  demo.blockNav = (e) => {
-    if (e.type === 'submit') { e.preventDefault(); return }
-    const a = e.target && e.target.closest && e.target.closest('a')
-    if (a) e.preventDefault()
-  }
-  document.addEventListener('click', demo.blockNav, true)
-  document.addEventListener('submit', demo.blockNav, true)
-
-  const attrEl = rootNode.matches('[data-hover-demo]') ? rootNode : rootNode.querySelector('[data-hover-demo]')
-  let mode = attrEl ? attrEl.getAttribute('data-hover-demo') : null
-  const scrollable = findScrollable(rootNode)
-  const swiperEl = rootNode.querySelector('.swiper')
-  if (!mode) {
-    if (swiperEl && swiperEl.swiper) mode = 'swiper'
-    else if (scrollable) mode = 'scroll'
-    else mode = 'pointer'
-  }
-
-  window.__demoMode = mode // debug handle: which driver the demo picked
-
-  // CSS :hover simulation always runs — it's harmless where unused.
-  buildHoverSimStyles()
-  const simTargets = [rootNode, ...rootNode.querySelectorAll('*')]
-  for (const n of simTargets) { if (n.classList) n.classList.add('__hover-sim') }
-
-  if (mode === 'replay') {
-    if (lastRender) renderComponent(lastRender)
-    return
-  }
-
-  if (mode === 'swiper' && swiperEl && swiperEl.swiper) {
-    demo.timers.push(setInterval(() => { try { swiperEl.swiper.slideNext() } catch (e) {} }, 1100))
-    return
-  }
-
-  if (mode === 'scroll' && scrollable) {
-    const max = scrollable.scrollHeight - scrollable.clientHeight
-    const t = gsap.to(scrollable, {
-      scrollTop: max,
-      duration: Math.max(2.5, max / 400),
-      ease: 'sine.inOut',
-      repeat: -1,
-      yoyo: true,
-    })
-    demo.tweens.push(t)
-    return
-  }
-
-  if (mode === 'type') {
-    const input = rootNode.querySelector('input, textarea')
-    if (input) {
-      input.focus()
-      const proto = input.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
-      const setter = Object.getOwnPropertyDescriptor(proto, 'value').set
-      const phrase = 'Hello there'
-      let i = 0
-      demo.timers.push(setInterval(() => {
-        i = (i + 1) % (phrase.length + 6)
-        const next = phrase.slice(0, Math.min(i, phrase.length))
-        try {
-          setter.call(input, next)
-          input.dispatchEvent(new Event('input', { bubbles: true }))
-        } catch (e) {}
-      }, 140))
-    }
-    return
-  }
-
-  if (mode === 'click') {
-    const target = rootNode.querySelector('[data-demo-click]') || rootNode.querySelector('button') || attrEl || rootNode
-    const clickIt = () => {
-      const r = target.getBoundingClientRect()
-      demoClick(target, r.left + r.width / 2, r.top + r.height / 2)
-    }
-    clickIt()
-    demo.timers.push(setInterval(clickIt, 1300))
-    return
-  }
-
-  // 'pointer' / 'hover': sweep a virtual cursor around the component so
-  // pointer-driven interactions (framer whileHover/onHoverStart, mouse
-  // followers, hover-expand tiles) play on their own.
-  const bounds = () => rootNode.getBoundingClientRect()
-  let angle = 0
-  let last = null
-  const step = () => {
-    const b = bounds()
-    if (b.width === 0 || b.height === 0) return
-    angle += 0.045
-    const x = b.left + b.width / 2 + (b.width / 2 - 8) * Math.sin(angle)
-    const y = b.top + b.height / 2 + (b.height / 2 - 8) * Math.sin(angle * 0.6) * 0.8
-    const el = document.elementFromPoint(x, y)
-    if (!el || !rootNode.contains(el)) return
-    if (last !== el) {
-      if (last) { demoDispatchPointer(last, 'out', x, y); demoDispatchPointer(last, 'leave', x, y) }
-      demoDispatchPointer(el, 'over', x, y)
-      demoDispatchPointer(el, 'enter', x, y)
-      last = el
-      demo.lastTarget = el
-    }
-    demoDispatchPointer(el, 'move', x, y)
-  }
-  demoDispatchPointer(rootNode, 'enter', 0, 0)
-  demo.timers.push(setInterval(step, 40))
-}
-
-function stopDemo() {
-  if (!demo.active) return
-  demo.active = false
-  for (const t of demo.timers) clearInterval(t)
-  demo.timers = []
-  for (const t of demo.tweens) t.kill()
-  demo.tweens = []
-  if (demo.blockNav) {
-    document.removeEventListener('click', demo.blockNav, true)
-    document.removeEventListener('submit', demo.blockNav, true)
-    demo.blockNav = null
-  }
-  const rootNode = rootEl.firstElementChild
-  if (rootNode) {
-    for (const n of [rootNode, ...rootNode.querySelectorAll('*')]) {
-      if (n.classList) n.classList.remove('__hover-sim')
-    }
-  }
-  if (demo.lastTarget) {
-    demoDispatchPointer(demo.lastTarget, 'out', 0, 0)
-    demoDispatchPointer(demo.lastTarget, 'leave', 0, 0)
-    demo.lastTarget = null
-  }
-  if (rootNode) { demoDispatchPointer(rootNode, 'leave', 0, 0) }
-}
-
-let lastRender = null
-
 window.addEventListener('message', (ev) => {
   const d = ev.data
   if (!d || d.source !== 'studio') return
-  if (d.type === 'render') { lastRender = d; stopDemo(); renderComponent(d) }
+  if (d.type === 'render') renderComponent(d)
   else if (d.type === 'serialize') {
     post({ type: 'serialized', nonce: d.nonce, html: rootEl.innerHTML, css: collectCss() })
-  } else if (d.type === 'demo') {
-    if (d.on) startDemo()
-    else stopDemo()
   }
 })
 
-post({ type: 'ready' })
+post({ type: 'ready', root: SERVED_ROOT })
 `
 }
 

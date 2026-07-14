@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RegistryEntry, ScanResult } from '@component-style-studio/registry'
 import { deriveControls, initialArgs, type ControlSpec, type StyleOverride } from '../lib/controls'
-import { type AnimConfig, type Instance, newInstanceId } from '../lib/canvas'
+import {
+  newInstanceId,
+  newPageId,
+  pageSlug,
+  type AnimConfig,
+  type Instance,
+  type Page,
+} from '../lib/canvas'
+import { PagesView } from './PagesView'
 import {
   exportSource,
   fetchPresets,
@@ -23,11 +31,46 @@ const NO_PRESETS: PresetLibrary = { root: '', entries: [] }
 // Default text color a dropped component gets so it's legible against the
 // current canvas background (dark canvas → light text, and vice versa).
 const CONTRAST_TEXT: Record<CanvasTheme, string> = { dark: '#e8e8ed', light: '#111115' }
+// Exported page background per canvas theme (mirrors the canvas surface).
+const CONTRAST_BG: Record<CanvasTheme, string> = { dark: '#0c0c0f', light: '#ffffff' }
 
 export function Workspace({ result, onReset }: { result: ScanResult; onReset: () => void }) {
   const [presets, setPresets] = useState<PresetLibrary>(NO_PRESETS)
-  const [instances, setInstances] = useState<Instance[]>([])
+  // The composition is a set of PAGES; the canvas edits one page at a time and
+  // the Pages view shows them as linked nodes (Blender-style).
+  // Composition persists per project so a reload (or an accidental tab
+  // discard) doesn't wipe the user's pages.
+  const storageKey = `css-workspace:${result.root || 'presets'}`
+  const [pages, setPages] = useState<Page[]>(() => {
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (raw) {
+        const saved = JSON.parse(raw) as { pages?: Page[] }
+        if (Array.isArray(saved.pages) && saved.pages.length > 0) return saved.pages
+      }
+    } catch {
+      // corrupted/legacy state — start fresh
+    }
+    return [{ id: newPageId(), name: 'Home', instances: [], nodeX: 90, nodeY: 130 }]
+  })
+  const [activePageId, setActivePageId] = useState<string | null>(null)
+  const [view, setView] = useState<'canvas' | 'pages'>('canvas')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const activePage = pages.find((p) => p.id === activePageId) ?? pages[0]
+  const instances = activePage.instances
+  const activePageIdResolved = activePage.id
+  /** Update the ACTIVE page's instances (same call shape as a state setter). */
+  const setInstances = useCallback(
+    (updater: (prev: Instance[]) => Instance[]) => {
+      setPages((prev) =>
+        prev.map((p) =>
+          p.id === activePageIdResolved ? { ...p, instances: updater(p.instances) } : p,
+        ),
+      )
+    },
+    [activePageIdResolved],
+  )
   const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>('dark')
   const [librarySide, setLibrarySide] = useState<PanelSide>('right')
   const [configSide, setConfigSide] = useState<PanelSide>('left')
@@ -48,6 +91,18 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       alive = false
     }
   }, [])
+
+  // Debounced autosave of the composition.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({ pages }))
+      } catch {
+        // storage full/unavailable — persistence is best-effort
+      }
+    }, 400)
+    return () => clearTimeout(t)
+  }, [pages, storageKey])
 
   // Canvas keyboard shortcuts (ignored while typing in a field): Escape
   // deselects, Delete/Backspace removes the selection, arrows nudge it
@@ -89,7 +144,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedId])
+  }, [selectedId, setInstances])
 
   const entries = useMemo(
     () => [...result.entries, ...presets.entries],
@@ -148,6 +203,60 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   const setStyle = (next: StyleOverride) => updateSelected((i) => ({ ...i, style: next }))
   const setAnim = (next: AnimConfig) => updateSelected((i) => ({ ...i, anim: next }))
   const replayAnim = () => updateSelected((i) => ({ ...i, replay: (i.replay ?? 0) + 1 }))
+  const setLinkTo = (pageId: string | undefined) =>
+    updateSelected((i) => ({ ...i, linkTo: pageId }))
+
+  // ---- Pages ---------------------------------------------------------------
+  const addPage = () => {
+    const n = pages.length + 1
+    const page: Page = {
+      id: newPageId(),
+      name: `Page ${n}`,
+      instances: [],
+      nodeX: 90 + (pages.length % 4) * 240,
+      nodeY: 130 + Math.floor(pages.length / 4) * 150,
+    }
+    setPages((prev) => [...prev, page])
+    setActivePageId(page.id)
+  }
+  const removePage = (id: string) => {
+    setPages((prev) => {
+      const next = prev.filter((p) => p.id !== id)
+      // Clear dangling links into the removed page.
+      return next.map((p) => ({
+        ...p,
+        instances: p.instances.map((i) => (i.linkTo === id ? { ...i, linkTo: undefined } : i)),
+      }))
+    })
+    setActivePageId((cur) => (cur === id ? null : cur))
+    setSelectedId(null)
+  }
+  const renamePage = (id: string, name: string) =>
+    setPages((prev) => prev.map((p) => (p.id === id ? { ...p, name } : p)))
+  const movePageNode = (id: string, nodeX: number, nodeY: number) =>
+    setPages((prev) => prev.map((p) => (p.id === id ? { ...p, nodeX, nodeY } : p)))
+  const openPageCanvas = (id: string) => {
+    setActivePageId(id)
+    setSelectedId(null)
+    setView('canvas')
+  }
+
+  // Unique slug per page (duplicate names get -2, -3, …) for export hrefs.
+  const slugById = useMemo(() => {
+    const used = new Map<string, number>()
+    const map = new Map<string, string>()
+    for (const p of pages) {
+      const base = pageSlug(p)
+      const n = used.get(base) ?? 0
+      used.set(base, n + 1)
+      map.set(p.id, n === 0 ? base : `${base}-${n + 1}`)
+    }
+    return map
+  }, [pages])
+  const linkHrefFor = useCallback(
+    (inst: Instance) => (inst.linkTo && slugById.has(inst.linkTo) ? `#/${slugById.get(inst.linkTo)}` : null),
+    [slugById],
+  )
 
   // The primary editable-text prop of a component: children (injected or real),
   // else its first text control. Used for double-click inline text editing.
@@ -223,12 +332,100 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     URL.revokeObjectURL(url)
   }
 
-  // Export the composition as a self-contained static HTML demo (front-end only).
+  // Export the whole composition as ONE self-contained HTML file: every page
+  // becomes a section, a tiny hash router switches between them (works from
+  // file://), instance links become real <a href="#/slug"> anchors, and each
+  // instance's animation replays on its real trigger (entrance / hover /
+  // click / scroll-into-view).
   const handleExportDemo = async () => {
     setExportMenuOpen(false)
-    const html = await canvasRef.current?.exportComposition()
-    if (!html) return
-    downloadBlob(new Blob([html], { type: 'text/html' }), 'style-studio-export.html')
+    setView('canvas')
+    const originalPage = activePage.id
+    const cssBlocks = new Set<string>()
+    const animCss = new Set<string>()
+    const sections: string[] = []
+
+    const settle = (ms: number) => new Promise((r) => setTimeout(r, ms))
+    for (const page of pages) {
+      setActivePageId(page.id)
+      // Frames for the newly active page mount + render asynchronously; retry
+      // the snapshot until every instance serialized (or we give up).
+      let snap = null as Awaited<ReturnType<NonNullable<typeof canvasRef.current>['snapshotPage']>> | null
+      for (let attempt = 0; attempt < 10; attempt++) {
+        await settle(attempt === 0 ? 350 : 700)
+        snap = (await canvasRef.current?.snapshotPage()) ?? null
+        if (snap && snap.serialized >= page.instances.length) break
+      }
+      if (!snap) continue
+      for (const c of snap.cssBlocks) cssBlocks.add(c)
+      for (const c of snap.animCss) animCss.add(c)
+      const slug = slugById.get(page.id) ?? page.id
+      sections.push(`<section data-page="${slug}" class="ss-page">\n${snap.body}\n</section>`)
+    }
+    setActivePageId(originalPage)
+
+    const firstSlug = slugById.get(pages[0].id) ?? pages[0].id
+    const runtime = `
+(function () {
+  var first = ${JSON.stringify(firstSlug)};
+  function currentSlug() {
+    var h = location.hash.replace(/^#\\/?/, '');
+    return h || first;
+  }
+  function wireAnims(scope) {
+    scope.querySelectorAll('[data-anim]').forEach(function (el) {
+      if (el.__wired) return;
+      el.__wired = true;
+      var cfg = JSON.parse(el.getAttribute('data-anim'));
+      var run = function () {
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = cfg.value;
+      };
+      if (cfg.trigger === 'hover') el.addEventListener('pointerenter', run);
+      else if (cfg.trigger === 'click') el.addEventListener('click', run);
+      else if (cfg.trigger === 'scroll') {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) { run(); if (cfg.once) io.disconnect(); }
+          });
+        }, { threshold: 0.25 });
+        io.observe(el);
+      } else el.__entrance = run;
+    });
+  }
+  function show() {
+    var slug = currentSlug();
+    document.querySelectorAll('.ss-page').forEach(function (p) {
+      var active = p.getAttribute('data-page') === slug;
+      p.classList.toggle('active', active);
+      if (active) {
+        wireAnims(p);
+        p.querySelectorAll('[data-anim]').forEach(function (el) {
+          if (el.__entrance) el.__entrance();
+        });
+      }
+    });
+  }
+  window.addEventListener('hashchange', show);
+  show();
+})();
+`
+    const html = [
+      '<!doctype html>',
+      '<html><head><meta charset="utf-8" />',
+      '<title>Style Studio export</title>',
+      `<style>${[...cssBlocks].join('\n')}</style>`,
+      `<style>${[...animCss].join('\n')}</style>`,
+      // display:block beats the preview harness's body{display:flex} rule that
+      // rides along in the collected component CSS.
+      `<style>body{margin:0;display:block;background:${CONTRAST_BG[canvasTheme]}}.ss-page{display:none;position:relative;min-height:100vh}.ss-page.active{display:block}</style>`,
+      '</head><body>',
+      sections.join('\n'),
+      `<script>${runtime}</script>`,
+      '</body></html>',
+    ].join('\n')
+    downloadBlob(new Blob([html], { type: 'text/html' }), 'style-studio-site.html')
   }
 
   // Export the edited component *source files* as a zip (Phase 8). Instances are
@@ -237,7 +434,8 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   const handleExportSource = async () => {
     setExportMenuOpen(false)
     const byRoot = new Map<string, ExportInstancePayload[]>()
-    for (const inst of instances) {
+    const allInstances = pages.flatMap((p) => p.instances)
+    for (const inst of allInstances) {
       const p = payloadFor(inst)
       if (!p) continue
       const { root, ...rest } = p
@@ -288,6 +486,9 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       onStyleChange={setStyle}
       position={{ x: selected?.x ?? 0, y: selected?.y ?? 0 }}
       onPositionChange={(x, y) => selected && patchInstance(selected.id, { x, y })}
+      pages={pages.map((p) => ({ id: p.id, name: p.name }))}
+      linkTo={selected?.linkTo}
+      onLinkToChange={setLinkTo}
       animationSlot={
         <AnimationTab value={selected?.anim} onChange={setAnim} onReplay={replayAnim} />
       }
@@ -303,6 +504,25 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       rootFor={rootFor}
       side={librarySide}
       onToggleSide={() => setLibrarySide((s) => (s === 'left' ? 'right' : 'left'))}
+      canApplyAnimation={selected != null}
+      appliedPreset={selected?.anim?.preset}
+      onApplyAnimation={(preset) =>
+        updateSelected((i) => ({
+          ...i,
+          anim: {
+            preset: preset.id,
+            trigger: preset.defaultTrigger,
+            duration: preset.duration,
+            delay: 0,
+            easing: 'ease-out',
+            once: true,
+          },
+          // Entrance effects show immediately; interaction-triggered ones
+          // play when the user actually hovers/clicks/scrolls the instance.
+          replay: (i.replay ?? 0) + 1,
+        }))
+      }
+      onClearAnimation={() => updateSelected((i) => ({ ...i, anim: undefined }))}
     />
   )
 
@@ -322,9 +542,29 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         >
           {result.root || 'Preset library'}
         </span>
+        <div className="flex gap-0.5 rounded-lg bg-secondary/60 p-0.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setView('canvas')}
+            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+              view === 'canvas' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {activePage.name}
+          </button>
+          <button
+            type="button"
+            onClick={() => setView('pages')}
+            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+              view === 'pages' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Pages ({pages.length})
+          </button>
+        </div>
         {instances.length > 0 && (
           <span className="text-[11px] text-muted-foreground">
-            {instances.length} on canvas
+            {instances.length} on this page
           </span>
         )}
         <span className="text-[11px] text-muted-foreground ml-auto shrink-0">
@@ -352,7 +592,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
           <button
             type="button"
             onClick={() => setExportMenuOpen((o) => !o)}
-            disabled={instances.length === 0}
+            disabled={pages.every((p) => p.instances.length === 0)}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-default transition-colors"
           >
             Export ▾
@@ -395,22 +635,41 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         {librarySide === 'left' && libraryPanel}
 
         <div className="flex-1 flex flex-col min-w-0">
-          <Canvas
-            ref={canvasRef}
-            instances={instances}
-            entryById={entryById}
-            rootFor={rootFor}
-            theme={canvasTheme}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onAdd={addInstance}
-            onMove={(id, x, y) => patchInstance(id, { x, y })}
-            onTransform={(id, patch) => patchInstance(id, patch)}
-            onRemove={removeInstance}
-            textOf={textOf}
-            onEditText={setInstanceText}
-          />
-          {showCode && (
+          {view === 'pages' ? (
+            <PagesView
+              pages={pages}
+              activePageId={activePage.id}
+              entryNameFor={(pageId, instanceId) => {
+                const page = pages.find((p) => p.id === pageId)
+                const inst = page?.instances.find((i) => i.id === instanceId)
+                return (inst && entryById(inst.entryId)?.name) || 'component'
+              }}
+              onSetActive={(id) => setActivePageId(id)}
+              onOpenCanvas={openPageCanvas}
+              onMoveNode={movePageNode}
+              onRename={renamePage}
+              onAddPage={addPage}
+              onRemovePage={removePage}
+            />
+          ) : (
+            <Canvas
+              ref={canvasRef}
+              instances={instances}
+              entryById={entryById}
+              rootFor={rootFor}
+              theme={canvasTheme}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onAdd={addInstance}
+              onMove={(id, x, y) => patchInstance(id, { x, y })}
+              onTransform={(id, patch) => patchInstance(id, patch)}
+              onRemove={removeInstance}
+              textOf={textOf}
+              onEditText={setInstanceText}
+              linkHrefFor={linkHrefFor}
+            />
+          )}
+          {showCode && view === 'canvas' && (
             <CodePane
               payload={codePayload}
               title={selectedEntry ? `${selectedEntry.name} — ${selectedEntry.filePath}` : null}

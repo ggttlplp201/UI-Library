@@ -1,10 +1,21 @@
-/** Boots (or reuses) the child preview server for a root and returns its URL. */
-let cached: { root: string; url: string } | null = null
-let inflight: { root: string; promise: Promise<string> } | null = null
+/**
+ * Boots (or reuses) the child preview server for a root and returns its URL.
+ *
+ * Cached per root — but the mapping can go stale: when the studio dev server
+ * restarts, child servers reboot lazily and may claim each other's ports
+ * (strictPort is off), leaving a cached URL pointing at a different project.
+ * The harness therefore reports which root it serves in its `ready` message;
+ * PreviewFrame calls `invalidatePreviewUrl` on a mismatch (or a dead frame)
+ * and re-resolves.
+ */
+const cached = new Map<string, string>()
+const inflight = new Map<string, Promise<string>>()
 
 export async function ensurePreviewUrl(root: string): Promise<string> {
-  if (cached?.root === root) return cached.url
-  if (inflight?.root === root) return inflight.promise
+  const hit = cached.get(root)
+  if (hit) return hit
+  const pending = inflight.get(root)
+  if (pending) return pending
 
   const promise = (async () => {
     const res = await fetch('/api/preview', {
@@ -14,20 +25,26 @@ export async function ensurePreviewUrl(root: string): Promise<string> {
     })
     const data: { ok: boolean; url?: string; error?: string } = await res.json()
     if (!data.ok || !data.url) throw new Error(data.error ?? `Preview server failed (${res.status})`)
-    cached = { root, url: data.url }
+    cached.set(root, data.url)
     return data.url
   })()
 
-  inflight = { root, promise }
+  inflight.set(root, promise)
   try {
     return await promise
   } finally {
-    if (inflight?.root === root) inflight = null
+    inflight.delete(root)
   }
+}
+
+/** Drop a stale mapping so the next ensurePreviewUrl re-asks the server. */
+export function invalidatePreviewUrl(root: string): void {
+  cached.delete(root)
 }
 
 /** Message the harness posts back to the Studio. */
 export type PreviewMessage =
-  | { source: 'preview'; type: 'ready' }
+  | { source: 'preview'; type: 'ready'; root?: string }
   | { source: 'preview'; type: 'rendered'; width: number; height: number; blank?: boolean }
   | { source: 'preview'; type: 'error'; message: string }
+  | { source: 'preview'; type: 'size'; width: number; height: number }

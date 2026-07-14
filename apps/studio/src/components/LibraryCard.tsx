@@ -27,9 +27,6 @@ export function LibraryCard({
   // Mount the preview iframe once the card scrolls near the viewport, so we
   // don't boot dozens of iframes at once — visible cards render without hover.
   const [inView, setInView] = useState(eager)
-  // Hovering the card plays the component's demo (its hover/click/scroll
-  // behavior) inside the preview; leaving resets it.
-  const [demo, setDemo] = useState(false)
 
   useEffect(() => {
     const el = cardRef.current
@@ -55,25 +52,16 @@ export function LibraryCard({
   return (
     <div
       ref={cardRef}
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData(DRAG_MIME, entry.id)
-        e.dataTransfer.effectAllowed = 'copy'
-      }}
-      onClick={onSelect}
-      onMouseEnter={() => setDemo(true)}
-      onMouseLeave={() => setDemo(false)}
-      className={`group rounded-lg border cursor-grab active:cursor-grabbing transition-colors overflow-hidden ${
+      className={`group rounded-lg border transition-colors overflow-hidden ${
         selected
           ? 'border-primary/40 bg-secondary'
           : 'border-border/50 bg-muted/20 hover:border-border'
       }`}
-      title={`${entry.name} — drag onto the canvas`}
     >
-      {/* Always render the live component (auto-animations like border-beam /
-          shimmer play continuously). Non-interactive so the whole card —
-          preview included — stays draggable. */}
-      <div className="h-[84px] flex items-center justify-center overflow-hidden bg-artboard pointer-events-none">
+      {/* The preview is LIVE: real hover/click/scroll goes straight into the
+          component (scroll demos scroll, toggles toggle). Adding to the canvas
+          happens from the name bar below, which stays outside the iframe. */}
+      <div className="h-[84px] flex items-center justify-center overflow-hidden bg-artboard">
         {inView && (
           <PreviewFrame
             root={root}
@@ -81,15 +69,23 @@ export function LibraryCard({
             exportName={entry.exportName}
             renderProps={defaultProps}
             fit
-            interactive={false}
+            interactive
             placeholderOnBlank
-            demo={demo}
             onOutcome={onOutcome}
             className="w-full h-full"
           />
         )}
       </div>
-      <div className="px-2 py-1.5 border-t border-border/50">
+      <div
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData(DRAG_MIME, entry.id)
+          e.dataTransfer.effectAllowed = 'copy'
+        }}
+        onClick={onSelect}
+        title={`${entry.name} — try the live preview above; drag or click here to add it to the canvas`}
+        className="px-2 py-1.5 border-t border-border/50 cursor-grab active:cursor-grabbing select-none"
+      >
         <div className="flex items-center gap-1">
           <span className="text-[11px] font-medium truncate">{entry.name}</span>
           {entry.source === 'preset' && (
@@ -97,12 +93,20 @@ export function LibraryCard({
               preset
             </span>
           )}
-          {entry.flags.needsMocking && (
+          <span className="ml-auto flex items-center gap-1 shrink-0">
+            {entry.flags.needsMocking && (
+              <span
+                title="Uses context or external hooks — preview mocks them"
+                className="w-1.5 h-1.5 rounded-full bg-amber-400"
+              />
+            )}
             <span
-              title="Uses context or external hooks — preview mocks them"
-              className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 ml-auto"
-            />
-          )}
+              className="text-[10px] leading-none text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-hidden
+            >
+              + add
+            </span>
+          </span>
         </div>
       </div>
     </div>

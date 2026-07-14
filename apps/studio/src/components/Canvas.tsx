@@ -1,5 +1,6 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
+import { compileAnim } from '../lib/animation'
 import type { Instance } from '../lib/canvas'
 import { composeRenderProps } from '../lib/controls'
 import { PreviewFrame, type PreviewHandle } from './PreviewFrame'
@@ -7,9 +8,22 @@ import { DRAG_MIME } from './LibraryCard'
 
 export type CanvasTheme = 'dark' | 'light'
 
+/** One page's serialized composition, ready for the multi-page assembler. */
+export interface PageSnapshot {
+  /** Absolutely-positioned instance markup for the page body */
+  body: string
+  /** Component CSS blocks (Tailwind output etc.) to dedupe across pages */
+  cssBlocks: string[]
+  /** Animation @keyframes used on this page */
+  animCss: string[]
+  /** How many instances actually serialized (readiness signal for retries) */
+  serialized: number
+}
+
 /** Imperative handle so the header's Export button can snapshot the canvas. */
 export interface CanvasHandle {
-  exportComposition: () => Promise<string>
+  /** Serialize the CURRENTLY mounted page's instances. */
+  snapshotPage: () => Promise<PageSnapshot>
 }
 
 const CANVAS_BG: Record<CanvasTheme, string> = { dark: '#0c0c0f', light: '#ffffff' }
@@ -77,6 +91,8 @@ interface CanvasProps {
   onRemove: (id: string) => void
   textOf: (inst: Instance) => string
   onEditText: (id: string, text: string) => void
+  /** Export href for an instance's page link (e.g. "#/pricing"), if any */
+  linkHrefFor?: (inst: Instance) => string | null
 }
 
 export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
@@ -93,6 +109,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     onRemove,
     textOf,
     onEditText,
+    linkHrefFor,
   },
   ref,
 ) {
@@ -102,10 +119,6 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
   const frameRefs = useRef(new Map<string, PreviewHandle>())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [natural, setNatural] = useState<Record<string, { w: number; h: number }>>({})
-  // Hovering an instance plays its demo (auto-scroll, carousel advance,
-  // simulated hover) — the same behavior as the library cards, so scroll- and
-  // interaction-driven components animate on the canvas instead of freezing.
-  const [demoId, setDemoId] = useState<string | null>(null)
 
   const localPoint = (clientX: number, clientY: number) => {
     const rect = surfaceRef.current?.getBoundingClientRect()
@@ -113,41 +126,61 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
   }
 
   useImperativeHandle(ref, () => ({
-    exportComposition: async () => {
+    snapshotPage: async () => {
       const cssBlocks = new Set<string>()
+      const animCss = new Set<string>()
       const parts: string[] = []
+      let serialized = 0
       for (const inst of instances) {
         const snap = (await frameRefs.current.get(inst.id)?.serialize()) ?? null
         if (!snap) continue
+        serialized += 1
         if (snap.css) cssBlocks.add(snap.css)
         const rotation = inst.rotation ?? 0
         const sx = inst.scaleX ?? 1
         const sy = inst.scaleY ?? 1
         const nat = natural[inst.id]
+
+        // Animation: same compiled CSS the preview harness ran, replayed in
+        // the export by a tiny runtime that wires the REAL trigger events.
+        const compiled = compileAnim(inst.anim)
+        let animAttr = ''
+        if (compiled) {
+          animCss.add(compiled.keyframesCss)
+          const cfg = { value: compiled.animationValue, trigger: compiled.trigger, once: compiled.once }
+          animAttr = ` data-anim="${JSON.stringify(cfg).replace(/"/g, '&quot;')}"`
+        }
+
         // Mirror the on-canvas structure: outer wrapper rotates about its
         // center at (natural × scale) size; inner wrapper scales from top-left.
+        // The animation rides on its OWN nested div — animation keyframes set
+        // `transform`, which would otherwise clobber the rotation/scale.
+        const animated = (inner: string) => (animAttr ? `<div${animAttr}>${inner}</div>` : inner)
+        let markup: string
         if (nat) {
-          parts.push(
+          markup =
             `<div style="position:absolute;left:${inst.x}px;top:${inst.y}px;width:${nat.w * sx}px;height:${nat.h * sy}px;transform:rotate(${rotation}deg);transform-origin:center center;">` +
-              `<div style="width:${nat.w}px;height:${nat.h}px;transform:scale(${sx},${sy});transform-origin:top left;">${snap.html}</div>` +
-              `</div>`,
-          )
+            animated(
+              `<div style="width:${nat.w}px;height:${nat.h}px;transform:scale(${sx},${sy});transform-origin:top left;">${snap.html}</div>`,
+            ) +
+            `</div>`
         } else {
-          parts.push(
-            `<div style="position:absolute;left:${inst.x}px;top:${inst.y}px;transform:rotate(${rotation}deg) scale(${sx},${sy});transform-origin:top left;">${snap.html}</div>`,
-          )
+          markup = `<div style="position:absolute;left:${inst.x}px;top:${inst.y}px;transform:rotate(${rotation}deg) scale(${sx},${sy});transform-origin:top left;">${animated(snap.html)}</div>`
         }
+
+        // Page link: wrap in a real anchor so the exported site navigates.
+        const href = linkHrefFor?.(inst)
+        if (href) {
+          markup = `<a href="${href}" style="display:contents;color:inherit;text-decoration:none;cursor:pointer;">${markup}</a>`
+        }
+        parts.push(markup)
       }
-      return [
-        '<!doctype html>',
-        '<html><head><meta charset="utf-8" />',
-        '<title>Component Style Studio export</title>',
-        `<style>${[...cssBlocks].join('\n')}</style>`,
-        `<style>body{margin:0;min-height:100vh;position:relative;background:${CANVAS_BG[theme]}}</style>`,
-        '</head><body>',
-        parts.join('\n'),
-        '</body></html>',
-      ].join('\n')
+      return {
+        body: parts.join('\n'),
+        cssBlocks: [...cssBlocks],
+        animCss: [...animCss],
+        serialized,
+      }
     },
   }))
 
@@ -276,8 +309,6 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                 e.stopPropagation()
                 onSelect(inst.id)
               }}
-              onMouseEnter={() => setDemoId(inst.id)}
-              onMouseLeave={() => setDemoId((prev) => (prev === inst.id ? null : prev))}
               onDoubleClick={(e) => {
                 e.stopPropagation()
                 onSelect(inst.id)
@@ -336,8 +367,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                     renderProps={composeRenderProps(inst.args, inst.style)}
                     anim={inst.anim}
                     replayKey={inst.replay}
-                    interactive={false}
-                    demo={demoId === inst.id}
+                    interactive={selected}
                     onSize={(s) =>
                       setNatural((prev) =>
                         prev[inst.id]?.w === s.width && prev[inst.id]?.h === s.height
@@ -366,6 +396,27 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
 
                 {selected && (
                   <>
+                    {/* Selected = live: real clicks/scroll/hover go into the
+                        component, so moving happens from this grab frame (the
+                        strips just outside the ring) or the handles. */}
+                    <div
+                      className="absolute -top-8 left-0 z-10 rounded-sm border border-border bg-card px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground shadow-sm pointer-events-none select-none"
+                      aria-hidden
+                    >
+                      live · drag frame to move
+                    </div>
+                    {[
+                      '-top-2.5 left-0 right-0 h-2.5',
+                      '-bottom-2.5 left-0 right-0 h-2.5',
+                      '-left-2.5 top-0 bottom-0 w-2.5',
+                      '-right-2.5 top-0 bottom-0 w-2.5',
+                    ].map((cls) => (
+                      <div
+                        key={cls}
+                        className={`absolute ${cls} cursor-grab active:cursor-grabbing`}
+                        title="Drag to move"
+                      />
+                    ))}
                     <button
                       type="button"
                       onClick={(e) => {

@@ -18,6 +18,9 @@ export function EditPanel({
   onStyleChange,
   position,
   onPositionChange,
+  pages,
+  linkTo,
+  onLinkToChange,
   animationSlot,
 }: {
   side: PanelSide
@@ -31,6 +34,10 @@ export function EditPanel({
   onStyleChange: (next: StyleOverride) => void
   position: { x: number; y: number }
   onPositionChange: (x: number, y: number) => void
+  /** Pages the selected instance can navigate to (export renders a real link) */
+  pages: { id: string; name: string }[]
+  linkTo?: string
+  onLinkToChange: (pageId: string | undefined) => void
   animationSlot?: React.ReactNode
 }) {
   const [tab, setTab] = useState<Tab>('controls')
@@ -80,6 +87,26 @@ export function EditPanel({
                   className={posClass}
                 />
               </label>
+            </div>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span
+                className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest shrink-0"
+                title="Clicking this component in the exported site navigates to the chosen page"
+              >
+                Links to
+              </span>
+              <select
+                value={linkTo ?? ''}
+                onChange={(e) => onLinkToChange(e.target.value || undefined)}
+                className={posClass}
+              >
+                <option value="">— no link —</option>
+                {pages.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </>
         ) : null}

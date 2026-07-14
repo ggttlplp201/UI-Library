@@ -1,10 +1,11 @@
 import type { AnimConfig } from '../lib/canvas'
-import { ANIM_PRESETS, DEFAULT_ANIM, EASINGS } from '../lib/animation'
+import { ANIM_PRESETS, ANIM_TRIGGERS, DEFAULT_ANIM, EASINGS, presetById } from '../lib/animation'
 
 /**
- * Animation tab (plan §5.5): pick a GSAP entrance preset plus duration/delay/
- * easing. Edits update the instance's anim config, which the preview harness
- * replays via GSAP. "Play" re-triggers the animation without other edits.
+ * Animation tab: fine-tune the instance's applied animation — effect,
+ * trigger (which REAL user interaction plays it), duration/delay/easing.
+ * Presets are usually applied from the Animations library menu; this tab
+ * edits the details.
  */
 export function AnimationTab({
   value,
@@ -22,21 +23,64 @@ export function AnimationTab({
   const inputClass =
     'w-full rounded-md px-2.5 py-1.5 text-xs bg-input border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring'
 
+  const trigger = anim.trigger ?? 'entrance'
+  const triggerHint = ANIM_TRIGGERS.find((t) => t.id === trigger)?.hint
+
   return (
     <div>
-      <Field label="Preset">
+      <Field label="Effect">
         <select
           value={anim.preset}
-          onChange={(e) => set('preset', e.target.value)}
+          onChange={(e) => {
+            const preset = e.target.value
+            const def = presetById(preset)
+            onChange({
+              ...anim,
+              preset,
+              // Adopt the effect's natural trigger/duration when switching
+              ...(def ? { trigger: def.defaultTrigger, duration: def.duration } : {}),
+            })
+          }}
           className={inputClass}
         >
           {ANIM_PRESETS.map((p) => (
             <option key={p} value={p}>
-              {p}
+              {p === 'none' ? 'none' : (presetById(p)?.name ?? p)}
             </option>
           ))}
         </select>
       </Field>
+
+      <Field label="Trigger">
+        <select
+          value={trigger}
+          onChange={(e) => set('trigger', e.target.value as AnimConfig['trigger'])}
+          disabled={anim.preset === 'none'}
+          className={`${inputClass} disabled:opacity-50`}
+        >
+          {ANIM_TRIGGERS.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        {triggerHint && anim.preset !== 'none' && (
+          <p className="text-[10px] text-muted-foreground mt-1">{triggerHint}</p>
+        )}
+      </Field>
+
+      {trigger === 'scroll' && anim.preset !== 'none' && (
+        <Field label="Repeat">
+          <label className="flex items-center gap-2 text-[11px] text-foreground">
+            <input
+              type="checkbox"
+              checked={!(anim.once ?? true)}
+              onChange={(e) => set('once', !e.target.checked)}
+            />
+            Replay every time it re-enters the viewport
+          </label>
+        </Field>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         <Field label="Duration (s)">
@@ -65,9 +109,11 @@ export function AnimationTab({
         <select
           value={anim.easing}
           onChange={(e) => set('easing', e.target.value)}
-          disabled={anim.preset === 'bounce'}
-          className={`${inputClass} disabled:opacity-50`}
+          className={inputClass}
         >
+          {EASINGS.includes(anim.easing) ? null : (
+            <option value={anim.easing}>{anim.easing}</option>
+          )}
           {EASINGS.map((e) => (
             <option key={e} value={e}>
               {e}
@@ -82,8 +128,13 @@ export function AnimationTab({
         disabled={anim.preset === 'none'}
         className="w-full mt-1 px-3 py-2 rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-default transition-colors"
       >
-        ▶ Play animation
+        ▶ Preview animation
       </button>
+      {anim.preset !== 'none' && trigger !== 'entrance' && (
+        <p className="text-[10px] text-muted-foreground mt-2">
+          Or trigger it for real ({triggerHint}) — the selected instance is live on the canvas.
+        </p>
+      )}
     </div>
   )
 }

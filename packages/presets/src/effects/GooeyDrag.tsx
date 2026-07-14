@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
  */
 
 /** Mount once; defines the #SkiperGooeyFilter SVG filter. */
-export const SkiperGooeyFilterProvider = () => {
+const SkiperGooeyFilterProvider = () => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

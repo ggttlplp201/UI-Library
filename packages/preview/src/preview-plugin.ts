@@ -90,7 +90,7 @@ export function previewPlugin(root: string): Plugin {
       if (id === HARNESS_ID) return HARNESS_ID
     },
     load(id) {
-      if (id === HARNESS_ID) return harnessModule(cssImportLines)
+      if (id === HARNESS_ID) return harnessModule(cssImportLines, root)
     },
   }
 }
