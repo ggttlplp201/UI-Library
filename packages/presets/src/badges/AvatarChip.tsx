@@ -10,7 +10,7 @@ export function AvatarChip({ name = 'Sarah Kim' }: AvatarChipProps) {
       <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[11px] font-bold text-white">
         {(name.charAt(0) || '?').toUpperCase()}
       </div>
-      <span className="text-fg text-[13px]">{name}</span>
+      <span className="text-card-foreground text-[13px]">{name}</span>
     </div>
   )
 }

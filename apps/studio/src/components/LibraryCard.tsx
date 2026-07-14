@@ -24,6 +24,9 @@ export function LibraryCard({
   // Mount the preview iframe once the card scrolls near the viewport, so we
   // don't boot dozens of iframes at once — visible cards render without hover.
   const [inView, setInView] = useState(false)
+  // Hovering the card plays the component's demo (its hover/click/scroll
+  // behavior) inside the preview; leaving resets it.
+  const [demo, setDemo] = useState(false)
 
   useEffect(() => {
     const el = cardRef.current
@@ -55,6 +58,8 @@ export function LibraryCard({
         e.dataTransfer.effectAllowed = 'copy'
       }}
       onClick={onSelect}
+      onMouseEnter={() => setDemo(true)}
+      onMouseLeave={() => setDemo(false)}
       className={`group rounded-lg border cursor-grab active:cursor-grabbing transition-colors overflow-hidden ${
         selected
           ? 'border-primary/40 bg-secondary'
@@ -75,6 +80,7 @@ export function LibraryCard({
             fit
             interactive={false}
             placeholderOnBlank
+            demo={demo}
             onOutcome={onOutcome}
             className="w-full h-full"
           />

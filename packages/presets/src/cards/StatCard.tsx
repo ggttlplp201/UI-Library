@@ -15,8 +15,8 @@ export function StatCard({
 }: StatCardProps) {
   return (
     <div className="bg-card rounded-xl p-4 border border-border min-w-[160px]">
-      <div className="text-[11px] text-muted/70 mb-1.5">{label}</div>
-      <div className="text-2xl font-bold text-fg tracking-tight">{value}</div>
+      <div className="text-[11px] text-muted-foreground/70 mb-1.5">{label}</div>
+      <div className="text-2xl font-bold text-card-foreground tracking-tight">{value}</div>
       <div className="text-xs text-success mt-1.5">↑ {delta}</div>
     </div>
   )

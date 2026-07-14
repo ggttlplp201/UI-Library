@@ -51,6 +51,12 @@ export interface PreviewFrameProps {
    * leaves it off so a dropped component always renders as-is.
    */
   placeholderOnBlank?: boolean
+  /**
+   * While true, the harness plays the component's hover demo (synthetic
+   * pointer sweep / clicks / auto-scroll, per the component's
+   * data-hover-demo hint). Turning it off re-renders to reset state.
+   */
+  demo?: boolean
 }
 
 type Status = 'loading' | 'ready' | 'error'
@@ -74,6 +80,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     fit = false,
     interactive = true,
     placeholderOnBlank = false,
+    demo = false,
     onOutcome,
   },
   ref,
@@ -121,6 +128,10 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     }
   }, [root])
 
+  // Desired demo state; re-asserted after every render post because the
+  // harness stops any running demo when it (re)renders.
+  const demoRef = useRef(false)
+
   const postRender = useCallback(() => {
     const win = iframeRef.current?.contentWindow
     if (!win || !readyRef.current) return
@@ -135,6 +146,9 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
       },
       '*',
     )
+    if (demoRef.current) {
+      win.postMessage({ source: 'studio', type: 'demo', on: true }, '*')
+    }
   }, [filePath, exportName])
 
   useEffect(() => {
@@ -173,6 +187,20 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   useEffect(() => {
     postRender()
   }, [postRender, propsKey, animKey, replayKey])
+
+  // Start/stop the in-iframe hover demo; stopping re-renders to reset any
+  // state the demo mutated (toggles flipped, carousels advanced, …). The
+  // desired state lives in demoRef so postRender (which runs on iframe
+  // ready and after prop changes) can re-assert it — otherwise a demo
+  // requested before the harness is ready would be lost.
+  useEffect(() => {
+    const wasOn = demoRef.current
+    demoRef.current = demo
+    const win = iframeRef.current?.contentWindow
+    if (!win || !readyRef.current || demo === wasOn) return
+    win.postMessage({ source: 'studio', type: 'demo', on: demo }, '*')
+    if (!demo) postRender()
+  }, [demo, postRender])
 
   // Track the container size for fit (thumbnail) scaling.
   useEffect(() => {

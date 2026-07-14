@@ -12,8 +12,8 @@ export function ContentCard({
 }: ContentCardProps) {
   return (
     <div className="bg-card rounded-xl p-4 border border-border min-w-[180px]">
-      <div className="font-semibold text-sm text-fg mb-1.5">{title}</div>
-      <div className="text-xs text-muted/80 leading-relaxed">{description}</div>
+      <div className="font-semibold text-sm text-card-foreground mb-1.5">{title}</div>
+      <div className="text-xs text-muted-foreground/80 leading-relaxed">{description}</div>
     </div>
   )
 }

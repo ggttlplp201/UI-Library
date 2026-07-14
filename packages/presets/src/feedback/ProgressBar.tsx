@@ -10,7 +10,7 @@ export function ProgressBar({ label = 'Uploading assets', value = 68 }: Progress
   const pct = Math.max(0, Math.min(100, value))
   return (
     <div className="min-w-[200px]">
-      <div className="flex justify-between mb-2 text-xs text-muted">
+      <div className="flex justify-between mb-2 text-xs text-muted-foreground">
         <span>{label}</span>
         <span>{pct}%</span>
       </div>

@@ -8,7 +8,7 @@ export function GhostButton({ children = 'Learn More' }: GhostButtonProps) {
   return (
     <button
       type="button"
-      className="bg-transparent text-muted text-sm font-medium rounded-lg px-5 py-2 border border-white/15 whitespace-nowrap"
+      className="bg-transparent text-muted-foreground text-sm font-medium rounded-lg px-5 py-2 border border-border whitespace-nowrap"
     >
       {children}
     </button>

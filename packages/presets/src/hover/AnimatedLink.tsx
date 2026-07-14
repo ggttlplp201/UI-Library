@@ -1,0 +1,212 @@
+"use client";
+
+import React from "react";
+
+import { cn } from "../lib/utils";
+
+/**
+ * Animated underline / highlight link hovers.
+ * Ported from Skiper UI (skiper40), inspired by cursor.com.
+ * Attribution to Skiper UI is required when using the free version.
+ * Author: @gurvinder-singh02 (https://gxuri.me)
+ */
+
+type AnimatedLinkProps = {
+  children?: React.ReactNode;
+  href?: string;
+  className?: string;
+};
+
+/** Underline sweeps in from the left, out to the right. */
+export const Link001 = ({
+  children = "hi@skiper-ui.com",
+  href = "#",
+  className,
+}: AnimatedLinkProps) => {
+  return (
+    <a
+      href={href}
+      data-hover-demo="hover"
+      className={cn(
+        "group relative flex items-center",
+        "before:pointer-events-none before:absolute before:left-0 before:top-[1.5em] before:h-[0.05em] before:w-full before:bg-current before:content-['']",
+        "before:origin-right before:scale-x-0 before:transition-transform before:duration-300 before:ease-[cubic-bezier(0.4,0,0.2,1)]",
+        "hover:before:origin-left hover:before:scale-x-100",
+        className,
+      )}
+    >
+      {children}
+      <svg
+        className="ml-[0.3em] mt-[0em] size-[0.55em] translate-y-1 opacity-0 transition-all duration-300 [motion-reduce:transition-none] group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none"
+        fill="none"
+        viewBox="0 0 10 10"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M1.004 9.166 9.337.833m0 0v8.333m0-8.333H1.004"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        ></path>
+      </svg>
+    </a>
+  );
+};
+
+/** Underline sweeps in from the right, out to the left. */
+export const Link002 = ({
+  children = "hi@skiper-ui.com",
+  href = "#",
+  className,
+}: AnimatedLinkProps) => {
+  return (
+    <a
+      href={href}
+      data-hover-demo="hover"
+      className={cn(
+        "group relative flex items-center",
+        className,
+        "before:pointer-events-none before:absolute before:left-0 before:top-[1.5em] before:h-[0.05em] before:w-full before:bg-current before:content-['']",
+        "before:origin-right before:scale-x-0 before:transition-transform before:duration-300 before:ease-[cubic-bezier(0.4,0,0.2,1)]",
+        "before:origin-left",
+        "hover:before:origin-right hover:before:scale-x-100",
+      )}
+    >
+      {children}
+      <svg
+        className="ml-[0.3em] mt-[0em] size-[0.55em] translate-y-1 opacity-0 transition-all duration-300 [motion-reduce:transition-none] group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none"
+        fill="none"
+        viewBox="0 0 10 10"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M1.004 9.166 9.337.833m0 0v8.333m0-8.333H1.004"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        ></path>
+      </svg>
+    </a>
+  );
+};
+
+/** Underline grows outward from the center. */
+export const Link003 = ({
+  children = "hi@skiper-ui.com",
+  href = "#",
+  className,
+}: AnimatedLinkProps) => {
+  return (
+    <a
+      href={href}
+      data-hover-demo="hover"
+      className={cn(
+        "group relative flex items-center",
+        className,
+        "before:pointer-events-none before:absolute before:left-0 before:top-[1.5em] before:h-[0.05em] before:w-full before:bg-current before:content-['']",
+        "before:origin-right before:scale-x-0 before:transition-transform before:duration-300 before:ease-[cubic-bezier(0.4,0,0.2,1)]",
+        "before:origin-center",
+        "hover:before:scale-x-100",
+      )}
+    >
+      {children}
+      <svg
+        className="ml-[0.3em] mt-[0em] size-[0.55em] translate-y-1 opacity-0 transition-all duration-300 [motion-reduce:transition-none] group-hover:translate-y-0 group-hover:opacity-100 motion-reduce:transition-none"
+        fill="none"
+        viewBox="0 0 10 10"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M1.004 9.166 9.337.833m0 0v8.333m0-8.333H1.004"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        ></path>
+      </svg>
+    </a>
+  );
+};
+
+/** Full-height highlight bar wipes up behind the text (blend-difference). */
+export const Link004 = ({
+  children = "hi@skiper-ui.com",
+  href = "#",
+  className,
+}: AnimatedLinkProps) => {
+  return (
+    <a
+      href={href}
+      data-hover-demo="hover"
+      className={cn(
+        "group relative flex items-center",
+        className,
+        "before:pointer-events-none before:absolute before:left-0 before:w-full before:bg-white before:content-['']",
+        "before:origin-right before:scale-x-0 before:transition-all before:duration-300 before:ease-[cubic-bezier(0.4,0,0.2,1)]",
+        "before:origin-center md:before:bottom-0",
+        "before:z-1 px-2 before:h-0 before:scale-x-100 before:mix-blend-difference hover:before:h-[1.4em]",
+      )}
+    >
+      {children}
+      <svg
+        className="z-0 ml-[0.6em] mt-[0em] size-[0.55em] translate-y-1 opacity-0 transition-all duration-300 [motion-reduce:transition-none] group-hover:translate-y-0 group-hover:rotate-45 group-hover:opacity-100 motion-reduce:transition-none"
+        fill="none"
+        viewBox="0 0 10 10"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M1.004 9.166 9.337.833m0 0v8.333m0-8.333H1.004"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        ></path>
+      </svg>
+    </a>
+  );
+};
+
+/** Highlight bar wipes across from the left (blend-difference). */
+export const Link005 = ({
+  children = "hi@skiper-ui.com",
+  href = "#",
+  className,
+}: AnimatedLinkProps) => {
+  return (
+    <a
+      href={href}
+      data-hover-demo="hover"
+      className={cn(
+        className,
+        "group relative flex items-center",
+        "before:pointer-events-none before:absolute before:left-0 before:w-full before:bg-white before:content-['']",
+        "before:scale-x-1 before:transition-all before:duration-300 before:ease-[cubic-bezier(0.4,0,0.2,1)]",
+        "before:origin-left md:before:top-0",
+        "before:z-1 px-2 before:h-full before:scale-x-0 before:mix-blend-difference hover:before:scale-x-100",
+      )}
+    >
+      {children}
+      <svg
+        className="z-0 ml-[0.6em] mt-[0em] size-[0.55em] -translate-x-1 rotate-45 opacity-0 transition-all duration-300 [motion-reduce:transition-none] group-hover:translate-x-0 group-hover:opacity-100 motion-reduce:transition-none"
+        fill="none"
+        viewBox="0 0 10 10"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M1.004 9.166 9.337.833m0 0v8.333m0-8.333H1.004"
+          stroke="currentColor"
+          strokeWidth="1.25"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        ></path>
+      </svg>
+    </a>
+  );
+};
