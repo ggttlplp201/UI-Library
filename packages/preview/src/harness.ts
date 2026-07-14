@@ -131,12 +131,30 @@ async function renderComponent({ module, exportName, props, anim }) {
       // name (our injected placeholder) with no real surface behind it.
       const echoesName = text !== '' && text === exportName && !hasFillOrMedia(rootEl)
       const blank = echoesName || !hasVisualSubstance(rootEl)
+      // Style-tab overrides must be visible on every component, including ones
+      // that never accept/spread a \`style\` prop (most demo components), so
+      // apply them straight to the rendered root element as well.
+      applyStyleOverride(props && props.style)
       playAnim(anim)
       const r = rootEl.getBoundingClientRect()
       post({ type: 'rendered', width: Math.ceil(r.width), height: Math.ceil(r.height), blank })
     })
   } catch (e) {
     if (token === renderToken) post({ type: 'error', message: String((e && e.message) || e) })
+  }
+}
+
+// Only the Style-tab's CSS keys — never layout/transform, which components
+// (framer-motion especially) manage themselves.
+const OVERRIDE_KEYS = ['color', 'background', 'backgroundColor', 'fontFamily', 'fontWeight', 'fontSize']
+
+function applyStyleOverride(style) {
+  const target = rootEl.firstElementChild
+  if (!target || !style || typeof style !== 'object') return
+  for (const key of OVERRIDE_KEYS) {
+    if (style[key] == null) continue
+    const value = key === 'fontSize' && typeof style[key] === 'number' ? style[key] + 'px' : style[key]
+    target.style[key] = value
   }
 }
 

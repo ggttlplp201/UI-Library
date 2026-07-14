@@ -5,7 +5,7 @@ import type { PropSpec, RegistryEntry } from '@component-style-studio/registry'
  * typed control the Controls panel renders an input for, mirroring Storybook's
  * Controls model without depending on Storybook.
  */
-export type ControlKind = 'text' | 'number' | 'boolean' | 'select' | 'color'
+export type ControlKind = 'text' | 'number' | 'boolean' | 'select' | 'color' | 'image' | 'images'
 
 export interface ControlSpec {
   name: string
@@ -13,6 +13,12 @@ export interface ControlSpec {
   required: boolean
   /** Options for `select`, parsed from a string-literal union type */
   options?: string[]
+  /**
+   * For `images`: the keys of each element when the prop is an object array
+   * (e.g. ['src','alt','title']); undefined means a plain `string[]`. Uploaded
+   * photos are shaped to match so they drop into the component unchanged.
+   */
+  imageKeys?: string[]
   defaultValue?: unknown
   description?: string
 }
@@ -57,9 +63,49 @@ function parseUnion(type: string): string[] | null {
   return literals.length === parts.length ? literals : null
 }
 
+// Array props holding pictures (carousels, galleries, parallax walls). These
+// get an upload control so the animation can run on the user's own photos.
+const IMAGE_LIST_NAME = /^(images|projects|photos|slides|cards)$/i
+// Single image-source string props (e.g. ClipDiv's imgSrc).
+const IMAGE_NAME = /(img|image|photo|poster|avatar|thumbnail)/i
+
+function imageListControl(prop: PropSpec): ControlSpec | null {
+  if (!IMAGE_LIST_NAME.test(prop.name)) return null
+  if (!prop.type.includes('[]') && !prop.type.includes('Array<')) return null
+  let imageKeys: string[] | undefined
+  if (prop.type.includes('{')) {
+    // Element objects name their picture field either `src` or `image`.
+    const srcKey = prop.type.includes('src') ? 'src' : prop.type.includes('image') ? 'image' : null
+    if (!srcKey) return null
+    imageKeys = [srcKey]
+    if (/\bid\b/.test(prop.type)) imageKeys.push('id')
+    if (prop.type.includes('alt')) imageKeys.push('alt')
+    if (prop.type.includes('title')) imageKeys.push('title')
+    if (prop.type.includes('code')) imageKeys.push('code')
+  }
+  return {
+    name: prop.name,
+    kind: 'images',
+    required: prop.required,
+    imageKeys,
+    description: prop.description,
+  }
+}
+
 function controlFor(prop: PropSpec): ControlSpec | null {
   if (SKIP_PROPS.has(prop.name)) return null
+  const imageList = imageListControl(prop)
+  if (imageList) return imageList
   if (UNEDITABLE.some((frag) => prop.type.includes(frag))) return null
+  if (IMAGE_NAME.test(prop.name) && prop.type.includes('string') && !parseUnion(prop.type)) {
+    return {
+      name: prop.name,
+      kind: 'image',
+      required: prop.required,
+      defaultValue: unquote(prop.defaultValue),
+      description: prop.description,
+    }
+  }
 
   const base = { name: prop.name, required: prop.required, description: prop.description }
   const options = parseUnion(prop.type)

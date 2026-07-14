@@ -102,6 +102,10 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
   const frameRefs = useRef(new Map<string, PreviewHandle>())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [natural, setNatural] = useState<Record<string, { w: number; h: number }>>({})
+  // Hovering an instance plays its demo (auto-scroll, carousel advance,
+  // simulated hover) — the same behavior as the library cards, so scroll- and
+  // interaction-driven components animate on the canvas instead of freezing.
+  const [demoId, setDemoId] = useState<string | null>(null)
 
   const localPoint = (clientX: number, clientY: number) => {
     const rect = surfaceRef.current?.getBoundingClientRect()
@@ -272,6 +276,8 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                 e.stopPropagation()
                 onSelect(inst.id)
               }}
+              onMouseEnter={() => setDemoId(inst.id)}
+              onMouseLeave={() => setDemoId((prev) => (prev === inst.id ? null : prev))}
               onDoubleClick={(e) => {
                 e.stopPropagation()
                 onSelect(inst.id)
@@ -331,6 +337,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                     anim={inst.anim}
                     replayKey={inst.replay}
                     interactive={false}
+                    demo={demoId === inst.id}
                     onSize={(s) =>
                       setNatural((prev) =>
                         prev[inst.id]?.w === s.width && prev[inst.id]?.h === s.height

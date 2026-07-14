@@ -41,7 +41,8 @@ const DEFAULT_IMAGES: CarouselImage[] = [
 ];
 
 interface CarouselProps {
-  images?: CarouselImage[];
+  /** Slides; inline type so the Studio can shape uploaded photos to match */
+  images?: { src: string; alt: string }[];
   className?: string;
   showPagination?: boolean;
   showNavigation?: boolean;

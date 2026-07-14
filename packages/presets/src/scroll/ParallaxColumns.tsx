@@ -68,6 +68,11 @@ export const ParallaxColumns = ({
   const y3 = useTransform(scrollYProgress, [0, 1], [0, panelHeight * 1.25]);
   const y4 = useTransform(scrollYProgress, [0, 1], [0, panelHeight * 3]);
 
+  // Wrap around however many photos were supplied, so uploading fewer than
+  // the nine defaults still fills all four columns.
+  const pool = images.length > 0 ? images : DEFAULT_IMAGES;
+  const pick = (i: number) => pool[i % pool.length];
+
   return (
     <div
       ref={scroller}
@@ -85,10 +90,10 @@ export const ParallaxColumns = ({
           ref={gallery}
           className="relative box-border flex h-[740px] gap-[2%] overflow-hidden bg-white p-[2%]"
         >
-          <Column images={[images[0], images[1], images[2]]} y={y} />
-          <Column images={[images[3], images[4], images[5]]} y={y2} />
-          <Column images={[images[6], images[7], images[8]]} y={y3} />
-          <Column images={[images[6], images[7], images[8]]} y={y4} />
+          <Column images={[pick(0), pick(1), pick(2)]} y={y} />
+          <Column images={[pick(3), pick(4), pick(5)]} y={y2} />
+          <Column images={[pick(6), pick(7), pick(8)]} y={y3} />
+          <Column images={[pick(6), pick(7), pick(8)]} y={y4} />
         </div>
         <div className="relative flex h-[420px] items-center justify-center gap-2">
           <span className="max-w-[12ch] text-center text-xs uppercase leading-tight opacity-40">

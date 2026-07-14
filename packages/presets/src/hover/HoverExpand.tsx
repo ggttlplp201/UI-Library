@@ -29,7 +29,8 @@ export const HoverExpand_001 = ({
   images = DEFAULT_IMAGES,
   className,
 }: {
-  images?: HoverImage[];
+  /** Tiles; inline type so the Studio can shape uploaded photos to match */
+  images?: { src: string; alt: string; code: string }[];
   className?: string;
 }) => {
   const [activeImage, setActiveImage] = useState<number | null>(1);
@@ -107,7 +108,8 @@ export const HoverExpand_002 = ({
   images = DEFAULT_IMAGES.slice(0, 6),
   className,
 }: {
-  images?: HoverImage[];
+  /** Rows; inline type so the Studio can shape uploaded photos to match */
+  images?: { src: string; alt: string; code: string }[];
   className?: string;
 }) => {
   const [activeImage, setActiveImage] = useState<number | null>(1);
