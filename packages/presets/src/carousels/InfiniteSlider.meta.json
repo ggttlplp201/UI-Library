@@ -1,0 +1,12 @@
+{
+  "library": "Motion Primitives",
+  "source": "https://motion-primitives.com/docs/infinite-slider",
+  "author": "@ibelick",
+  "license": "MIT",
+  "attributionRequired": false,
+  "ingest": "manual-port",
+  "styleFamily": "motion-primitives",
+  "qualityTier": "vetted",
+  "previewStatus": "ok",
+  "fetchedFrom": "https://raw.githubusercontent.com/ibelick/motion-primitives/main/components/core/infinite-slider.tsx"
+}

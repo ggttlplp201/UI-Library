@@ -114,6 +114,18 @@ do not edit by hand.
 | ShimmerButton | `src/buttons/ShimmerButton.tsx` | MIT | https://magicui.design/docs/components/shimmer-button |
 | TextReveal | `src/scroll/TextReveal.tsx` | MIT | https://magicui.design/docs/components/text-reveal |
 
+## Motion Primitives
+
+- Author: @ibelick
+- License: MIT
+
+| Component | File | License | Source |
+|---|---|---|---|
+| AnimatedGroup | `src/effects/AnimatedGroup.tsx` | MIT | https://motion-primitives.com/docs/animated-group |
+| InfiniteSlider | `src/carousels/InfiniteSlider.tsx` | MIT | https://motion-primitives.com/docs/infinite-slider |
+| TextEffect | `src/text/TextEffect.tsx` | MIT | https://motion-primitives.com/docs/text-effect |
+| TextShimmer | `src/text/TextShimmer.tsx` | MIT | https://motion-primitives.com/docs/text-shimmer |
+
 ## React Bits
 
 - Author: David Haz (@DavidHDev)
