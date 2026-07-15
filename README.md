@@ -28,10 +28,10 @@ Made by **Leon** ([@ggttlplp201](https://github.com/ggttlplp201)) as a personal 
 
 ### What's in the box
 
-The bundled preset library includes three complete design themes — **Kinetic UI** (light
-editorial kit), **Kinetic Lab** (dark motion lab), and **Chrome Console** (pure-CSS industrial
-hardware: knobs you can drag, gauges, bat-switches) — plus page sections (navbar, hero, feature
-grid, CTA, footer), cards, inputs, badges, and effects.
+The bundled preset library includes two complete design themes — **Kinetic UI** (light
+editorial kit) and **Kinetic Lab** (dark motion lab) — plus page sections (navbar, hero,
+feature grid, CTA, footer), cards, inputs, badges, and effects, alongside credited
+components sourced from Magic UI, Cult UI, shadcn/ui, React Bits, and Motion Primitives.
 
 ![Component Style Studio — import screen](docs/media/studio-launcher.gif)
 
