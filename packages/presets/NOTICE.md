@@ -114,6 +114,25 @@ do not edit by hand.
 | ShimmerButton | `src/buttons/ShimmerButton.tsx` | MIT | https://magicui.design/docs/components/shimmer-button |
 | TextReveal | `src/scroll/TextReveal.tsx` | MIT | https://magicui.design/docs/components/text-reveal |
 
+## React Bits
+
+- Author: David Haz (@DavidHDev)
+- License: MIT + Commons Clause
+
+| Component | File | License | Source |
+|---|---|---|---|
+| AnimatedContent | `src/effects/AnimatedContent.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+| BlurText | `src/text/BlurText.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+| ClickSpark | `src/effects/ClickSpark.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+| FadeContent | `src/effects/FadeContent.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+| GradientText | `src/text/GradientText.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+| PillNav | `src/navigation/PillNav.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+| RotatingText | `src/text/RotatingText.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+| ShinyText | `src/text/ShinyText.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+| SplitText | `src/text/SplitText.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+| SpotlightCard | `src/cards/SpotlightCard.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+| StarBorder | `src/effects/StarBorder.tsx` | MIT + Commons Clause | https://reactbits.dev/ |
+
 ## shadcn/ui
 
 - Author: shadcn

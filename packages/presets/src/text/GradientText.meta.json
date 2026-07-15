@@ -1,0 +1,12 @@
+{
+  "library": "React Bits",
+  "source": "https://reactbits.dev/",
+  "author": "David Haz (@DavidHDev)",
+  "license": "MIT + Commons Clause",
+  "attributionRequired": false,
+  "ingest": "registry",
+  "fetchedFrom": "https://reactbits.dev/r/GradientText-TS-TW.json",
+  "styleFamily": "react-bits",
+  "qualityTier": "vetted",
+  "previewStatus": "ok"
+}
