@@ -11,6 +11,7 @@ import {
   type PageFx,
 } from '../lib/canvas'
 import { LOADER_CSS, PAGE_FX_CATEGORIES, loaderById, loaderHtml } from '../lib/pagefx'
+import { FX_CSS, FX_JS } from '@component-style-studio/preview/fx'
 import { PagesView } from './PagesView'
 import {
   exportSource,
@@ -262,6 +263,9 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     })
   const setStyle = (next: StyleOverride) => updateSelected((i) => ({ ...i, style: next }))
   const setAnim = (next: AnimConfig) => updateSelected((i) => ({ ...i, anim: next }))
+  const applyFx = (fxId: string) =>
+    updateSelected((i) => ({ ...i, fx: { id: fxId, accent: '#E3B23C' } }))
+  const clearFx = () => updateSelected((i) => ({ ...i, fx: undefined }))
   const replayAnim = () => updateSelected((i) => ({ ...i, replay: (i.replay ?? 0) + 1 }))
   const setLinkTo = (pageId: string | undefined) =>
     updateSelected((i) => ({ ...i, linkTo: pageId }))
@@ -567,6 +571,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       if (active) {
         activeSection = p;
         wireAnims(p);
+        wireFx(p);
         p.querySelectorAll('[data-anim]').forEach(function (el) {
           if (el.__entrance) el.__entrance();
         });
@@ -574,6 +579,15 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     });
     showLoading(slug);
     applyCursor(activeSection);
+  }
+  // Interaction effects: re-attach each page's [data-fx] hosts when it shows.
+  ${FX_JS}
+  function wireFx(scope) {
+    scope.querySelectorAll('[data-fx]').forEach(function (el) {
+      if (el.__fxWired) return;
+      el.__fxWired = true;
+      try { __ssFxAttach(el, JSON.parse(el.getAttribute('data-fx'))); } catch (err) { /* bad cfg */ }
+    });
   }
   window.addEventListener('hashchange', show);
   // Per-button links: components stamp data-nav="#/slug" on individual buttons.
@@ -589,7 +603,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       '<html><head><meta charset="utf-8" />',
       '<title>Style Studio export</title>',
       `<style>${[...cssBlocks].join('\n')}</style>`,
-      `<style>${[...animCss].join('\n')}</style>`,
+      `<style>${[...animCss].join('\n')}\n${FX_CSS}</style>`,
       // display:block beats the preview harness's body{display:flex} rule that
       // rides along in the collected component CSS.
       `<style>body{margin:0;display:block;background:${CONTRAST_BG[canvasTheme]}}.ss-page{display:none;position:relative;min-height:100vh}.ss-page.active{display:block}\n${LOADER_CSS}\n.ss-loading{position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;transition:opacity .4s ease}</style>`,
@@ -707,6 +721,9 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       onToggleSide={() => setLibrarySide((s) => (s === 'left' ? 'right' : 'left'))}
       canApplyAnimation={selected != null}
       appliedPreset={selected?.anim?.preset}
+      appliedFx={selected?.fx?.id}
+      onApplyFx={(fx) => applyFx(fx.id)}
+      onClearFx={clearFx}
       onApplyAnimation={(preset) =>
         updateSelected((i) => ({
           ...i,

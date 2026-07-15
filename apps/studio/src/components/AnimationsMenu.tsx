@@ -1,4 +1,5 @@
 import { ANIM_TRIGGERS, ANIMATIONS, type AnimPresetDef } from '../lib/animation'
+import { FX_CATALOG, type FxDef } from '@component-style-studio/preview/fx'
 
 const TRIGGER_BADGE: Record<string, string> = {
   entrance: 'bg-sky-500/15 text-sky-300',
@@ -17,15 +18,22 @@ const TRIGGER_BADGE: Record<string, string> = {
 export function AnimationsMenu({
   canApply,
   appliedPreset,
+  appliedFx,
   onApply,
   onClear,
+  onApplyFx,
+  onClearFx,
 }: {
   /** True when a canvas instance is selected */
   canApply: boolean
   /** Preset id currently applied to the selection (for highlighting) */
   appliedPreset?: string
+  /** Interaction-effect id currently attached to the selection */
+  appliedFx?: string
   onApply: (preset: AnimPresetDef) => void
   onClear: () => void
+  onApplyFx: (fx: FxDef) => void
+  onClearFx: () => void
 }) {
   return (
     <div className="flex-1 overflow-y-auto px-2 pb-3">
@@ -69,6 +77,54 @@ export function AnimationsMenu({
           className="w-full mt-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground border border-border/50 hover:text-foreground hover:border-border transition-colors"
         >
           Remove animation
+        </button>
+      )}
+
+      {/* Interaction EFFECTS: behaviors attached to the host component (per
+          the handoff's classification) — never standalone components. The
+          host keeps its own markup; the effect wires listeners around it. */}
+      <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest px-1 pt-4 pb-1">
+        Interaction effects
+      </p>
+      <p className="text-[10px] text-muted-foreground px-1 pb-2">
+        Behaviors that attach to the selected component — it keeps its look, the effect adds the
+        motion. Works live and in the export.
+      </p>
+      <div className="grid grid-cols-1 gap-1.5">
+        {FX_CATALOG.map((fx) => {
+          const applied = appliedFx === fx.id
+          return (
+            <button
+              key={fx.id}
+              type="button"
+              disabled={!canApply}
+              onClick={() => onApplyFx(fx)}
+              className={`text-left rounded-lg border px-2.5 py-2 transition-colors disabled:opacity-45 disabled:cursor-default ${
+                applied
+                  ? 'border-primary/50 bg-secondary'
+                  : 'border-border/50 bg-muted/20 hover:border-border hover:bg-secondary/40'
+              }`}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-medium">{fx.name}</span>
+                {fx.textBased && (
+                  <span className="ml-auto text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded bg-rose-500/15 text-rose-300">
+                    text
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{fx.description}</p>
+            </button>
+          )
+        })}
+      </div>
+      {canApply && appliedFx && (
+        <button
+          type="button"
+          onClick={onClearFx}
+          className="w-full mt-2 px-2 py-1.5 rounded-md text-[11px] text-muted-foreground border border-border/50 hover:text-foreground hover:border-border transition-colors"
+        >
+          Remove effect
         </button>
       )}
     </div>

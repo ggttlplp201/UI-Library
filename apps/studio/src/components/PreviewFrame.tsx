@@ -18,6 +18,8 @@ export interface PreviewFrameProps {
   renderProps: Record<string, unknown>
   /** Animation config; compiled to CSS keyframes + trigger for the harness */
   anim?: AnimConfig
+  /** Interaction effect attached to the rendered host (magnetic, ripple, …) */
+  fx?: { id: string; accent?: string; text?: string }
   /** Bump to replay the animation without other changes */
   replayKey?: number
   className?: string
@@ -73,6 +75,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     exportName,
     renderProps,
     anim,
+    fx,
     replayKey,
     className,
     onSize,
@@ -99,6 +102,8 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   propsRef.current = renderProps
   const animRef = useRef(anim)
   animRef.current = anim
+  const fxRef = useRef(fx)
+  fxRef.current = fx
   const onSizeRef = useRef(onSize)
   onSizeRef.current = onSize
   const onUserClickRef = useRef(onUserClick)
@@ -145,6 +150,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         exportName,
         props: propsRef.current,
         anim: compiled ? { ...compiled, playNow } : null,
+        fx: fxRef.current ?? null,
       },
       '*',
     )
@@ -201,6 +207,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   // animation on every unrelated edit).
   const propsKey = JSON.stringify(renderProps)
   const animKey = JSON.stringify(anim ?? null)
+  const fxKey = JSON.stringify(fx ?? null)
   // A replayKey bump means "Preview animation": ask the harness to play the
   // effect immediately even when its trigger is hover/click/scroll.
   const lastReplayRef = useRef(replayKey)
@@ -208,7 +215,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     const isReplay = replayKey !== lastReplayRef.current
     lastReplayRef.current = replayKey
     postRender(isReplay)
-  }, [postRender, propsKey, animKey, replayKey])
+  }, [postRender, propsKey, animKey, fxKey, replayKey])
 
   // Track the container size for fit (thumbnail) scaling.
   useEffect(() => {

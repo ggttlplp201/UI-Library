@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import type { AnimPresetDef } from '../lib/animation'
 import { AnimationsMenu } from './AnimationsMenu'
+import type { FxDef } from '@component-style-studio/preview/fx'
 import { LibraryCard } from './LibraryCard'
 import { PanelSideToggle, type PanelSide } from './PanelSideToggle'
 
@@ -19,6 +20,9 @@ export function LibraryPanel({
   side,
   onToggleSide,
   canApplyAnimation,
+  appliedFx,
+  onApplyFx,
+  onClearFx,
   appliedPreset,
   onApplyAnimation,
   onClearAnimation,
@@ -31,6 +35,9 @@ export function LibraryPanel({
   onToggleSide: () => void
   /** True when a canvas instance is selected (animations can be applied) */
   canApplyAnimation: boolean
+  appliedFx?: string
+  onApplyFx: (fx: FxDef) => void
+  onClearFx: () => void
   /** Animation preset id applied to the current selection */
   appliedPreset?: string
   onApplyAnimation: (preset: AnimPresetDef) => void
@@ -150,8 +157,11 @@ export function LibraryPanel({
         <AnimationsMenu
           canApply={canApplyAnimation}
           appliedPreset={appliedPreset}
+          appliedFx={appliedFx}
           onApply={onApplyAnimation}
           onClear={onClearAnimation}
+          onApplyFx={onApplyFx}
+          onClearFx={onClearFx}
         />
       ) : (
         <div className="flex-1 overflow-y-auto px-2 pb-3 grid grid-cols-2 gap-1.5 auto-rows-[116px] content-start">

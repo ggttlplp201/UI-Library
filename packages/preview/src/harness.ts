@@ -12,6 +12,8 @@
  *                     { type: 'rendered', width, height }
  *                     { type: 'error', message }
  */
+import { FX_CSS, FX_JS } from './fx.js'
+
 export function harnessModule(cssImportLines: string, root = ''): string {
   return `${cssImportLines}
 import React from 'react'
@@ -25,6 +27,24 @@ const rootEl = document.getElementById('preview-root')
 const root = createRoot(rootEl)
 
 function post(msg) { parent.postMessage({ source: 'preview', ...msg }, '*') }
+
+// Interaction effects (magnetic, ripple, tilt, …): behaviors attached to the
+// rendered component, shared verbatim with the HTML export runtime.
+${FX_JS}
+{
+  const fxStyle = document.createElement('style')
+  fxStyle.textContent = ${JSON.stringify(FX_CSS)}
+  document.head.appendChild(fxStyle)
+}
+let fxCleanup = null
+let lastFx = null
+function applyFx(fx) {
+  lastFx = fx && fx.id ? fx : null
+  if (fxCleanup) { fxCleanup(); fxCleanup = null }
+  const target = rootEl.firstElementChild
+  if (!target || !lastFx) return
+  fxCleanup = __ssFxAttach(target, lastFx)
+}
 
 // Previews are fully interactive (real hover/click/scroll), but they must
 // never NAVIGATE — a link or form submit would unload the harness and kill
@@ -171,7 +191,7 @@ class ErrorBoundary extends React.Component {
   render() { return this.state.err ? null : this.props.children }
 }
 
-async function renderComponent({ module, exportName, props, anim }) {
+async function renderComponent({ module, exportName, props, anim, fx }) {
   const token = ++renderToken
   try {
     let mod
@@ -209,6 +229,7 @@ async function renderComponent({ module, exportName, props, anim }) {
       // apply them straight to the rendered root element as well.
       applyStyleOverride(props && props.style)
       applyAnim(anim)
+      applyFx(fx)
       const r = rootEl.getBoundingClientRect()
       // Report the component's named link slots (buttons marked with
       // data-link-slot) so the Studio can offer a per-button "links to" picker.
@@ -286,7 +307,13 @@ window.addEventListener('message', (ev) => {
   if (!d || d.source !== 'studio') return
   if (d.type === 'render') renderComponent(d)
   else if (d.type === 'serialize') {
+    // Serialize the CLEAN host markup: effects mutate the DOM (glare layers,
+    // clones, typed text), and the export re-attaches them itself via
+    // [data-fx] — detach for the snapshot, then restore.
+    const fxToRestore = lastFx
+    if (fxCleanup) { fxCleanup(); fxCleanup = null }
     post({ type: 'serialized', nonce: d.nonce, html: rootEl.innerHTML, css: collectCss() })
+    if (fxToRestore) applyFx(fxToRestore)
   }
 })
 

@@ -41,6 +41,11 @@ export interface Instance {
   /** Page this instance navigates to when clicked (exported as a real link) */
   linkTo?: string
   /**
+   * Interaction effect attached to this instance (magnetic, ripple, tilt, …).
+   * Behaviors, not components — they wrap the rendered host element.
+   */
+  fx?: { id: string; accent?: string; text?: string }
+  /**
    * Per-button navigation: components can expose named link slots
    * (data-link-slot on individual buttons) — each slot can lead to its own
    * page. Falls back to `linkTo` for clicks outside any slot.

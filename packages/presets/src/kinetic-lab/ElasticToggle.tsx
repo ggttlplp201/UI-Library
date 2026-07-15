@@ -9,11 +9,17 @@ import { KLAB } from "../lib/klab";
 export const ElasticToggle = ({
   defaultOn = true,
   accent = "#E3B23C",
+  onLabel = "ON",
+  offLabel = "OFF",
 }: {
   /** Initial state */
   defaultOn?: boolean;
   /** Accent color (track when on) */
   accent?: string;
+  /** Label shown when on */
+  onLabel?: string;
+  /** Label shown when off */
+  offLabel?: string;
 }) => {
   const [on, setOn] = useState(defaultOn);
   return (
@@ -50,7 +56,7 @@ export const ElasticToggle = ({
         />
       </button>
       <span style={{ fontFamily: KLAB.mono, fontSize: 13, color: KLAB.muted, width: 34 }}>
-        {on ? "ON" : "OFF"}
+        {on ? onLabel : offLabel}
       </span>
     </div>
   );

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { KLAB, klabOnAccent } from "../lib/klab";
 
 const ANGLES = [-150, -110, -70, -30];
-const ICONS = ["★", "✎", "↗", "♥"];
 
 /**
  * Kinetic Lab radial menu — FAB whose 4 actions fan out on an arc with a
@@ -11,12 +10,16 @@ const ICONS = ["★", "✎", "↗", "♥"];
  */
 export const RadialMenu = ({
   accent = "#E3B23C",
+  icons = "★, ✎, ↗, ♥",
 }: {
   /** Accent color (FAB + actions) */
   accent?: string;
+  /** Comma-separated action icons/characters (up to 4) */
+  icons?: string;
 }) => {
   const [open, setOpen] = useState(false);
   const ink = klabOnAccent(accent);
+  const iconList = icons.split(",").map((i) => i.trim()).filter(Boolean);
   return (
     // Room above for the fanned-out actions.
     <div style={{ paddingTop: 96, paddingLeft: 70, paddingRight: 70, paddingBottom: 8 }}>
@@ -51,7 +54,7 @@ export const RadialMenu = ({
                 opacity: open ? 1 : 0,
               }}
             >
-              {ICONS[i]}
+              {iconList[i] ?? "•"}
             </button>
           );
         })}

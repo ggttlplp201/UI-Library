@@ -203,6 +203,11 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           const cfg = { value: compiled.animationValue, trigger: compiled.trigger, once: compiled.once }
           animAttr = ` data-anim="${JSON.stringify(cfg).replace(/"/g, '&quot;')}"`
         }
+        // Interaction effect: the export runtime re-attaches the same behavior
+        // (shared FX_JS) to this wrapper when its page shows.
+        if (inst.fx?.id) {
+          animAttr += ` data-fx="${JSON.stringify(inst.fx).replace(/"/g, '&quot;')}"`
+        }
 
         // Mirror the on-canvas structure: outer wrapper rotates about its
         // center at (natural × scale) size; inner wrapper scales from top-left.
@@ -505,6 +510,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                     exportName={entry.exportName}
                     renderProps={composeRenderProps(inst.args, inst.style)}
                     anim={inst.anim}
+                    fx={inst.fx}
                     replayKey={inst.replay}
                     interactive={live}
                     onUserClick={

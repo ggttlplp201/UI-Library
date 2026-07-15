@@ -11,6 +11,7 @@ export const CCActuatorButton = ({
   accent = "#FF7A1A",
   finish = "chrome",
   defaultEngaged = false,
+  label = "PUSH",
 }: {
   /** Active accent (ring/label) */
   accent?: string;
@@ -18,6 +19,8 @@ export const CCActuatorButton = ({
   finish?: "chrome" | "graphite";
   /** Initial state */
   defaultEngaged?: boolean;
+  /** Engraved face label */
+  label?: string;
 }) => {
   const [on, setOn] = useState(defaultEngaged);
   const m = ccMaterials(accent, finish);
@@ -43,7 +46,7 @@ export const CCActuatorButton = ({
         <span
           style={sx(`position:relative;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;letter-spacing:.14em;color:${on ? accent : "#2b333b"};text-shadow:${on ? `0 0 7px ${m.A(0.8)}` : "0 1px 0 rgba(255,255,255,.55)"}`)}
         >
-          PUSH
+          {label}
         </span>
       </button>
     </div>,
