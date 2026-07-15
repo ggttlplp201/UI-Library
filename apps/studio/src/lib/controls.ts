@@ -11,6 +11,8 @@ export interface ControlSpec {
   name: string
   kind: ControlKind
   required: boolean
+  /** Plumbing-ish prop (no description/default): shown collapsed under "Advanced" */
+  advanced?: boolean
   /** Options for `select`, parsed from a string-literal union type */
   options?: string[]
   /**
@@ -34,7 +36,22 @@ export interface StyleOverride {
 }
 
 // Props that are styling/rendering plumbing, not meaningful content controls.
-const SKIP_PROPS = new Set(['className', 'style', 'ref', 'key', 'asChild'])
+const SKIP_PROPS = new Set([
+  'className', 'style', 'ref', 'key', 'asChild',
+  // DOM chrome that leaks through docgen when a component extends
+  // HTMLAttributes — real users never want these in a design tool.
+  'accessKey', 'role', 'tabIndex', 'id', 'lang', 'dir', 'slot', 'spellCheck',
+  'draggable', 'contentEditable', 'autoFocus', 'autoCapitalize', 'autoCorrect',
+  'autoSave', 'translate', 'hidden', 'inert', 'nonce', 'radioGroup', 'is',
+  'itemID', 'itemProp', 'itemRef', 'itemScope', 'itemType', 'about',
+  'datatype', 'inlist', 'prefix', 'property', 'rel', 'resource', 'rev',
+  'typeof', 'vocab', 'security', 'unselectable', 'inputMode', 'enterKeyHint',
+  'exportparts', 'part', 'popover', 'popoverTarget', 'popoverTargetAction',
+  'contextMenu', 'results',
+  'suppressContentEditableWarning', 'suppressHydrationWarning',
+])
+// Whole prop families that are never design controls.
+const SKIP_PATTERNS = [/^aria-/i, /^data-/i, /^on[A-Z]/]
 
 // Type fragments that mark a prop as non-trivially editable: functions,
 // elements, and arrays/object literals (which must not be mocked as strings —
@@ -94,6 +111,7 @@ function imageListControl(prop: PropSpec): ControlSpec | null {
 
 function controlFor(prop: PropSpec): ControlSpec | null {
   if (SKIP_PROPS.has(prop.name)) return null
+  if (SKIP_PATTERNS.some((re) => re.test(prop.name))) return null
   const imageList = imageListControl(prop)
   if (imageList) return imageList
   if (UNEDITABLE.some((frag) => prop.type.includes(frag))) return null
@@ -113,7 +131,14 @@ function controlFor(prop: PropSpec): ControlSpec | null {
     return { ...base, kind: 'select', options, defaultValue: unquote(prop.defaultValue) }
   }
   if (prop.type === 'boolean') {
-    return { ...base, kind: 'boolean', defaultValue: prop.defaultValue === 'true' }
+    // Only carry a default the component actually declared — synthesizing
+    // `false` here would make inherited DOM flags (defaultChecked, …) look
+    // component-authored and surface them as primary controls.
+    return {
+      ...base,
+      kind: 'boolean',
+      defaultValue: prop.defaultValue != null ? prop.defaultValue === 'true' : undefined,
+    }
   }
   if (/\bnumber\b/.test(prop.type)) {
     const n = prop.defaultValue != null ? Number(prop.defaultValue) : undefined
@@ -140,6 +165,19 @@ export function deriveControls(entry: RegistryEntry): ControlSpec[] {
   const controls = entry.props
     .map(controlFor)
     .filter((c): c is ControlSpec => c != null)
+
+  // A prop the component author documented, defaulted, or requires is a real
+  // design control; anything else (inherited plumbing that survived the
+  // filters) collapses under "Advanced" so the panel stays scannable.
+  for (const c of controls) {
+    c.advanced = !(c.description || c.defaultValue !== undefined || c.required)
+  }
+  // If nothing qualifies as primary (imported components without JSDoc),
+  // don't bury everything — promote them all.
+  if (controls.length > 0 && controls.every((c) => c.advanced)) {
+    for (const c of controls) c.advanced = false
+  }
+  controls.sort((a, b) => Number(a.advanced) - Number(b.advanced))
 
   // Inject a `children` text control only when the component has no other
   // text-bearing prop to drive its content (docgen usually filters `children`

@@ -284,23 +284,100 @@ export function EditPanel({
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
-            {tab === 'controls' &&
-              (controls.length === 0 ? (
-                <p className="text-[11px] text-muted-foreground">No editable props detected.</p>
-              ) : (
-                controls.map((control) => (
-                  <ControlInput
-                    key={control.name}
-                    control={control}
-                    value={args[control.name]}
-                    onChange={(v) => onArgChange(control.name, v)}
-                  />
-                ))
-              ))}
+            {tab === 'controls' && (
+              // Keyed by component so the filter query and Advanced disclosure
+              // reset when the selection changes (a hidden lingering filter
+              // would silently blank the next component's controls).
+              <ControlsTab
+                key={entry?.id ?? 'none'}
+                controls={controls}
+                args={args}
+                onArgChange={onArgChange}
+              />
+            )}
             {tab === 'style' && <StyleTab value={style} onChange={onStyleChange} />}
             {tab === 'animation' && animationSlot}
           </div>
         </>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Controls tab: primary (component-authored) props up front; inherited
+ * plumbing collapsed under "Advanced"; a filter box once the list is long.
+ */
+function ControlsTab({
+  controls,
+  args,
+  onArgChange,
+}: {
+  controls: ControlSpec[]
+  args: Record<string, unknown>
+  onArgChange: (name: string, value: unknown) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(false)
+
+  if (controls.length === 0) {
+    return <p className="text-[11px] text-muted-foreground">No editable props detected.</p>
+  }
+
+  const q = query.trim().toLowerCase()
+  const matches = (c: ControlSpec) =>
+    q === '' ||
+    c.name.toLowerCase().includes(q) ||
+    (c.description ?? '').toLowerCase().includes(q)
+
+  const primary = controls.filter((c) => !c.advanced && matches(c))
+  const advanced = controls.filter((c) => c.advanced && matches(c))
+  // While searching, matches from Advanced surface directly — a filter that
+  // hides its own results behind a second click would read as "no results".
+  const advancedOpen = showAdvanced || q !== ''
+
+  const renderControl = (control: ControlSpec) => (
+    <ControlInput
+      key={control.name}
+      control={control}
+      value={args[control.name]}
+      onChange={(v) => onArgChange(control.name, v)}
+    />
+  )
+
+  return (
+    <div>
+      {controls.length > 8 && (
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Filter controls…"
+          className="w-full rounded-md px-2 py-1 mb-3 text-[11px] bg-input border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+      )}
+      {primary.map(renderControl)}
+      {primary.length === 0 && advanced.length === 0 && (
+        <p className="text-[11px] text-muted-foreground">No controls match "{query}".</p>
+      )}
+      {advanced.length > 0 && (
+        <div className={primary.length > 0 ? 'mt-2 pt-2 border-t border-border' : ''}>
+          {q === '' && (
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="w-full flex items-center gap-1 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span
+                className={`inline-block transition-transform ${advancedOpen ? 'rotate-90' : ''}`}
+              >
+                ▸
+              </span>
+              Advanced ({advanced.length})
+            </button>
+          )}
+          {advancedOpen && <div className={q === '' ? 'mt-1' : ''}>{advanced.map(renderControl)}</div>}
+        </div>
       )}
     </div>
   )
