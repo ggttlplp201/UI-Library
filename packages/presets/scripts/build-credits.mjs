@@ -74,7 +74,8 @@ for (const file of componentFiles) {
   for (const m of src.matchAll(/^export\s*\{([^}]+)\}\s*;?\s*$/gm)) {
     for (const raw of m[1].split(',')) {
       const name = raw.trim().split(/\s+as\s+/).pop()
-      if (name && /^[A-Z]\w*$/.test(name) && !exports.includes(name)) exports.push(name)
+      // Components only — ALL_CAPS exports are constants, not components.
+      if (name && /^[A-Z]\w*$/.test(name) && !/^[A-Z0-9_]+$/.test(name) && !exports.includes(name)) exports.push(name)
     }
   }
   for (const name of exports) {

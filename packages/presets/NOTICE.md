@@ -64,6 +64,41 @@ do not edit by hand.
 | StatCard | `src/cards/StatCard.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | StatusBadge | `src/badges/StatusBadge.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 
+## Cult UI
+
+- Author: nolly-studio (@cult-ui)
+- License: MIT
+
+| Component | File | License | Source |
+|---|---|---|---|
+| BlobContext | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
+| DynamicContainer | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
+| DynamicDescription | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
+| DynamicDiv | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
+| DynamicIsland | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
+| DynamicIslandProvider | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
+| DynamicIslandSizePresets | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
+| DynamicTitle | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
+| FamilyButton | `src/buttons/FamilyButton.tsx` | MIT | https://www.cult-ui.com/docs/components/family-button |
+| MinimalCard | `src/cards/MinimalCard.tsx` | MIT | https://www.cult-ui.com/docs/components/minimal-card |
+| MinimalCardContent | `src/cards/MinimalCard.tsx` | MIT | https://www.cult-ui.com/docs/components/minimal-card |
+| MinimalCardDescription | `src/cards/MinimalCard.tsx` | MIT | https://www.cult-ui.com/docs/components/minimal-card |
+| MinimalCardFooter | `src/cards/MinimalCard.tsx` | MIT | https://www.cult-ui.com/docs/components/minimal-card |
+| MinimalCardImage | `src/cards/MinimalCard.tsx` | MIT | https://www.cult-ui.com/docs/components/minimal-card |
+| MinimalCardTitle | `src/cards/MinimalCard.tsx` | MIT | https://www.cult-ui.com/docs/components/minimal-card |
+| ShiftCard | `src/cards/ShiftCard.tsx` | MIT | https://www.cult-ui.com/docs/components/shift-card |
+| ShiftCardContent | `src/cards/ShiftCard.tsx` | MIT | https://www.cult-ui.com/docs/components/shift-card |
+| ShiftCardHeader | `src/cards/ShiftCard.tsx` | MIT | https://www.cult-ui.com/docs/components/shift-card |
+| TextureButton | `src/buttons/TextureButton.tsx` | MIT | https://www.cult-ui.com/docs/components/texture-button |
+| TextureCard | `src/cards/TextureCard.tsx` | MIT | https://www.cult-ui.com/docs/components/texture-card |
+| TextureCardContent | `src/cards/TextureCard.tsx` | MIT | https://www.cult-ui.com/docs/components/texture-card |
+| TextureCardDescription | `src/cards/TextureCard.tsx` | MIT | https://www.cult-ui.com/docs/components/texture-card |
+| TextureCardFooter | `src/cards/TextureCard.tsx` | MIT | https://www.cult-ui.com/docs/components/texture-card |
+| TextureCardHeader | `src/cards/TextureCard.tsx` | MIT | https://www.cult-ui.com/docs/components/texture-card |
+| TextureCardStyled | `src/cards/TextureCard.tsx` | MIT | https://www.cult-ui.com/docs/components/texture-card |
+| TextureCardTitle | `src/cards/TextureCard.tsx` | MIT | https://www.cult-ui.com/docs/components/texture-card |
+| TextureSeparator | `src/cards/TextureCard.tsx` | MIT | https://www.cult-ui.com/docs/components/texture-card |
+
 ## Magic UI
 
 - Author: @magicuidesign

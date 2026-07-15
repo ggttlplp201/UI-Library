@@ -105,7 +105,12 @@ for (const file of item.files ?? []) {
   })
 
   // Component name = the file's main export (registry files are kebab-case).
-  const exportMatch = content.match(/export (?:const|function) ([A-Z]\w*)/)
+  // Some registries (Cult UI) declare `const X = ...` and export at the bottom
+  // via `export default X` / `export { X }` — fall back to those forms.
+  const exportMatch =
+    content.match(/export (?:const|function) ([A-Z]\w*)/) ||
+    content.match(/^export default ([A-Z]\w*)/m) ||
+    content.match(/^export\s*\{\s*([A-Z]\w*)/m)
   const name = exportMatch ? exportMatch[1] : null
   if (!name) {
     console.error(`No component export found in ${file.path} — skipped`)

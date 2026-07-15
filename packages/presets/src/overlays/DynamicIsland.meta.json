@@ -1,0 +1,12 @@
+{
+  "library": "Cult UI",
+  "source": "https://www.cult-ui.com/docs/components/dynamic-island",
+  "author": "nolly-studio (@cult-ui)",
+  "license": "MIT",
+  "attributionRequired": false,
+  "ingest": "registry",
+  "fetchedFrom": "https://www.cult-ui.com/r/dynamic-island.json",
+  "styleFamily": "cult-ui",
+  "qualityTier": "vetted",
+  "previewStatus": "ok"
+}
