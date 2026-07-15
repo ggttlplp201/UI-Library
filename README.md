@@ -1,58 +1,77 @@
 # Component Style Studio
 
-A standalone visual tool for styling React components. Point it at an existing codebase (or
-start with the bundled preset library), browse the components with live previews, compose them
-on a canvas, edit their style and animation, and export the result — either as a self-contained
-HTML demo or as the edited component source, ready to diff.
-
-The folder you import is scanned in place. Nothing is copied.
+Build real, working web pages out of your own React components — visually.
 
 ![Component Style Studio — workspace](docs/media/studio-workspace.gif)
 
-## Features
+## 🌟 Highlights
 
-- **Import any React codebase** — components populate a searchable, categorized library with
-  live previews. No configuration; the studio reads your real `tsconfig`, Tailwind setup, and
-  `node_modules`. Or start with the bundled preset library, no folder needed.
-- **Compose on a canvas** — drag components in, then move, scale, stretch (change length on one
-  axis), and rotate them Canva-style. Arrow keys nudge, `Delete` removes, `Esc` deselects.
-- **Edit style and animation** — override text, color, background, and font; attach an entrance
-  animation (fade, slide, scale, bounce) powered by GSAP.
-- **See the generated code live** — your visual edits are written back into the component's real
-  source by a narrow AST transform engine (style, text, position, animation only — never app
-  logic), shown in a code pane as you work.
-- **Export two ways** — a self-contained front-end HTML demo, or a `.zip` of the edited component
-  source files (grouped per project, with a conflict report), ready to drop into a diff.
+- 🎨 **Design with real components** — import any React codebase (or use the 130+ bundled presets) and every component renders live, with its actual CSS, Tailwind config, and dependencies
+- 🖱️ **A canvas that feels like Canva** — drag anywhere to move, marquee-select groups, scale/stretch/rotate, press **▶ live** to actually click the thing you placed
+- 📄 **Multi-page sites, wired like Blender nodes** — pages live in a browser-style tab strip; the Root graph connects them, and every button can lead to its own page
+- ⏳ **Page effects, where they belong** — loading screens and cursor effects are set per *page*, not dropped on the canvas
+- ▶️ **Preview mode** — run your site inside the studio: loading screens play, buttons navigate, effects work
+- 📦 **Export something real** — one self-contained HTML file of the whole site, or a zip of your edited component source, ready to diff
+- ✍️ **Code stays honest** — visual edits are written back into the component's real source by an AST engine (style, text, animation — never your logic)
+
+## ℹ️ Overview
+
+Component Style Studio is a local-first visual page builder. Point it at a folder and the
+components inside populate a searchable library with live previews — nothing is copied, the
+folder is scanned in place. Compose components into pages, restyle them, attach animations with
+real triggers (entrance, hover, click, scroll), link buttons to pages, and ship the result.
+
+It sits somewhere between a design tool and a site builder: like Figma you compose visually,
+but every block is a *running React component*, so what you preview is what you export.
+
+Made by **Leon** ([@ggttlplp201](https://github.com/ggttlplp201)) as a personal project.
+
+### What's in the box
+
+The bundled preset library includes three complete design themes — **Kinetic UI** (light
+editorial kit), **Kinetic Lab** (dark motion lab), and **Chrome Console** (pure-CSS industrial
+hardware: knobs you can drag, gauges, bat-switches) — plus page sections (navbar, hero, feature
+grid, CTA, footer), cards, inputs, badges, and effects.
 
 ![Component Style Studio — import screen](docs/media/studio-launcher.gif)
 
-## Layout
-
-| Path | What |
-|---|---|
-| `apps/studio` | The Studio app (Vite + React + TS + Tailwind v4) |
-| `packages/registry` | Shared registry schema types (imported + preset components) |
-| `packages/parser` | Import pipeline: file walk, `react-docgen-typescript` extraction, runtime-dependency flagging, and the `/api/scan` dev-server endpoint |
-| `packages/preview` | Live preview engine: a child dev-server per project plus the iframe harness that renders and animates a component |
-| `packages/presets` | The bundled preset component library |
-| `packages/ast-sync` | AST sync engine: the edit transforms, the `/api/code` (live code) and `/api/export` (zip) endpoints, and a zero-dependency zip writer |
-
-## Run
+## 🚀 Quick start
 
 ```bash
 npm install
-npm run dev        # studio at http://localhost:5173
+npm run dev        # open http://localhost:5173
+```
+
+Point it at a React project folder, or click **"Start with the preset library"** and build
+straight away. When you're happy, hit **▶ Preview** to try your site, then **Export**.
+
+```bash
 npm test           # unit tests (vitest)
 npm run lint       # oxlint
 npm run typecheck
 ```
 
-## How scanning works
+## 🧭 Finding your way around
 
-Component scanning runs in the studio's **local dev server** (Node), not the browser:
-`react-docgen-typescript` needs the TypeScript compiler plus the target folder's real
-`node_modules`/`tsconfig.json` for full-fidelity prop extraction. The UI posts a folder path to
-`/api/scan`; nothing from the scanned folder is written or copied.
+| Where | What |
+|---|---|
+| Library (right) | Components + Animations tabs; drag or click a card to place it |
+| Canvas (center) | Your page. Select → move/scale/rotate; **▶ live** to interact for real |
+| Configure (left) | Selected component's props, style, links, animation — or, with nothing selected, the **page settings** (loading screen, cursor effect) |
+| Tab strip (top) | Every open page, plus **⌘ Root** — the node graph where you wire pages together |
+| Code pane (bottom) | The selected component's source with your edits written back in |
 
-Previews render the same way — each imported project gets its own child dev server, so a
-component renders with its own real dependencies, CSS, and Tailwind config rather than a shim.
+## 🏗️ How it works
+
+| Path | What |
+|---|---|
+| `apps/studio` | The Studio app (Vite + React + TS + Tailwind v4) |
+| `packages/parser` | Folder scan → `react-docgen-typescript` prop extraction (`/api/scan`) |
+| `packages/preview` | A child dev-server per project + the iframe harness that renders, animates, and reports clicks |
+| `packages/presets` | The bundled preset library (themes, sections, effects) |
+| `packages/ast-sync` | The AST edit engine, live code (`/api/code`) and source export (`/api/export`) |
+| `packages/registry` | Shared registry types |
+
+Scanning and previews run in the studio's local dev server, not the browser — components need
+the TypeScript compiler and their own real `node_modules` to render faithfully. Nothing from
+your folder is written or copied.

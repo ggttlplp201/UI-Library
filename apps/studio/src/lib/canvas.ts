@@ -52,10 +52,26 @@ export interface Instance {
  * A page of the composition. The canvas edits one page at a time; the Pages
  * view shows all of them as connected nodes (edges = instance links).
  */
+/** Page-level effects: what shows while the page loads, and the cursor. */
+export interface PageFx {
+  /** Loading-screen loader id (lib/pagefx.ts), undefined = none */
+  loader?: string
+  /** Loader accent color */
+  loaderAccent?: string
+  /** How long the loading screen stays up (ms) */
+  loaderMs?: number
+  /** Cursor effect id, undefined = default cursor */
+  cursor?: string
+  /** Cursor accent color */
+  cursorAccent?: string
+}
+
 export interface Page {
   id: string
   name: string
   instances: Instance[]
+  /** Page-level effects (loading screen, cursor) */
+  fx?: PageFx
   /** Node position in the Pages graph view */
   nodeX: number
   nodeY: number

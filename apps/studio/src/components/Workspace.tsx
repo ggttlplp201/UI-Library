@@ -8,7 +8,9 @@ import {
   type AnimConfig,
   type Instance,
   type Page,
+  type PageFx,
 } from '../lib/canvas'
+import { LOADER_CSS, PAGE_FX_CATEGORIES, loaderById, loaderHtml } from '../lib/pagefx'
 import { PagesView } from './PagesView'
 import {
   exportSource,
@@ -100,6 +102,8 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   const [configSide, setConfigSide] = useState<PanelSide>('left')
   const [showCode, setShowCode] = useState(true)
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null)
+  const [previewBusy, setPreviewBusy] = useState(false)
   const [exportReport, setExportReport] = useState<{
     files: number
     conflicts: ExportConflict[]
@@ -146,6 +150,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       // Leave browser/OS shortcuts (Cmd/Ctrl/Alt combos) alone.
       if (e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === 'Escape') {
+        setPreviewHtml(null)
         setSelectedIds([])
         return
       }
@@ -182,6 +187,14 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   const entries = useMemo(
     () => [...result.entries, ...presets.entries],
     [result.entries, presets.entries],
+  )
+  // Loaders/cursor effects are PAGE effects (picked in Page settings), not
+  // placeable components — keep them out of the library grid. Only preset
+  // entries are filtered: an imported project's own "loaders" folder is none
+  // of our business.
+  const placeableEntries = useMemo(
+    () => entries.filter((e) => !(e.source === 'preset' && PAGE_FX_CATEGORIES.has(e.category ?? ''))),
+    [entries],
   )
   const entryById = useMemo(() => {
     const map = new Map(entries.map((e) => [e.id, e]))
@@ -252,6 +265,10 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   const replayAnim = () => updateSelected((i) => ({ ...i, replay: (i.replay ?? 0) + 1 }))
   const setLinkTo = (pageId: string | undefined) =>
     updateSelected((i) => ({ ...i, linkTo: pageId }))
+  const setPageFx = (fx: PageFx) =>
+    setPages((prev) =>
+      prev.map((p) => (p.id === activePageIdResolved ? { ...p, fx } : p)),
+    )
   const setLinkSlot = (slot: string, pageId: string | undefined) =>
     updateSelected((i) => {
       const links = { ...i.links }
@@ -437,13 +454,13 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   // file://), instance links become real <a href="#/slug"> anchors, and each
   // instance's animation replays on its real trigger (entrance / hover /
   // click / scroll-into-view).
-  const handleExportDemo = async () => {
-    setExportMenuOpen(false)
+  const buildSiteHtml = async (): Promise<string | null> => {
     setView('canvas')
     const originalPage = activePage.id
     const cssBlocks = new Set<string>()
     const animCss = new Set<string>()
     const sections: string[] = []
+    const overlays: string[] = []
 
     const settle = (ms: number) => new Promise((r) => setTimeout(r, ms))
     for (const page of pages) {
@@ -460,7 +477,17 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       for (const c of snap.cssBlocks) cssBlocks.add(c)
       for (const c of snap.animCss) animCss.add(c)
       const slug = slugById.get(page.id) ?? page.id
-      sections.push(`<section data-page="${slug}" class="ss-page">\n${snap.body}\n</section>`)
+      const fx = page.fx
+      const cursorAttr = fx?.cursor
+        ? ` data-cursor="${fx.cursor}" data-cursor-accent="${fx.cursorAccent || '#E3B23C'}"`
+        : ''
+      sections.push(`<section data-page="${slug}" class="ss-page"${cursorAttr}>\n${snap.body}\n</section>`)
+      const loaderDef = loaderById(fx?.loader)
+      if (loaderDef) {
+        overlays.push(
+          `<div class="ss-loading" data-for="${slug}" data-ms="${fx?.loaderMs ?? 1400}" style="background:${CONTRAST_BG[canvasTheme]}">${loaderHtml(loaderDef, fx?.loaderAccent || '#4B3BFF')}</div>`,
+        )
+      }
     }
     setActivePageId(originalPage)
 
@@ -494,18 +521,59 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       } else el.__entrance = run;
     });
   }
+  // Page-level effects: the loading screen shows on first load and on every
+  // navigation to its page; the cursor effect follows the active page.
+  var loaderTimer = null;
+  function showLoading(slug) {
+    document.querySelectorAll('.ss-loading').forEach(function (o) {
+      if (o.getAttribute('data-for') !== slug) { o.style.display = 'none'; return; }
+      clearTimeout(loaderTimer);
+      o.style.display = 'flex';
+      o.style.opacity = '1';
+      var ms = Number(o.getAttribute('data-ms')) || 1400;
+      loaderTimer = setTimeout(function () {
+        o.style.opacity = '0';
+        setTimeout(function () { o.style.display = 'none'; }, 400);
+      }, ms);
+    });
+  }
+  var cursorEl = null;
+  function applyCursor(section) {
+    var kind = section ? section.getAttribute('data-cursor') : null;
+    var acc = (section && section.getAttribute('data-cursor-accent')) || '#E3B23C';
+    if (cursorEl) { cursorEl.remove(); cursorEl = null; }
+    document.body.style.cursor = '';
+    if (!kind) return;
+    cursorEl = document.createElement('div');
+    if (kind === 'blend') {
+      cursorEl.style.cssText = 'position:fixed;top:0;left:0;width:66px;height:66px;border-radius:50%;background:' + acc + ';mix-blend-mode:difference;pointer-events:none;z-index:9999;transform:translate(-120px,-120px);transition:transform .14s cubic-bezier(.2,.8,.3,1)';
+      document.body.style.cursor = 'none';
+    } else {
+      cursorEl.style.cssText = 'position:fixed;top:0;left:0;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,' + acc + 'aa,transparent 70%);pointer-events:none;z-index:9999;transform:translate(-120px,-120px);transition:transform .12s ease-out';
+    }
+    document.body.appendChild(cursorEl);
+  }
+  document.addEventListener('mousemove', function (e) {
+    if (!cursorEl) return;
+    var half = cursorEl.offsetWidth / 2;
+    cursorEl.style.transform = 'translate(' + (e.clientX - half) + 'px,' + (e.clientY - half) + 'px)';
+  });
   function show() {
     var slug = currentSlug();
+    var activeSection = null;
     document.querySelectorAll('.ss-page').forEach(function (p) {
       var active = p.getAttribute('data-page') === slug;
       p.classList.toggle('active', active);
       if (active) {
+        activeSection = p;
         wireAnims(p);
         p.querySelectorAll('[data-anim]').forEach(function (el) {
           if (el.__entrance) el.__entrance();
         });
       }
     });
+    showLoading(slug);
+    applyCursor(activeSection);
   }
   window.addEventListener('hashchange', show);
   // Per-button links: components stamp data-nav="#/slug" on individual buttons.
@@ -524,13 +592,34 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       `<style>${[...animCss].join('\n')}</style>`,
       // display:block beats the preview harness's body{display:flex} rule that
       // rides along in the collected component CSS.
-      `<style>body{margin:0;display:block;background:${CONTRAST_BG[canvasTheme]}}.ss-page{display:none;position:relative;min-height:100vh}.ss-page.active{display:block}</style>`,
+      `<style>body{margin:0;display:block;background:${CONTRAST_BG[canvasTheme]}}.ss-page{display:none;position:relative;min-height:100vh}.ss-page.active{display:block}\n${LOADER_CSS}\n.ss-loading{position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;transition:opacity .4s ease}</style>`,
       '</head><body>',
       sections.join('\n'),
+      overlays.join('\n'),
       `<script>${runtime}</script>`,
       '</body></html>',
     ].join('\n')
-    downloadBlob(new Blob([html], { type: 'text/html' }), 'style-studio-site.html')
+    return html
+  }
+
+  const handleExportDemo = async () => {
+    setExportMenuOpen(false)
+    const html = await buildSiteHtml()
+    if (html) downloadBlob(new Blob([html], { type: 'text/html' }), 'style-studio-site.html')
+  }
+
+  // Preview mode: the same self-contained site the export produces, shown in
+  // a fullscreen iframe — loading screens, button navigation, animations, and
+  // cursor effects all run for real, outside the canvas.
+  const handlePreview = async () => {
+    if (previewBusy) return
+    setPreviewBusy(true)
+    try {
+      const html = await buildSiteHtml()
+      if (html) setPreviewHtml(html)
+    } finally {
+      setPreviewBusy(false)
+    }
   }
 
   // Export the edited component *source files* as a zip (Phase 8). Instances are
@@ -597,6 +686,10 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       linkSlots={selected ? (slotsByInstance[selected.id] ?? []) : []}
       links={selected?.links ?? {}}
       onLinkSlotChange={setLinkSlot}
+      pageName={activePage.name}
+      pageFx={activePage.fx}
+      onPageFxChange={setPageFx}
+      selectionCount={selectedIds.length}
       animationSlot={
         <AnimationTab value={selected?.anim} onChange={setAnim} onReplay={replayAnim} />
       }
@@ -606,7 +699,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   const libraryPanel = (
     <LibraryPanel
       key="library"
-      entries={entries}
+      entries={placeableEntries}
       selectedId={selectedEntry?.id ?? null}
       onSelect={addFromLibrary}
       rootFor={rootFor}
@@ -731,6 +824,15 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         >
           {canvasTheme === 'dark' ? '☾' : '☀'}
         </button>
+        <button
+          type="button"
+          onClick={handlePreview}
+          disabled={previewBusy || pages.every((p) => p.instances.length === 0)}
+          title="Run the site you built — loading screens, buttons, and effects all work (Esc to return)"
+          className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary hover:bg-secondary/70 disabled:opacity-40 disabled:cursor-default transition-colors"
+        >
+          {previewBusy ? 'Building…' : '▶ Preview'}
+        </button>
         <div className="relative shrink-0">
           <button
             type="button"
@@ -843,6 +945,27 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         {librarySide === 'right' && libraryPanel}
         {configSide === 'right' && configPanel}
       </div>
+
+      {previewHtml && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-black">
+          <div className="h-9 shrink-0 flex items-center gap-3 px-3 bg-card border-b border-border">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Preview — your site, running for real
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              buttons navigate · loading screens + effects play
+            </span>
+            <button
+              type="button"
+              onClick={() => setPreviewHtml(null)}
+              className="ml-auto px-2.5 py-1 rounded-md text-[11px] font-medium bg-secondary hover:bg-secondary/70 transition-colors"
+            >
+              ✕ Back to canvas (Esc)
+            </button>
+          </div>
+          <iframe title="Site preview" srcDoc={previewHtml} className="flex-1 w-full border-0 bg-white" />
+        </div>
+      )}
 
       {exportReport && (
         <div className="fixed bottom-4 right-4 z-50 w-80 rounded-lg border border-border bg-popover shadow-xl p-3">

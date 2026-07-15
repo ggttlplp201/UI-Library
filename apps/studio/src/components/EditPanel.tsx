@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import type { ControlSpec, StyleOverride } from '../lib/controls'
+import type { PageFx } from '../lib/canvas'
+import { CURSORS, LOADERS, LOADER_CSS, loaderById, loaderHtml } from '../lib/pagefx'
 import { ControlInput } from './controls/ControlInput'
 import { StyleTab } from './StyleTab'
 import { PanelSideToggle, type PanelSide } from './PanelSideToggle'
@@ -25,6 +27,10 @@ export function EditPanel({
   links = {},
   onLinkSlotChange,
   animationSlot,
+  pageName,
+  pageFx,
+  onPageFxChange,
+  selectionCount = 0,
 }: {
   side: PanelSide
   onToggleSide: () => void
@@ -47,6 +53,13 @@ export function EditPanel({
   links?: Record<string, string>
   onLinkSlotChange?: (slot: string, pageId: string | undefined) => void
   animationSlot?: React.ReactNode
+  /** Active page name (page settings shown when nothing is selected) */
+  pageName?: string
+  /** Active page's effects (loading screen, cursor) */
+  pageFx?: PageFx
+  onPageFxChange?: (fx: PageFx) => void
+  /** How many instances are selected (multi-select shows a group hint, not page settings) */
+  selectionCount?: number
 }) {
   const [tab, setTab] = useState<Tab>('controls')
   const posClass =
@@ -144,10 +157,111 @@ export function EditPanel({
         ) : null}
       </div>
 
-      {!entry ? (
+      {!entry && selectionCount > 1 ? (
         <div className="flex-1 flex items-center justify-center p-4">
           <p className="text-[11px] text-muted-foreground text-center">
-            Select a component on the canvas to edit its props, style, and animation.
+            {selectionCount} components selected — drag to move them together, Delete removes them,
+            arrows nudge. Select one to edit its props.
+          </p>
+        </div>
+      ) : !entry ? (
+        <div className="flex-1 overflow-y-auto p-3">
+          {/* PAGE settings: effects that belong to the page itself, not to a
+              placeable component — the loading screen shown while the page
+              loads, and the cursor effect. */}
+          <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest">
+            Page — {pageName ?? 'current'}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-1 mb-3">
+            Select a component to edit it — or set what this page does on its own:
+          </p>
+
+          <p className="text-[10px] font-semibold mb-1.5" title="Shown while the page loads (and on navigation) in the exported site">
+            Loading screen
+          </p>
+          <select
+            value={pageFx?.loader ?? ''}
+            onChange={(e) => onPageFxChange?.({ ...pageFx, loader: e.target.value || undefined })}
+            className="w-full rounded-md px-2 py-1 text-xs bg-input border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="">— none —</option>
+            {LOADERS.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+          {pageFx?.loader && loaderById(pageFx.loader) && (
+            <>
+              <div
+                className="mt-2 h-[92px] rounded-lg border border-border flex items-center justify-center overflow-hidden"
+                style={{ background: '#0c0c0f' }}
+                dangerouslySetInnerHTML={{
+                  __html: `<style>${LOADER_CSS}</style>${loaderHtml(loaderById(pageFx.loader)!, pageFx.loaderAccent || '#4B3BFF')}`,
+                }}
+              />
+              <div className="flex items-center gap-2 mt-2">
+                <label className="flex items-center gap-1.5 flex-1">
+                  <span className="text-[10px] text-muted-foreground">Color</span>
+                  <input
+                    type="color"
+                    value={pageFx.loaderAccent || '#4B3BFF'}
+                    onChange={(e) => onPageFxChange?.({ ...pageFx, loaderAccent: e.target.value })}
+                    className="w-7 h-6 rounded border border-border bg-input p-0.5 cursor-pointer"
+                  />
+                </label>
+                <label className="flex items-center gap-1.5 flex-1">
+                  <span className="text-[10px] text-muted-foreground shrink-0">Secs</span>
+                  <input
+                    type="number"
+                    min={0.2}
+                    max={10}
+                    step={0.2}
+                    value={((pageFx.loaderMs ?? 1400) / 1000).toFixed(1)}
+                    onChange={(e) =>
+                      onPageFxChange?.({ ...pageFx, loaderMs: Math.round(Number(e.target.value) * 1000) })
+                    }
+                    className="w-full rounded-md px-2 py-1 text-xs bg-input border border-border text-foreground focus:outline-none"
+                  />
+                </label>
+              </div>
+            </>
+          )}
+
+          <p className="text-[10px] font-semibold mb-1.5 mt-4" title="Custom cursor effect on this page in the exported site">
+            Cursor effect
+          </p>
+          <select
+            value={pageFx?.cursor ?? ''}
+            onChange={(e) => onPageFxChange?.({ ...pageFx, cursor: e.target.value || undefined })}
+            className="w-full rounded-md px-2 py-1 text-xs bg-input border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="">— default cursor —</option>
+            {CURSORS.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          {pageFx?.cursor && (
+            <div className="flex items-center gap-2 mt-2">
+              <label className="flex items-center gap-1.5">
+                <span className="text-[10px] text-muted-foreground">Color</span>
+                <input
+                  type="color"
+                  value={pageFx.cursorAccent || '#E3B23C'}
+                  onChange={(e) => onPageFxChange?.({ ...pageFx, cursorAccent: e.target.value })}
+                  className="w-7 h-6 rounded border border-border bg-input p-0.5 cursor-pointer"
+                />
+              </label>
+              <p className="text-[10px] text-muted-foreground flex-1">
+                {CURSORS.find((c) => c.id === pageFx.cursor)?.description}
+              </p>
+            </div>
+          )}
+          <p className="text-[10px] text-muted-foreground mt-3">
+            Both play in the exported site: the loading screen on load and on navigation to this page,
+            the cursor while it's open.
           </p>
         </div>
       ) : (
