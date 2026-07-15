@@ -1,0 +1,12 @@
+{
+  "library": "Magic UI",
+  "source": "https://magicui.design/docs/components/dot-pattern",
+  "author": "@magicuidesign",
+  "license": "MIT",
+  "attributionRequired": false,
+  "ingest": "registry",
+  "fetchedFrom": "https://magicui.design/r/dot-pattern.json",
+  "styleFamily": "magic-ui",
+  "qualityTier": "vetted",
+  "previewStatus": "ok"
+}

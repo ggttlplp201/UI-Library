@@ -1,0 +1,12 @@
+{
+  "library": "Magic UI",
+  "source": "https://magicui.design/docs/components/shimmer-button",
+  "author": "@magicuidesign",
+  "license": "MIT",
+  "attributionRequired": false,
+  "ingest": "registry",
+  "fetchedFrom": "https://magicui.design/r/shimmer-button.json",
+  "styleFamily": "magic-ui",
+  "qualityTier": "vetted",
+  "previewStatus": "ok"
+}

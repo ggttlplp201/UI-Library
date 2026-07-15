@@ -128,12 +128,11 @@ for (const [library, comps] of [...byLibrary.entries()].sort((a, b) => a[0].loca
   lines.push('')
   lines.push(`- Author: ${meta.author}`)
   lines.push(`- License: ${meta.license}${meta.attributionRequired ? ' — **attribution required**' : ''}`)
-  lines.push(`- Source: ${meta.source}`)
   lines.push('')
-  lines.push('| Component | File | License |')
-  lines.push('|---|---|---|')
+  lines.push('| Component | File | License | Source |')
+  lines.push('|---|---|---|---|')
   for (const c of comps.sort((a, b) => a.name.localeCompare(b.name))) {
-    lines.push(`| ${c.name} | \`${c.file}\` | ${c.meta.license} |`)
+    lines.push(`| ${c.name} | \`${c.file}\` | ${c.meta.license} | ${c.meta.source} |`)
   }
   lines.push('')
 }

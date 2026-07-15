@@ -1,0 +1,12 @@
+{
+  "library": "Magic UI",
+  "source": "https://magicui.design/docs/components/animated-gradient-text",
+  "author": "@magicuidesign",
+  "license": "MIT",
+  "attributionRequired": false,
+  "ingest": "registry",
+  "fetchedFrom": "https://magicui.design/r/animated-gradient-text.json",
+  "styleFamily": "magic-ui",
+  "qualityTier": "vetted",
+  "previewStatus": "ok"
+}
