@@ -31,6 +31,35 @@ export interface RuntimeFlags {
   needsMocking: boolean
 }
 
+/** SPDX license id or a short descriptor. */
+export type LicenseId = 'MIT' | 'MIT + Commons Clause' | 'Apache-2.0' | 'CC0-1.0' | 'ISC' | string
+
+/**
+ * Provenance + license + visual-coherence metadata for a preset component,
+ * loaded from its `<Name>.meta.json` sidecar (component-sourcing.md §0.2).
+ * The sidecar is JSON on purpose: it is parsed, never executed, and it stays
+ * out of the component source so it can't leak into serialized exports.
+ */
+export interface PresetMeta {
+  // provenance & license
+  library: string
+  source: string
+  author: string
+  license: LicenseId
+  /** true → the exporter MUST inject a visible credit for this component */
+  attributionRequired: boolean
+  ingest: 'registry' | 'manual-port' | 'rebuilt'
+  /** Registry ref / URL the component was fetched from (staleness checks) */
+  fetchedFrom?: string
+  /** Secondary categories beyond the folder-derived one */
+  tags?: string[]
+  // visual-coherence gate (product quality, not license)
+  /** Design language, e.g. 'kinetic' | 'chrome-console' | 'magic-ui' */
+  styleFamily?: string
+  qualityTier?: 'authored' | 'vetted' | 'raw'
+  previewStatus?: 'ok' | 'needs-mock' | 'broken'
+}
+
 export interface RegistryEntry {
   /** Stable id: `<relative file path>#<export name>` */
   id: string
@@ -45,6 +74,8 @@ export interface RegistryEntry {
   description?: string
   props: PropSpec[]
   flags: RuntimeFlags
+  /** Present only for `source: 'preset'` entries that have a `.meta.json` sidecar. */
+  meta?: PresetMeta
 }
 
 export interface ScanStats {

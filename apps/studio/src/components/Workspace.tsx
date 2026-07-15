@@ -371,6 +371,26 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     (inst: Instance) => (inst.linkTo && slugById.has(inst.linkTo) ? `#/${slugById.get(inst.linkTo)}` : null),
     [slugById],
   )
+  /**
+   * Visible credits for every included component whose license requires
+   * attribution (entry.meta.attributionRequired — see NOTICE.md / the
+   * component-sourcing manifest). Deduped by library+author.
+   */
+  const creditsFor = useCallback(
+    (insts: Instance[]): string[] => {
+      const seen = new Map<string, string>()
+      for (const inst of insts) {
+        const meta = entryById(inst.entryId)?.meta
+        if (!meta?.attributionRequired) continue
+        const key = `${meta.library}|${meta.author}`
+        if (!seen.has(key)) {
+          seen.set(key, `${meta.library} by ${meta.author} — ${meta.source} (${meta.license})`)
+        }
+      }
+      return [...seen.values()]
+    },
+    [entryById],
+  )
   const slotHrefFor = useCallback(
     (inst: Instance, slot: string) => {
       const target = inst.links?.[slot]
@@ -598,8 +618,12 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   show();
 })();
 `
+    const creditLines = creditsFor(pages.flatMap((p) => p.instances))
     const html = [
       '<!doctype html>',
+      ...(creditLines.length > 0
+        ? [`<!--\n  Credits — this page includes components that require attribution:\n${creditLines.map((c) => `  · ${c}`).join('\n')}\n-->`]
+        : []),
       '<html><head><meta charset="utf-8" />',
       '<title>Style Studio export</title>',
       `<style>${[...cssBlocks].join('\n')}</style>`,
@@ -657,7 +681,16 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       const conflicts: ExportConflict[] = []
       const skipped: ExportSkip[] = []
       for (const [root, insts] of byRoot) {
-        const res = await exportSource({ root, instances: insts })
+        const rootInstances = allInstances.filter((i) => {
+          const e = entryById(i.entryId)
+          return e && rootFor(e) === root
+        })
+        const roots = creditsFor(rootInstances)
+        const credits =
+          roots.length > 0
+            ? `# Credits\n\nComponents in this export that require attribution:\n\n${roots.map((c) => `- ${c}`).join('\n')}\n`
+            : undefined
+        const res = await exportSource({ root, instances: insts, credits })
         files += res.files.length
         conflicts.push(...res.conflicts)
         skipped.push(...res.skipped)

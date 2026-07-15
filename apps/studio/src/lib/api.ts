@@ -106,6 +106,7 @@ export interface ExportSourceResult {
  * a zip (base64) plus a conflict/skip report (Phase 8).
  */
 export async function exportSource(payload: {
+  credits?: string
   root: string
   instances: ExportInstancePayload[]
 }): Promise<ExportSourceResult> {

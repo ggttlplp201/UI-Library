@@ -1,0 +1,11 @@
+{
+  "library": "Skiper UI",
+  "source": "https://skiper-ui.com",
+  "author": "@gurvinder-singh02",
+  "license": "Free tier (attribution required)",
+  "attributionRequired": true,
+  "ingest": "manual-port",
+  "styleFamily": "skiper",
+  "qualityTier": "vetted",
+  "previewStatus": "ok"
+}

@@ -1,0 +1,12 @@
+{
+  "library": "shadcn/ui",
+  "source": "https://ui.shadcn.com/docs/components/scroll-area",
+  "author": "shadcn",
+  "license": "MIT",
+  "attributionRequired": false,
+  "ingest": "manual-port",
+  "fetchedFrom": "scroll-area (adapted to @base-ui/react)",
+  "styleFamily": "studio",
+  "qualityTier": "vetted",
+  "previewStatus": "needs-mock"
+}

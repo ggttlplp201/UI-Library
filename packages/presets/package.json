@@ -32,5 +32,9 @@
     "@vitejs/plugin-react": "^6.0.3",
     "tailwindcss": "^4.3.2",
     "vite": "^8.1.1"
+  },
+  "scripts": {
+    "build:credits": "node scripts/build-credits.mjs",
+    "test": "node scripts/build-credits.mjs"
   }
 }

@@ -55,6 +55,12 @@ export interface CodeExportRequest {
   /** Absolute root of the scanned project */
   root: string
   instances: ExportInstance[]
+  /**
+   * Attribution text for bundled components whose license requires visible
+   * credit (component-sourcing.md §0.3 step 4). Shipped as CREDITS.md in the
+   * zip so exported source never drops a required credit.
+   */
+  credits?: string
 }
 
 type Send = (status: number, payload: unknown) => void
@@ -172,7 +178,11 @@ export function codeSyncPlugin(): Plugin {
             send(400, { ok: false, error: 'Body is not valid JSON' })
             return
           }
-          const { root, instances } = request
+          const { root, instances, credits } = request
+          if (credits !== undefined && (typeof credits !== 'string' || credits.length > 100_000)) {
+            send(400, { ok: false, error: '"credits" must be a reasonably sized string' })
+            return
+          }
           if (typeof root !== 'string' || !isAbsolute(root)) {
             send(400, { ok: false, error: 'Missing absolute "root"' })
             return
@@ -211,10 +221,12 @@ export function codeSyncPlugin(): Plugin {
               return readFileSync(abs, 'utf-8')
             }
             const result = collectChanges(safe, readSource)
-            const zipBase64 = result.files.length
-              ? Buffer.from(
-                  buildZip(result.files.map((f) => ({ path: f.path, content: f.code }))),
-                ).toString('base64')
+            const zipEntries = result.files.map((f) => ({ path: f.path, content: f.code }))
+            if (zipEntries.length > 0 && credits) {
+              zipEntries.push({ path: 'CREDITS.md', content: credits })
+            }
+            const zipBase64 = zipEntries.length
+              ? Buffer.from(buildZip(zipEntries)).toString('base64')
               : undefined
             send(200, {
               ok: true,
