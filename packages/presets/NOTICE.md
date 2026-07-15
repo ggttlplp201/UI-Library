@@ -13,6 +13,7 @@ do not edit by hand.
 |---|---|---|---|
 | AlertBanner | `src/feedback/AlertBanner.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | AvatarChip | `src/badges/AvatarChip.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
+| BackgroundBeams | `src/backgrounds/BackgroundBeams.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | BlendCursor | `src/cursor-fx/BlendCursor.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | BlobLoader | `src/loaders/BlobLoader.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | CCActuatorButton | `src/chrome-console/CCActuatorButton.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
@@ -52,7 +53,9 @@ do not edit by hand.
 | KineticTabs | `src/kinetic-ui/KineticTabs.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | KineticToast | `src/kinetic-ui/KineticToast.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | KineticTooltip | `src/kinetic-ui/KineticTooltip.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
+| LampHeader | `src/sections/LampHeader.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | LiquidFill | `src/kinetic-lab/LiquidFill.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
+| Meteors | `src/backgrounds/Meteors.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | OrbitLoader | `src/loaders/OrbitLoader.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | PillBadge | `src/badges/PillBadge.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
 | PrimaryButton | `src/buttons/PrimaryButton.tsx` | MIT | https://github.com/ggttlplp201/UI-Library |
