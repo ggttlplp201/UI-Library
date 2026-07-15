@@ -519,9 +519,18 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     const runtime = `
 (function () {
   var first = ${JSON.stringify(firstSlug)};
+  // In the Studio's Preview overlay the site runs in a srcdoc iframe whose
+  // base URL is the parent app's — real hash navigation would reload the
+  // Studio inside the frame. Route internally there; use the hash on file://.
+  var srcdoc = /^about:/.test(location.href);
+  var current = location.hash.replace(/^#\\/?/, '') || first;
   function currentSlug() {
-    var h = location.hash.replace(/^#\\/?/, '');
-    return h || first;
+    return current;
+  }
+  function navigate(slug) {
+    slug = String(slug).replace(/^#\\/?/, '');
+    if (srcdoc || slug === current) { current = slug; show(); }
+    else location.hash = '#/' + slug;
   }
   function wireAnims(scope) {
     scope.querySelectorAll('[data-anim]').forEach(function (el) {
@@ -609,11 +618,20 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       try { __ssFxAttach(el, JSON.parse(el.getAttribute('data-fx'))); } catch (err) { /* bad cfg */ }
     });
   }
-  window.addEventListener('hashchange', show);
-  // Per-button links: components stamp data-nav="#/slug" on individual buttons.
+  window.addEventListener('hashchange', function () {
+    current = location.hash.replace(/^#\\/?/, '') || first;
+    show();
+  });
+  // Per-button links stamp data-nav="#/slug"; whole-instance links are real
+  // <a href="#/slug"> anchors. Both go through navigate() so they work in the
+  // srcdoc Preview overlay as well as the exported file.
   document.addEventListener('click', function (e) {
-    var el = e.target && e.target.closest ? e.target.closest('[data-nav]') : null;
-    if (el) { e.preventDefault(); location.hash = el.getAttribute('data-nav'); }
+    var t = e.target;
+    if (!t || !t.closest) return;
+    var el = t.closest('[data-nav]');
+    if (el) { e.preventDefault(); navigate(el.getAttribute('data-nav')); return; }
+    var a = t.closest('a[href^="#/"]');
+    if (a) { e.preventDefault(); navigate(a.getAttribute('href')); }
   });
   show();
 })();
