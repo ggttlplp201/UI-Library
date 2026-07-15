@@ -1,0 +1,12 @@
+{
+  "library": "shadcn/ui",
+  "source": "https://ui.shadcn.com/docs/components/accordion",
+  "author": "shadcn",
+  "license": "MIT",
+  "attributionRequired": false,
+  "ingest": "registry",
+  "fetchedFrom": "https://ui.shadcn.com/r/styles/new-york/accordion.json",
+  "styleFamily": "shadcn",
+  "qualityTier": "vetted",
+  "previewStatus": "needs-mock"
+}
