@@ -7,5 +7,6 @@
   "ingest": "manual-port",
   "styleFamily": "skiper",
   "qualityTier": "vetted",
-  "previewStatus": "ok"
+  "previewStatus": "ok",
+  "hidden": true
 }

@@ -8,5 +8,6 @@
   "fetchedFrom": "https://magicui.design/r/dot-pattern.json",
   "styleFamily": "magic-ui",
   "qualityTier": "vetted",
-  "previewStatus": "ok"
+  "previewStatus": "ok",
+  "hidden": true
 }

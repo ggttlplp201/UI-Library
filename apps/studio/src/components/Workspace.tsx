@@ -194,7 +194,11 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   // entries are filtered: an imported project's own "loaders" folder is none
   // of our business.
   const placeableEntries = useMemo(
-    () => entries.filter((e) => !(e.source === 'preset' && PAGE_FX_CATEGORIES.has(e.category ?? ''))),
+    () =>
+      entries.filter(
+        (e) =>
+          !e.meta?.hidden && !(e.source === 'preset' && PAGE_FX_CATEGORIES.has(e.category ?? '')),
+      ),
     [entries],
   )
   const entryById = useMemo(() => {
@@ -872,7 +876,8 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
           </span>
         )}
         <span className="text-[11px] text-muted-foreground ml-auto shrink-0">
-          {result.stats.componentsFound} imported · {presets.entries.length} presets
+          {result.stats.componentsFound} imported ·{' '}
+          {placeableEntries.filter((e) => e.source === 'preset').length} presets
         </span>
         <button
           type="button"

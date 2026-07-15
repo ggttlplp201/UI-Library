@@ -58,6 +58,12 @@ export interface PresetMeta {
   styleFamily?: string
   qualityTier?: 'authored' | 'vetted' | 'raw'
   previewStatus?: 'ok' | 'needs-mock' | 'broken'
+  /**
+   * Compositional sub-export (DialogTrigger, TabsList, card parts, …) that
+   * cannot render standalone: kept in the registry for export/code purposes
+   * but not offered in the Studio's component library.
+   */
+  hidden?: boolean
 }
 
 export interface RegistryEntry {

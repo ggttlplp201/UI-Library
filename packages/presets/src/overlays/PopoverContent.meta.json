@@ -8,5 +8,6 @@
   "fetchedFrom": "https://ui.shadcn.com/r/styles/new-york/popover.json",
   "styleFamily": "shadcn",
   "qualityTier": "vetted",
-  "previewStatus": "needs-mock"
+  "previewStatus": "needs-mock",
+  "hidden": true
 }

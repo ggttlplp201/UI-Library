@@ -8,5 +8,6 @@
   "fetchedFrom": "https://www.cult-ui.com/r/minimal-card.json",
   "styleFamily": "cult-ui",
   "qualityTier": "vetted",
-  "previewStatus": "needs-mock"
+  "previewStatus": "needs-mock",
+  "hidden": true
 }

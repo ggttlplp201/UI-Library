@@ -8,5 +8,6 @@
   "fetchedFrom": "scroll-area (adapted to @base-ui/react)",
   "styleFamily": "studio",
   "qualityTier": "vetted",
-  "previewStatus": "needs-mock"
+  "previewStatus": "needs-mock",
+  "hidden": true
 }
