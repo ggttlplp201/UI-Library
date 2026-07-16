@@ -26,7 +26,7 @@ import {
 import { CodePane } from './CodePane'
 import { LibraryPanel } from './LibraryPanel'
 import { LivePreview } from './LivePreview'
-import { sampleSitePages } from '../lib/sampleSite'
+import type { SampleProject } from '../lib/samples'
 import { EditPanel } from './EditPanel'
 import { AnimationTab } from './AnimationTab'
 import { Canvas, type CanvasHandle, type CanvasTheme } from './Canvas'
@@ -40,13 +40,23 @@ const CONTRAST_TEXT: Record<CanvasTheme, string> = { dark: '#e8e8ed', light: '#1
 // Exported page background per canvas theme (mirrors the canvas surface).
 const CONTRAST_BG: Record<CanvasTheme, string> = { dark: '#0c0c0f', light: '#ffffff' }
 
-export function Workspace({ result, onReset }: { result: ScanResult; onReset: () => void }) {
+export function Workspace({
+  result,
+  sample,
+  onReset,
+}: {
+  result: ScanResult
+  sample?: SampleProject
+  onReset: () => void
+}) {
   const [presets, setPresets] = useState<PresetLibrary>(NO_PRESETS)
   // The composition is a set of PAGES; the canvas edits one page at a time and
   // the Pages view shows them as linked nodes (Blender-style).
   // Composition persists per project so a reload (or an accidental tab
   // discard) doesn't wipe the user's pages.
-  const storageKey = `css-workspace:${result.root || 'presets'}`
+  const storageKey = sample
+    ? `css-workspace:sample:${sample.id}`
+    : `css-workspace:${result.root || 'presets'}`
   const [pages, setPages] = useState<Page[]>(() => {
     try {
       const raw = localStorage.getItem(storageKey)
@@ -57,9 +67,9 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     } catch {
       // corrupted/legacy state — start fresh
     }
-    // Fresh preset-library session: open on a real sample landing site so the
-    // first screen shows what the app is for. Imported projects start empty.
-    if (!result.root) return sampleSitePages()
+    // A sample project seeds its prebuilt pages on first open; after that the
+    // user's edits (persisted under the sample's own key) win.
+    if (sample) return sample.build()
     return [{ id: newPageId(), name: 'Home', instances: [], nodeX: 90, nodeY: 130 }]
   })
   const [activePageId, setActivePageId] = useState<string | null>(null)

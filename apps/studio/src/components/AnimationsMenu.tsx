@@ -1,6 +1,45 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ANIM_TRIGGERS, ANIMATIONS, compileAnim, type AnimPresetDef } from '../lib/animation'
-import { FX_CATALOG, type FxDef } from '@component-style-studio/preview/fx'
+import { FX_CATALOG, FX_CSS, FX_JS, type FxDef } from '@component-style-studio/preview/fx'
+
+// The fx engine ships as a JS string (it's embedded into exports); evaluate it
+// once here so the menu can run REAL behaviors on the demo chips.
+type FxAttach = (el: HTMLElement, cfg: { id: string; accent?: string; text?: string }) => (() => void) | undefined
+let fxAttachSingleton: FxAttach | null = null
+function getFxAttach(): FxAttach {
+  if (!fxAttachSingleton) {
+    fxAttachSingleton = new Function(`${FX_JS}; return __ssFxAttach;`)() as FxAttach
+  }
+  return fxAttachSingleton
+}
+
+/** Demo chip that attaches the actual interaction effect while hovered. */
+function FxChip({ fx }: { fx: FxDef }) {
+  const ref = useRef<HTMLSpanElement>(null)
+  const [active, setActive] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !active) return
+    let cleanup: (() => void) | undefined
+    try {
+      cleanup = getFxAttach()(el, { id: fx.id, accent: '#7c6fff' })
+    } catch {
+      // demo only — a broken effect never breaks the menu
+    }
+    return () => cleanup?.()
+  }, [active, fx.id])
+  return (
+    <span
+      className="w-12 h-9 shrink-0 rounded-md bg-background/60 border border-border/60 flex items-center justify-center overflow-hidden"
+      onMouseEnter={() => setActive(true)}
+      onMouseLeave={() => setActive(false)}
+    >
+      <span ref={ref} className="inline-block px-1.5 py-0.5 rounded bg-primary/80 text-[9px] font-bold text-white">
+        {fx.textBased ? (fx.id === 'countup' ? '128' : 'Aa') : 'Aa'}
+      </span>
+    </span>
+  )
+}
 
 // Every preset's keyframes, compiled once — the hover chips reference them.
 const PREVIEW_KEYFRAMES = ANIMATIONS.map((a) => {
@@ -52,7 +91,7 @@ export function AnimationsMenu({
   const [demoId, setDemoId] = useState<string | null>(null)
   return (
     <div className="flex-1 overflow-y-auto px-2 pb-3">
-      <style>{PREVIEW_KEYFRAMES}</style>
+      <style>{PREVIEW_KEYFRAMES + FX_CSS}</style>
       <p className="text-[10px] text-muted-foreground px-1 py-2">
         {canApply
           ? 'Click an animation to apply it to the selected component.'
@@ -136,15 +175,20 @@ export function AnimationsMenu({
                   : 'border-border/50 bg-muted/20 hover:border-border hover:bg-secondary/40'
               }`}
             >
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-medium">{fx.name}</span>
-                {fx.textBased && (
-                  <span className="ml-auto text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded bg-rose-500/15 text-rose-300">
-                    text
-                  </span>
-                )}
+              <div className="flex items-center gap-2">
+                <FxChip fx={fx} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-medium">{fx.name}</span>
+                    {fx.textBased && (
+                      <span className="ml-auto text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded bg-rose-500/15 text-rose-300">
+                        text
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{fx.description}</p>
+                </div>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{fx.description}</p>
             </button>
           )
         })}

@@ -67,7 +67,7 @@ export function LibraryCard({
     >
       {/* The WHOLE card is the drag/click handle, so the preview iframe stays
           pointer-transparent here. Components go live once on the canvas. */}
-      <div className="h-[84px] flex items-center justify-center overflow-hidden bg-artboard">
+      <div className="relative h-[84px] flex items-center justify-center overflow-hidden bg-artboard">
         {inView && (
           <PreviewFrame
             root={root}
@@ -81,30 +81,34 @@ export function LibraryCard({
             className="w-full h-full"
           />
         )}
+        {/* Badges overlay the thumbnail so the footer keeps its full width
+            for the component NAME (previously truncated to two letters). */}
+        {entry.source === 'preset' && (
+          <span className="absolute top-1 right-1 text-[7px] font-semibold uppercase tracking-wider px-1 py-px rounded bg-black/45 text-white/80">
+            preset
+          </span>
+        )}
+        {entry.flags.needsMocking && (
+          <span
+            title="Uses context or external hooks — preview mocks them"
+            className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full bg-amber-400"
+          />
+        )}
+        <span
+          className="absolute bottom-1 right-1 text-[10px] leading-none px-1 py-0.5 rounded bg-black/45 text-white/85 opacity-0 group-hover:opacity-100 transition-opacity"
+          aria-hidden
+        >
+          + add
+        </span>
       </div>
       <div className="px-2 py-1.5 border-t border-border/50">
-        <div className="flex items-center gap-1">
-          <span className="text-[11px] font-medium truncate">{entry.name}</span>
-          {entry.source === 'preset' && (
-            <span className="text-[7px] font-semibold uppercase tracking-wider px-1 rounded bg-primary/20 text-accent-foreground shrink-0">
-              preset
-            </span>
-          )}
-          <span className="ml-auto flex items-center gap-1 shrink-0">
-            {entry.flags.needsMocking && (
-              <span
-                title="Uses context or external hooks — preview mocks them"
-                className="w-1.5 h-1.5 rounded-full bg-amber-400"
-              />
-            )}
-            <span
-              className="text-[10px] leading-none text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-              aria-hidden
-            >
-              + add
-            </span>
-          </span>
-        </div>
+        {/* Spaced camelCase names wrap to two lines instead of truncating. */}
+        <span
+          className="block text-[11px] leading-tight font-medium break-words [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden"
+          title={entry.name}
+        >
+          {entry.name.replace(/([a-z0-9])([A-Z])/g, '$1​$2')}
+        </span>
       </div>
     </div>
   )
