@@ -49,6 +49,44 @@ function renderInput(control: ControlSpec, value: unknown, onChange: (value: unk
           ))}
         </select>
       )
+    case 'list': {
+      // Row editor for string[] props (menu items, tab labels, words):
+      // edit each row, remove with ×, append with + Add.
+      const items = Array.isArray(value)
+        ? (value as string[])
+        : Array.isArray(control.defaultValue)
+          ? (control.defaultValue as string[])
+          : []
+      const set = (next: string[]) => onChange(next)
+      return (
+        <div className="flex flex-col gap-1">
+          {items.map((item, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <input
+                value={item}
+                onChange={(e) => set(items.map((x, j) => (j === i ? e.target.value : x)))}
+                className={inputClass}
+              />
+              <button
+                type="button"
+                title="Remove row"
+                onClick={() => set(items.filter((_, j) => j !== i))}
+                className="shrink-0 w-6 h-6 rounded-md text-muted-foreground hover:text-destructive hover:bg-secondary text-xs"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => set([...items, `Item ${items.length + 1}`])}
+            className="self-start px-2 py-1 rounded-md text-[11px] text-muted-foreground hover:text-foreground bg-secondary/60 hover:bg-secondary"
+          >
+            + Add row
+          </button>
+        </div>
+      )
+    }
     case 'boolean':
       return (
         <button

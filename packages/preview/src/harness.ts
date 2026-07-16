@@ -232,7 +232,7 @@ async function renderComponent({ module, exportName, props, anim, fx, host }) {
       applyHost(host)
       applyAnim(anim)
       applyFx(fx)
-      const r = rootEl.getBoundingClientRect()
+      const r = measureBounds()
       // Report the component's named link slots (buttons marked with
       // data-link-slot) so the Studio can offer a per-button "links to" picker.
       const slots = []
@@ -293,6 +293,30 @@ function afterPaint(cb) {
 }
 
 // Live size reporting: content grows/shrinks after the initial measure
+// Visual bounds: transformed children (skewed sheens, rotated layers) often
+// overflow the root's layout box and would be clipped by a frame sized to it.
+// Union the descendants' rects rightward/downward, capped so components with
+// long translated tracks (marquees) don't balloon their reported size.
+function measureBounds() {
+  const base = rootEl.getBoundingClientRect()
+  let right = base.right
+  let bottom = base.bottom
+  for (const el of rootEl.querySelectorAll('*')) {
+    const tag = el.tagName
+    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'LINK') continue
+    const r = el.getBoundingClientRect()
+    if (r.width === 0 && r.height === 0) continue
+    if (r.right > right) right = r.right
+    if (r.bottom > bottom) bottom = r.bottom
+  }
+  const maxW = base.width * 1.5 + 40
+  const maxH = base.height * 1.5 + 40
+  return {
+    width: Math.min(right - base.left, maxW),
+    height: Math.min(bottom - base.top, maxH),
+  }
+}
+
 // (animated numbers, late-loading images, reflowing inputs), and a stale
 // one-shot size leaves the thumbnail clipped or over-zoomed. Report every
 // settled size change; the Studio re-fits.
@@ -302,7 +326,7 @@ let sizeRaf = 0
 const sizeObserver = new ResizeObserver(() => {
   cancelAnimationFrame(sizeRaf)
   sizeRaf = requestAnimationFrame(() => {
-    const r = rootEl.getBoundingClientRect()
+    const r = measureBounds()
     const w = Math.ceil(r.width)
     const h = Math.ceil(r.height)
     if (w === lastW && h === lastH) return

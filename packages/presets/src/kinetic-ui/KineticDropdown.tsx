@@ -1,11 +1,7 @@
 import { useState } from "react";
 import { KUI, KUI_KEYFRAMES } from "../lib/kinetic";
 
-const ITEMS = [
-  { label: "Profile", dot: "#4B3BFF" },
-  { label: "Settings", dot: "#12A150" },
-  { label: "Billing", dot: "#E08600" },
-];
+const DOTS = ["#4B3BFF", "#12A150", "#E08600", "#7C6FFF", "#0E9AA7"];
 
 /**
  * Kinetic UI dropdown — spring open, chevron rotate, hover rows, danger
@@ -13,9 +9,15 @@ const ITEMS = [
  */
 export const KineticDropdown = ({
   defaultChoice = "Settings",
+  items = ["Profile", "Settings", "Billing"],
+  dangerItem = "Sign out",
 }: {
   /** Initially selected item */
   defaultChoice?: string;
+  /** Menu rows — each row is a link slot, so it can lead to its own page */
+  items?: string[];
+  /** Red row at the bottom (empty hides it) */
+  dangerItem?: string;
 }) => {
   const [open, setOpen] = useState(false);
   const [choice, setChoice] = useState(defaultChoice);
@@ -99,22 +101,34 @@ export const KineticDropdown = ({
             animation: `uk-menuin .18s ${KUI.spring}`,
           }}
         >
-          {ITEMS.map((item) => (
-            <button key={item.label} type="button" onClick={() => select(item.label)} className="kui-dd-item" style={itemStyle}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: item.dot }} />
-              {item.label}
+          {items.map((label, i) => (
+            <button
+              key={label + i}
+              type="button"
+              data-link-slot={label}
+              onClick={() => select(label)}
+              className="kui-dd-item"
+              style={itemStyle}
+            >
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: DOTS[i % DOTS.length] }} />
+              {label}
             </button>
           ))}
-          <div style={{ height: 1, background: KUI.hairline, margin: "6px 4px" }} />
-          <button
-            type="button"
-            onClick={() => select("Sign out")}
-            className="kui-dd-item kui-dd-danger"
-            style={{ ...itemStyle, color: KUI.danger }}
-          >
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: KUI.danger }} />
-            Sign out
-          </button>
+          {dangerItem && (
+            <>
+              <div style={{ height: 1, background: KUI.hairline, margin: "6px 4px" }} />
+              <button
+                type="button"
+                data-link-slot={dangerItem}
+                onClick={() => select(dangerItem)}
+                className="kui-dd-item kui-dd-danger"
+                style={{ ...itemStyle, color: KUI.danger }}
+              >
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: KUI.danger }} />
+                {dangerItem}
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

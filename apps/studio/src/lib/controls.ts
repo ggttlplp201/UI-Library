@@ -5,7 +5,7 @@ import type { PropSpec, RegistryEntry } from '@component-style-studio/registry'
  * typed control the Controls panel renders an input for, mirroring Storybook's
  * Controls model without depending on Storybook.
  */
-export type ControlKind = 'text' | 'number' | 'boolean' | 'select' | 'color' | 'image' | 'images'
+export type ControlKind = 'text' | 'number' | 'boolean' | 'select' | 'color' | 'image' | 'images' | 'list'
 
 export interface ControlSpec {
   name: string
@@ -109,11 +109,35 @@ function imageListControl(prop: PropSpec): ControlSpec | null {
   }
 }
 
+function parseListDefault(raw: string | undefined): string[] | undefined {
+  if (!raw) return undefined
+  for (const candidate of [raw, raw.replace(/'/g, '"')]) {
+    try {
+      const v = JSON.parse(candidate)
+      if (Array.isArray(v) && v.every((x) => typeof x === 'string')) return v
+    } catch {
+      // not JSON — fall through
+    }
+  }
+  return undefined
+}
+
 function controlFor(prop: PropSpec): ControlSpec | null {
   if (SKIP_PROPS.has(prop.name)) return null
   if (SKIP_PATTERNS.some((re) => re.test(prop.name))) return null
   const imageList = imageListControl(prop)
   if (imageList) return imageList
+  // Plain string lists (menu rows, tab labels, rotating words) get an
+  // add/remove row editor instead of being dropped as uneditable.
+  if (/^\s*string\s*\[\]\s*$/.test(prop.type)) {
+    return {
+      name: prop.name,
+      kind: 'list',
+      required: prop.required,
+      defaultValue: parseListDefault(prop.defaultValue),
+      description: prop.description,
+    }
+  }
   if (UNEDITABLE.some((frag) => prop.type.includes(frag))) return null
   if (IMAGE_NAME.test(prop.name) && prop.type.includes('string') && !parseUnion(prop.type)) {
     return {
