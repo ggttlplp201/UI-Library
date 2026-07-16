@@ -1,11 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
-import {
-  DEFAULT_ARTBOARD_WIDTH,
-  MIN_BOARD_HEIGHT,
-  type Instance,
-  type Page,
-} from '../lib/canvas'
+import { DEFAULT_ARTBOARD_WIDTH, MIN_BOARD_HEIGHT, type Page } from '../lib/canvas'
 import { composeRenderProps } from '../lib/controls'
 import { LOADER_CSS, loaderById, loaderHtml } from '../lib/pagefx'
 import { PreviewFrame } from './PreviewFrame'
