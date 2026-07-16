@@ -188,6 +188,9 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
       } else if (data.type === 'clicked') {
         onUserClickRef.current?.(data.slot)
       } else if (data.type === 'size') {
+        // A 0×0 report (pre-paint) must never shrink the frame — the component
+        // would then render into a zero-width box and wrap at min-content.
+        if (data.width === 0 && data.height === 0) return
         setSize({ width: data.width, height: data.height })
         onSizeRef.current?.({ width: data.width, height: data.height })
       } else if (data.type === 'rendered') {
@@ -195,8 +198,12 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         setError(null)
         setBlank(Boolean(data.blank))
         if (data.slots) onSlotsRef.current?.(data.slots)
-        setSize({ width: data.width, height: data.height })
-        onSizeRef.current?.({ width: data.width, height: data.height })
+        // Same 0×0 guard as the size path: a blank-then-hydrating component
+        // must not zero the frame it is about to render into.
+        if (data.width !== 0 || data.height !== 0) {
+          setSize({ width: data.width, height: data.height })
+          onSizeRef.current?.({ width: data.width, height: data.height })
+        }
         reportOutcome(!data.blank)
       } else if (data.type === 'error') {
         setStatus('error')

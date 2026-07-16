@@ -261,12 +261,23 @@ function applyHost(host) {
   rootEl.style.flexShrink = w || h ? '0' : ''
   // Stamp every rendered element child to fill the pinned root — skipping
   // <style>/<script> tags many presets render before their real markup.
+  // CRITICAL: only clear styles WE stamped earlier. Blindly resetting
+  // width/height wiped components that size themselves with inline styles
+  // (panels, dividers, figures) whenever no explicit size was set.
   for (const child of rootEl.children) {
     const tag = child.tagName
     if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'LINK' || tag === 'META') continue
-    child.style.width = w ? '100%' : ''
-    child.style.height = h ? '100%' : ''
-    if (w || h) child.style.boxSizing = 'border-box'
+    if (w || h) {
+      child.style.width = w ? '100%' : child.style.width
+      child.style.height = h ? '100%' : child.style.height
+      child.style.boxSizing = 'border-box'
+      child.__ssHostStamped = true
+    } else if (child.__ssHostStamped) {
+      child.style.width = ''
+      child.style.height = ''
+      child.style.boxSizing = ''
+      delete child.__ssHostStamped
+    }
   }
 }
 
@@ -329,6 +340,9 @@ const sizeObserver = new ResizeObserver(() => {
     const r = measureBounds()
     const w = Math.ceil(r.width)
     const h = Math.ceil(r.height)
+    // Nothing rendered yet — a 0×0 report would shrink the Studio's frame to
+    // zero and the component would then mount into a zero-width box.
+    if (w === 0 && h === 0) return
     if (w === lastW && h === lastH) return
     lastW = w
     lastH = h
@@ -376,8 +390,19 @@ export const PREVIEW_HTML = `<!doctype html>
     <meta charset="utf-8" />
     <style>
       html, body { margin: 0; padding: 0; height: 100%; background: transparent; }
-      body { display: flex; align-items: center; justify-content: center; }
-      #preview-root { padding: 0; }
+      /* flex-start (not center): the frame can be wider than the root when
+         children overflow it (marquee tracks) — centering would shift the
+         visible content right/down of the instance's canvas position. When the
+         frame exactly fits the content the two are identical. */
+      body { display: flex; align-items: flex-start; justify-content: flex-start; }
+      /* max-content: the component lays out at its natural width even when the
+         iframe is transiently narrow (first mount is 0/300px wide) — otherwise
+         text wraps to min-content and the wrapped size gets reported back and
+         locked in. An explicit host width (inline style) still overrides this. */
+      /* flex-shrink 0: the body is a flex row, and without it the root gets
+         squeezed below max-content to min-content whenever the iframe is
+         narrower than the content — same wrap, different mechanism. */
+      #preview-root { padding: 0; width: max-content; flex-shrink: 0; }
     </style>
   </head>
   <body>
