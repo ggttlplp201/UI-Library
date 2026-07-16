@@ -41,8 +41,10 @@ export const KineticDropdown = ({
     fontFamily: KUI.body,
   };
   return (
-    // Reserve room below so the open menu isn't clipped by the component box.
-    <div style={{ position: "relative", display: "inline-block", paddingBottom: open ? 212 : 0, fontFamily: KUI.body }}>
+    // Reserve room below so the open menu isn't clipped by the component box;
+    // the inner wrapper anchors the menu to the trigger itself.
+    <div style={{ display: "inline-block", paddingBottom: open ? 212 : 0, fontFamily: KUI.body }}>
+      <div style={{ position: "relative", display: "inline-block" }}>
       <style>{`${KUI_KEYFRAMES}
 .kui-dd-item{transition:background .16s}
 .kui-dd-item:hover{background:${KUI.page}}
@@ -131,6 +133,7 @@ export const KineticDropdown = ({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 };

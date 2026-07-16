@@ -25,6 +25,7 @@ import {
 } from '../lib/api'
 import { CodePane } from './CodePane'
 import { LibraryPanel } from './LibraryPanel'
+import { LivePreview } from './LivePreview'
 import { EditPanel } from './EditPanel'
 import { AnimationTab } from './AnimationTab'
 import { Canvas, type CanvasHandle, type CanvasTheme } from './Canvas'
@@ -104,8 +105,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
   const [configSide, setConfigSide] = useState<PanelSide>('left')
   const [showCode, setShowCode] = useState(true)
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
-  const [previewHtml, setPreviewHtml] = useState<string | null>(null)
-  const [previewBusy, setPreviewBusy] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const [exportReport, setExportReport] = useState<{
     files: number
     conflicts: ExportConflict[]
@@ -193,7 +193,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       // Leave other browser/OS shortcuts (Alt combos) alone.
       if (e.altKey) return
       if (e.key === 'Escape') {
-        setPreviewHtml(null)
+        setPreviewOpen(false)
         setSelectedIds([])
         return
       }
@@ -726,19 +726,11 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     if (html) downloadBlob(new Blob([html], { type: 'text/html' }), 'style-studio-site.html')
   }
 
-  // Preview mode: the same self-contained site the export produces, shown in
-  // a fullscreen iframe — loading screens, button navigation, animations, and
-  // cursor effects all run for real, outside the canvas.
-  const handlePreview = async () => {
-    if (previewBusy) return
-    setPreviewBusy(true)
-    try {
-      const html = await buildSiteHtml()
-      if (html) setPreviewHtml(html)
-    } finally {
-      setPreviewBusy(false)
-    }
-  }
+  // Preview mode: the composition runs LIVE — every instance is a mounted
+  // React component, so dropdowns open and toggles toggle without needing a
+  // link; linked components/rows navigate between pages; loaders and cursor
+  // effects play like the exported site.
+  const handlePreview = () => setPreviewOpen(true)
 
   // Export the edited component *source files* as a zip (Phase 8). Instances are
   // grouped by project root (a canvas can mix imported + preset components), and
@@ -969,11 +961,11 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         <button
           type="button"
           onClick={handlePreview}
-          disabled={previewBusy || pages.every((p) => p.instances.length === 0)}
+          disabled={pages.every((p) => p.instances.length === 0)}
           title="Run the site you built — loading screens, buttons, and effects all work (Esc to return)"
           className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary hover:bg-secondary/70 disabled:opacity-40 disabled:cursor-default transition-colors"
         >
-          {previewBusy ? 'Building…' : '▶ Preview'}
+          ▶ Preview
         </button>
         <div className="relative shrink-0">
           <button
@@ -1095,24 +1087,30 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
         {configSide === 'right' && configPanel}
       </div>
 
-      {previewHtml && (
+      {previewOpen && (
         <div className="fixed inset-0 z-[100] flex flex-col bg-black">
           <div className="h-9 shrink-0 flex items-center gap-3 px-3 bg-card border-b border-border">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
               Preview — your site, running for real
             </span>
             <span className="text-[10px] text-muted-foreground">
-              buttons navigate · loading screens + effects play
+              everything is live: menus open, toggles toggle, linked buttons navigate
             </span>
             <button
               type="button"
-              onClick={() => setPreviewHtml(null)}
+              onClick={() => setPreviewOpen(false)}
               className="ml-auto px-2.5 py-1 rounded-md text-[11px] font-medium bg-secondary hover:bg-secondary/70 transition-colors"
             >
               ✕ Back to canvas (Esc)
             </button>
           </div>
-          <iframe title="Site preview" srcDoc={previewHtml} className="flex-1 w-full border-0 bg-white" />
+          <LivePreview
+            pages={pages}
+            startPageId={activePage.id}
+            theme={canvasTheme}
+            entryById={entryById}
+            rootFor={rootFor}
+          />
         </div>
       )}
 
