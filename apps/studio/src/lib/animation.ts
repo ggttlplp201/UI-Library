@@ -132,6 +132,77 @@ export const ANIMATIONS: AnimPresetDef[] = [
     duration: 1.2,
     keyframes: `0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); }`,
   },
+  // ——— Kit-themed animations (docs/recreated-kits.md) ———
+  {
+    id: 'glitch-in',
+    name: 'Glitch in',
+    description: 'Glitchtype — RGB-split jitter resolving into place',
+    defaultTrigger: 'entrance',
+    duration: 0.6,
+    keyframes: `
+      0% { opacity: 0; transform: translateX(-6px); text-shadow: 3px 0 #f0323c, -3px 0 #32c8f0; }
+      20% { opacity: 1; transform: translateX(4px); text-shadow: -3px 0 #f0323c, 3px 0 #32c8f0; }
+      40% { transform: translateX(-3px); text-shadow: 2px 0 #f0323c, -2px 0 #32c8f0; }
+      60% { transform: translateX(2px); text-shadow: -1px 0 #f0323c, 1px 0 #32c8f0; }
+      100% { opacity: 1; transform: translateX(0); text-shadow: none; }`,
+  },
+  {
+    id: 'crt-flicker',
+    name: 'CRT flicker',
+    description: 'Glitchtype — phosphor tube flicker',
+    defaultTrigger: 'hover',
+    duration: 0.5,
+    keyframes: `
+      0% { opacity: 1; } 8% { opacity: .6; } 12% { opacity: 1; } 30% { opacity: .85; }
+      36% { opacity: 1; } 70% { opacity: .75; } 74% { opacity: 1; } 100% { opacity: 1; }`,
+  },
+  {
+    id: 'bevel-press',
+    name: 'Bevel press',
+    description: 'Chicago 95 — chunky inset press',
+    defaultTrigger: 'click',
+    duration: 0.25,
+    keyframes: `0% { transform: translate(0,0); } 50% { transform: translate(2px,2px); } 100% { transform: translate(0,0); }`,
+  },
+  {
+    id: 'pixel-pop',
+    name: 'Pixel pop',
+    description: 'Spritecraft / Overworld — stepped 8-bit scale-in',
+    defaultTrigger: 'entrance',
+    duration: 0.45,
+    keyframes: `
+      0% { opacity: 0; transform: scale(.4); } 25% { opacity: 1; transform: scale(.6); }
+      50% { transform: scale(.8); } 75% { transform: scale(1.05); } 100% { transform: scale(1); }`,
+  },
+  {
+    id: 'scribble-in',
+    name: 'Scribble in',
+    description: 'Marginalia — written onto the page left to right',
+    defaultTrigger: 'entrance',
+    duration: 0.7,
+    keyframes: `
+      from { opacity: 0; clip-path: inset(0 100% 0 0); transform: rotate(-1deg); }
+      to { opacity: 1; clip-path: inset(0 0 0 0); transform: rotate(0deg); }`,
+  },
+  {
+    id: 'stamp-in',
+    name: 'Stamp in',
+    description: 'Boldcase — slams down like a rubber stamp',
+    defaultTrigger: 'entrance',
+    duration: 0.35,
+    keyframes: `
+      0% { opacity: 0; transform: scale(1.4); }
+      70% { opacity: 1; transform: scale(.96); }
+      100% { opacity: 1; transform: scale(1); }`,
+  },
+  {
+    id: 'tick-flash',
+    name: 'Tick flash',
+    description: 'Voltura — data-update flash',
+    defaultTrigger: 'hover',
+    duration: 0.4,
+    keyframes: `0% { filter: brightness(1); } 30% { filter: brightness(1.6) saturate(1.4); } 100% { filter: brightness(1); }`,
+  },
 ]
 
 export const presetById = (id: string): AnimPresetDef | undefined =>
