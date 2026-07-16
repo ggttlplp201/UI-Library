@@ -490,6 +490,10 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           backgroundImage: `radial-gradient(${DOT_COLOR[theme]} 1px, transparent 1px)`,
           backgroundSize: '20px 20px',
           backgroundPosition: '-1px -1px',
+          // The artboard IS the page: content that runs past its edge
+          // (marquee tracks, wide shadows) clips like it will on the real site
+          // instead of bleeding onto the workspace background.
+          overflow: 'hidden',
         }}
         onPointerDown={(e) => {
           // Marquee select: drag on empty canvas draws a selection box.

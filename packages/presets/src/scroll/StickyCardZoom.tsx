@@ -17,12 +17,14 @@ import { useEffect, useRef, useState } from "react";
  * Author: @gurvinder-singh02 (https://gxuri.me)
  */
 
+// Self-contained defaults: the original lummi paths only exist in Skiper's
+// own site, which rendered the whole demo as a blank panel here.
 const DEFAULT_IMAGES = [
-  "/images/lummi/img14.jpg",
-  "/images/lummi/img30.jpg",
-  "/images/lummi/img19.jpg",
-  "/images/lummi/img21.jpg",
-  "/images/lummi/img23.jpg",
+  "https://picsum.photos/seed/sticky-a/1040/680",
+  "https://picsum.photos/seed/sticky-b/1040/680",
+  "https://picsum.photos/seed/sticky-c/1040/680",
+  "https://picsum.photos/seed/sticky-d/1040/680",
+  "https://picsum.photos/seed/sticky-e/1040/680",
 ];
 
 const StickyZoomCard = ({
@@ -33,7 +35,11 @@ const StickyZoomCard = ({
   scroller: React.RefObject<HTMLDivElement | null>;
 }) => {
   const container = useRef(null);
-  const [maxScrollY, setMaxScrollY] = useState(Infinity);
+  // 0, not Infinity: with Infinity the [max, max+10000] input range is
+  // degenerate and every card renders at scale(0) — a blank panel until the
+  // first inner scroll. At 0 cards are visible immediately; isInView still
+  // re-anchors the pin point once a card actually reaches the top.
+  const [maxScrollY, setMaxScrollY] = useState(0);
 
   const filter = useMotionValue(0);
   const negateFilter = useTransform(filter, (value) => -value);
@@ -100,7 +106,7 @@ export const StickyCardZoom = ({
     <div
       ref={scroller}
       data-hover-demo="scroll"
-      className="h-[420px] w-[520px] max-w-full overflow-y-auto rounded-xl border border-border bg-background"
+      className="relative h-[420px] w-[520px] max-w-full overflow-y-auto rounded-xl border border-border bg-background"
     >
       <section className="relative flex w-full flex-col items-center gap-[64px] px-4 pb-[200px] pt-[200px]">
         <div className="absolute left-1/2 top-10 grid -translate-x-1/2 content-start justify-items-center gap-6 text-center">

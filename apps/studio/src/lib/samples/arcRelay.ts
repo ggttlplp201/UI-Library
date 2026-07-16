@@ -27,8 +27,9 @@ function build(): Page[] {
     instances: [
       inst(preset('src/sections/SiteNavbar.tsx'), 0, 0, {
         w: 1280,
-        args: { brand: 'ARC RELAY', links: 'Signal, Specs, Access', cta: 'Request access' },
-        links: { cta: accessId, Specs: specsId, Access: accessId },
+        args: { brand: 'ARC RELAY', links: 'Launch, Specs, Access', cta: 'Request access' },
+        links: { cta: accessId, Launch: launchId, Specs: specsId, Access: accessId },
+        style: { backgroundColor: 'rgba(12,12,15,0.92)', color: '#f4f2ec' },
       }),
       // — The lit stage —
       inst(preset('src/backgrounds/BackgroundBeams.tsx'), 0, 96, {
@@ -50,7 +51,7 @@ function build(): Page[] {
         args: { children: 'Request access', shimmerColor: AMBER, background: 'rgba(10,10,12,1)' },
         linkTo: accessId,
       }),
-      inst(preset('src/buttons/GhostButton.tsx'), 380, 468, {
+      inst(preset('src/buttons/GhostButton.tsx'), 380, 450, {
         args: { children: 'Read the specs' },
         linkTo: specsId,
         style: { color: MUTED },
@@ -71,15 +72,15 @@ function build(): Page[] {
         args: { width: 1080, height: 210 },
       }),
       inst(preset('src/cards/StatCard.tsx'), 150, 960, {
-        args: { label: 'Round-trip latency', value: '12', suffix: 'ms' },
+        args: { label: 'Round-trip latency', value: '12 ms', delta: '1.1 ms under spec', background: '#141312', color: '#f4f2ec' },
         anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.6, delay: 0, easing: 'ease-out', once: true },
       }),
       inst(preset('src/cards/StatCard.tsx'), 510, 960, {
-        args: { label: 'Relay nodes online', value: '240', suffix: '' },
+        args: { label: 'Relay nodes online', value: '240', delta: '12 new this week', background: '#141312', color: '#f4f2ec' },
         anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.6, delay: 0.1, easing: 'ease-out', once: true },
       }),
       inst(preset('src/cards/StatCard.tsx'), 870, 960, {
-        args: { label: 'Signal integrity', value: '99.99', suffix: '%' },
+        args: { label: 'Signal integrity', value: '99.99%', delta: '0.002% packet loss', background: '#141312', color: '#f4f2ec' },
         anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.6, delay: 0.2, easing: 'ease-out', once: true },
       }),
       // — What it is (asymmetric: copy left, hardware right) —
@@ -96,11 +97,11 @@ function build(): Page[] {
       }),
       inst(preset('src/basics/ImageBlock.tsx'), 700, 1300, {
         args: {
-          imageSrc: 'https://picsum.photos/seed/arc-hardware/880/560',
+          imageSrc: 'https://picsum.photos/seed/arc-bench/880/560?grayscale',
           width: 440,
           height: 300,
           radius: 12,
-          caption: 'Relay unit, first production run — anodized shell, single amber status lamp.',
+          caption: 'From the field-test archive, week 30. Shot between runs.',
         },
         anim: { preset: 'fade', trigger: 'scroll', duration: 0.8, delay: 0, easing: 'ease-out', once: true },
       }),
@@ -127,7 +128,9 @@ function build(): Page[] {
       }),
       inst(preset('src/sections/SiteFooter.tsx'), 0, 3000, {
         w: 1280,
-        args: { brand: 'ARC RELAY', links: 'Signal, Specs, Access, Press', copyright: '© 2026 Arc Industries.' },
+        args: { brand: 'ARC RELAY', links: 'Launch, Specs, Access', copyright: '© 2026 Arc Industries.' },
+        links: { Launch: launchId, Specs: specsId, Access: accessId },
+        style: { backgroundColor: 'rgba(12,12,15,0.92)', color: '#f4f2ec' },
       }),
     ],
   }
@@ -143,8 +146,9 @@ function build(): Page[] {
     instances: [
       inst(preset('src/sections/SiteNavbar.tsx'), 0, 0, {
         w: 1280,
-        args: { brand: 'ARC RELAY', links: 'Signal, Specs, Access', cta: 'Request access' },
-        links: { cta: accessId, Signal: launchId, Access: accessId },
+        args: { brand: 'ARC RELAY', links: 'Launch, Specs, Access', cta: 'Request access' },
+        links: { cta: accessId, Launch: launchId, Specs: specsId, Access: accessId },
+        style: { backgroundColor: 'rgba(12,12,15,0.92)', color: '#f4f2ec' },
       }),
       inst(preset('src/sections/LampHeader.tsx'), 440, 100, {
         args: {

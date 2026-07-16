@@ -649,7 +649,7 @@ export function Workspace({
       const bw = page.artboardWidth ?? DEFAULT_ARTBOARD_WIDTH
       const bh = Math.max(page.boardHeight ?? 0, snap.contentHeight)
       sections.push(
-        `<section data-page="${slug}" class="ss-page"${cursorAttr}>\n<div class="ss-board" data-w="${bw}" style="width:${bw}px;min-height:${bh}px;position:relative;margin:0 auto;">\n${snap.body}\n</div>\n</section>`,
+        `<section data-page="${slug}" class="ss-page"${cursorAttr}>\n<div class="ss-board" data-w="${bw}" style="width:${bw}px;min-height:${bh}px;position:relative;margin:0 auto;overflow:hidden;">\n${snap.body}\n</div>\n</section>`,
       )
       const loaderDef = loaderById(fx?.loader)
       if (loaderDef) {

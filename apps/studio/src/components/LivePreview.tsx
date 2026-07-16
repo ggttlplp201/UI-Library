@@ -125,6 +125,7 @@ export function LivePreview({
             position: 'relative',
             margin: '0 auto',
             background: BG[theme],
+            overflow: 'hidden',
           }}
         >
           {page.instances.map((inst) => {
