@@ -1,0 +1,12 @@
+{
+  "library": "shadcn/ui",
+  "source": "https://ui.shadcn.com/docs/components/tabs",
+  "author": "shadcn",
+  "license": "MIT",
+  "attributionRequired": false,
+  "ingest": "manual-port",
+  "styleFamily": "shadcn",
+  "qualityTier": "authored",
+  "previewStatus": "ok",
+  "tags": ["demo"]
+}
