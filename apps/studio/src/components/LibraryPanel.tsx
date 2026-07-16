@@ -9,6 +9,25 @@ import { PanelSideToggle, type PanelSide } from './PanelSideToggle'
 type LibraryMode = 'components' | 'animations'
 
 /**
+ * Curated sets shown as expandable "kits": clicking one unfolds the list of
+ * its components. A kit is any styleFamily registered here — recreated sets
+ * add a row and appear automatically.
+ */
+const KITS: { family: string; title: string; accent: string; blurb: string }[] = [
+  { family: 'kinetic', title: 'Kinetic UI', accent: '#4B3BFF', blurb: 'Light editorial kit — springy indigo controls' },
+  { family: 'kinetic-lab', title: 'Kinetic Lab', accent: '#E08600', blurb: 'Playful physics — fills, dials, elastic toggles' },
+  { family: 'basics', title: 'Basics', accent: '#8a8f98', blurb: 'Page primitives — text, images, panels, backdrops' },
+  { family: 'cupertino', title: 'Cupertino', accent: '#0A84FF', blurb: 'Liquid-glass iOS kit — frosted tints, springs' },
+  { family: 'glitchtype', title: 'Glitchtype', accent: '#00E5A0', blurb: 'CRT terminal — scanlines, glitch, phosphor type' },
+  { family: 'chicago95', title: 'Chicago 95', accent: '#008080', blurb: 'Retro OS — beveled chrome, pixel dialogs' },
+  { family: 'spritecraft', title: 'Spritecraft', accent: '#FFD750', blurb: '8-bit game HUD — blocky sprites, hard shadows' },
+  { family: 'marginalia', title: 'Marginalia', accent: '#B8524D', blurb: 'Ink & paper — annotations, stamps, serifs' },
+  { family: 'boldcase', title: 'Boldcase', accent: '#F91814', blurb: 'Brutalist poster type — huge grotesk, hard rules' },
+  { family: 'voltura', title: 'Voltura', accent: '#BF5AF2', blurb: 'Electric dark — voltage gradients, neon edges' },
+  { family: 'overworld', title: 'Overworld', accent: '#30D158', blurb: 'Adventure UI — parchment maps, quest chrome' },
+]
+
+/**
  * The right-hand library. Two menus: Components (building blocks placed on
  * the canvas) and Animations (motion presets applied to a placed component).
  */
@@ -46,6 +65,7 @@ export function LibraryPanel({
   const [mode, setMode] = useState<LibraryMode>('components')
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<string>('all')
+  const [openKit, setOpenKit] = useState<string | null>(null)
   // Ids of components that can't produce a real preview (error / bare text).
   // A card reports this once it renders; we drop those from the grid so every
   // visible component has a working preview.
@@ -91,6 +111,23 @@ export function LibraryPanel({
     seenNames.add(entry.name)
     filtered.push(entry)
   }
+
+  // Kits: curated styleFamily sets, browsable as expandable groups. Shown when
+  // not searching and not inside a category — those views search everything.
+  const kits = useMemo(() => {
+    const byFamily = new Map<string, RegistryEntry[]>()
+    for (const e of entries) {
+      const fam = e.meta?.styleFamily
+      if (!fam || e.meta?.hidden || broken.has(e.id)) continue
+      const list = byFamily.get(fam) ?? []
+      list.push(e)
+      byFamily.set(fam, list)
+    }
+    return KITS.map((k) => ({ ...k, entries: byFamily.get(k.family) ?? [] })).filter(
+      (k) => k.entries.length > 0,
+    )
+  }, [entries, broken])
+  const showKits = mode === 'components' && search.trim() === '' && category === 'all'
 
   return (
     <div
@@ -164,7 +201,62 @@ export function LibraryPanel({
           onClearFx={onClearFx}
         />
       ) : (
-        <div className="flex-1 overflow-y-auto px-2 pb-3 grid grid-cols-2 gap-1.5 auto-rows-[116px] content-start">
+        <div className="flex-1 overflow-y-auto px-2 pb-3">
+          {/* Kits: designed sets that unfold into their components. */}
+          {showKits && kits.length > 0 && (
+            <div className="mb-2">
+              <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest px-1 mb-1.5">
+                Kits
+              </p>
+              <div className="flex flex-col gap-1">
+                {kits.map((kit) => {
+                  const open = openKit === kit.family
+                  return (
+                    <div key={kit.family} className="rounded-lg border border-border/60 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setOpenKit(open ? null : kit.family)}
+                        className={`w-full flex items-center gap-2 px-2.5 py-2 text-left transition-colors ${
+                          open ? 'bg-secondary' : 'bg-card hover:bg-secondary/60'
+                        }`}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: kit.accent }}
+                        />
+                        <span className="text-[12px] font-semibold tracking-tight">{kit.title}</span>
+                        <span className="text-[10px] text-muted-foreground">{kit.entries.length}</span>
+                        <span className="ml-auto text-[10px] text-muted-foreground">
+                          {open ? '▾' : '▸'}
+                        </span>
+                      </button>
+                      {open && (
+                        <div className="px-1.5 pb-1.5 bg-secondary/40">
+                          <p className="text-[10px] text-muted-foreground px-1 py-1">{kit.blurb}</p>
+                          <div className="grid grid-cols-2 gap-1.5 auto-rows-[116px] content-start">
+                            {kit.entries.map((entry) => (
+                              <LibraryCard
+                                key={entry.id}
+                                entry={entry}
+                                root={rootFor(entry)}
+                                selected={selectedId === entry.id}
+                                onSelect={() => onSelect(entry.id)}
+                                onOutcome={(previewable) => markOutcome(entry.id, previewable)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest px-1 mt-3 mb-1.5">
+                All components
+              </p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-1.5 auto-rows-[116px] content-start">
           {filtered.map((entry) => (
             <LibraryCard
               key={entry.id}
@@ -192,6 +284,7 @@ export function LibraryPanel({
           {filtered.length === 0 && (
             <p className="col-span-2 text-[11px] text-muted-foreground px-2 py-2">No matches.</p>
           )}
+          </div>
         </div>
       )}
     </div>
