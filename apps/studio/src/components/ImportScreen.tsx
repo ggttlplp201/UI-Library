@@ -5,9 +5,11 @@ import { getRecentPaths, rememberPath, scanFolder } from '../lib/api'
 export function ImportScreen({
   onScanned,
   onUsePresets,
+  onBack,
 }: {
   onScanned: (result: ScanResult) => void
   onUsePresets: () => void
+  onBack?: () => void
 }) {
   const [path, setPath] = useState('')
   const [busy, setBusy] = useState(false)

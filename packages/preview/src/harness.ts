@@ -61,6 +61,16 @@ document.addEventListener('click', (e) => {
 }, true)
 document.addEventListener('submit', (e) => e.preventDefault(), true)
 
+// Keys and pointer position are invisible to the parent while focus/hover is
+// inside this iframe — forward what the Studio needs: Escape (close preview)
+// and pointer moves (page cursor effects must keep tracking over components).
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') post({ type: 'esc' })
+})
+document.addEventListener('pointermove', (e) => {
+  post({ type: 'pointer', x: e.clientX, y: e.clientY })
+}, { passive: true })
+
 // Animation playback. The Studio compiles the instance's AnimConfig into
 // { keyframesCss, animationValue, trigger, once } (see lib/animation.ts) and
 // the harness wires the trigger to a REAL user interaction: entrance plays on

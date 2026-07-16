@@ -72,7 +72,20 @@ export function Workspace({
     if (sample) return sample.build()
     return [{ id: newPageId(), name: 'Home', instances: [], nodeX: 90, nodeY: 130 }]
   })
-  const [activePageId, setActivePageId] = useState<string | null>(null)
+  const [activePageId, setActivePageId] = useState<string | null>(() => {
+    // Reopen on the page that was active before the reload.
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (raw) {
+        const saved = JSON.parse(raw) as { pages?: Page[]; activePageId?: string }
+        if (saved.activePageId && (saved.pages ?? []).some((p) => p.id === saved.activePageId))
+          return saved.activePageId
+      }
+    } catch {
+      // fall through
+    }
+    return null
+  })
   // Open page tabs (browser-style strip in the header). Opening a page's
   // canvas adds a tab; closing a tab only closes the tab, never the page.
   const [openTabs, setOpenTabs] = useState<string[]>(() => {
@@ -140,13 +153,60 @@ export function Workspace({
   useEffect(() => {
     const t = setTimeout(() => {
       try {
-        localStorage.setItem(storageKey, JSON.stringify({ pages, openTabs }))
+        localStorage.setItem(storageKey, JSON.stringify({ pages, openTabs, activePageId }))
       } catch {
         // storage full/unavailable — persistence is best-effort
       }
     }, 400)
     return () => clearTimeout(t)
-  }, [pages, openTabs, storageKey])
+  }, [pages, openTabs, activePageId, storageKey])
+
+  // ——— Undo / redo ———
+  // Snapshot stack over the whole composition. Rapid updates (drags emit one
+  // per frame) coalesce: a snapshot is taken only after the state has been
+  // quiet for a beat, so one drag = one undo step.
+  const undoStack = useRef<string[]>([])
+  const redoStack = useRef<string[]>([])
+  const lastStable = useRef<string>(JSON.stringify(pages))
+  const historyMuted = useRef(false)
+  useEffect(() => {
+    if (historyMuted.current) {
+      historyMuted.current = false
+      lastStable.current = JSON.stringify(pages)
+      return
+    }
+    const t = setTimeout(() => {
+      const now = JSON.stringify(pages)
+      if (now === lastStable.current) return
+      undoStack.current.push(lastStable.current)
+      if (undoStack.current.length > 100) undoStack.current.shift()
+      redoStack.current = []
+      lastStable.current = now
+    }, 350)
+    return () => clearTimeout(t)
+  }, [pages])
+  const timeTravel = useCallback(
+    (direction: 'undo' | 'redo') => {
+      // A pending (not yet coalesced) edit still counts — fold it in first so
+      // undo right after a change undoes THAT change, not the one before it.
+      const now = JSON.stringify(pages)
+      if (now !== lastStable.current) {
+        undoStack.current.push(lastStable.current)
+        redoStack.current = []
+        lastStable.current = now
+      }
+      const from = direction === 'undo' ? undoStack.current : redoStack.current
+      const to = direction === 'undo' ? redoStack.current : undoStack.current
+      const snapshot = from.pop()
+      if (!snapshot) return
+      to.push(lastStable.current)
+      lastStable.current = snapshot
+      historyMuted.current = true
+      setPages(JSON.parse(snapshot) as Page[])
+      setSelectedIds([])
+    },
+    [pages],
+  )
 
   // In-app clipboard for Cmd/Ctrl+C/V and Cmd/Ctrl+D: cloned instances get
   // fresh ids and a small offset so the copy is visibly a copy.
@@ -183,6 +243,11 @@ export function Workspace({
       // Copy / paste / duplicate selected components (Cmd on Mac, Ctrl elsewhere).
       if (e.metaKey || e.ctrlKey) {
         const k = e.key.toLowerCase()
+        if (k === 'z') {
+          e.preventDefault()
+          timeTravel(e.shiftKey ? 'redo' : 'undo')
+          return
+        }
         if (k === 'c' && selectedIds.length > 0) {
           // Don't hijack copying real text (e.g. from the code drawer).
           if (window.getSelection()?.toString()) return
@@ -239,7 +304,21 @@ export function Workspace({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedIds, setInstances, instances, pasteInstances])
+  }, [selectedIds, setInstances, instances, pasteInstances, timeTravel])
+
+  // Esc pressed while focus is INSIDE a preview iframe never reaches this
+  // window — the harness forwards it up as a message instead.
+  useEffect(() => {
+    const onMsg = (ev: MessageEvent) => {
+      const d = ev.data as { source?: string; type?: string } | null
+      if (d?.source === 'preview' && d.type === 'esc') {
+        setPreviewOpen(false)
+        setSelectedIds([])
+      }
+    }
+    window.addEventListener('message', onMsg)
+    return () => window.removeEventListener('message', onMsg)
+  }, [])
 
   const entries = useMemo(
     () => [...result.entries, ...presets.entries],
@@ -645,10 +724,10 @@ export function Workspace({
     if (!kind) return;
     cursorEl = document.createElement('div');
     if (kind === 'blend') {
-      cursorEl.style.cssText = 'position:fixed;top:0;left:0;width:66px;height:66px;border-radius:50%;background:' + acc + ';mix-blend-mode:difference;pointer-events:none;z-index:9999;transform:translate(-120px,-120px);transition:transform .14s cubic-bezier(.2,.8,.3,1)';
+      cursorEl.style.cssText = 'position:fixed;top:0;left:0;width:66px;height:66px;border-radius:50%;background:' + acc + ';mix-blend-mode:difference;pointer-events:none;z-index:9999;transform:translate(-120px,-120px);will-change:transform';
       document.body.style.cursor = 'none';
     } else {
-      cursorEl.style.cssText = 'position:fixed;top:0;left:0;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,' + acc + 'aa,transparent 70%);pointer-events:none;z-index:9999;transform:translate(-120px,-120px);transition:transform .12s ease-out';
+      cursorEl.style.cssText = 'position:fixed;top:0;left:0;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,' + acc + 'aa,transparent 70%);pointer-events:none;z-index:9999;transform:translate(-120px,-120px);will-change:transform';
     }
     document.body.appendChild(cursorEl);
   }
@@ -1021,7 +1100,16 @@ export function Workspace({
         </div>
         <button
           type="button"
-          onClick={onReset}
+          onClick={() => {
+            // One stray click must not eject the session — edits are autosaved,
+            // but leaving should still be a decision, not an accident.
+            if (
+              window.confirm(
+                'Open a different project? This workspace is saved and you can come back to it.',
+              )
+            )
+              onReset()
+          }}
           className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-secondary hover:bg-secondary/70 transition-colors"
         >
           New import

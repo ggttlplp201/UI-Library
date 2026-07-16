@@ -67,18 +67,41 @@ export function LivePreview({
     }
   }, [pageId, page.fx?.loader, page.fx?.loaderMs])
 
-  // Cursor effect (same visuals as the export runtime).
+  // Cursor effect (same visuals as the export runtime). Two sources feed it:
+  // real mousemove over the shell, and forwarded pointer messages from the
+  // component iframes — without those the dot freezes whenever the pointer is
+  // over a component (iframes swallow mouse events).
   const cursorRef = useRef<HTMLDivElement>(null)
+  const shellRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const el = cursorRef.current
     if (!el) return
-    const onMove = (e: MouseEvent) => {
+    const moveTo = (x: number, y: number) => {
       const half = el.offsetWidth / 2
-      el.style.transform = `translate(${e.clientX - half}px, ${e.clientY - half}px)`
+      el.style.transform = `translate(${x - half}px, ${y - half}px)`
+    }
+    const onMove = (e: MouseEvent) => moveTo(e.clientX, e.clientY)
+    const onMsg = (ev: MessageEvent) => {
+      const d = ev.data as { source?: string; type?: string; x?: number; y?: number } | null
+      if (d?.source !== 'preview' || d.type !== 'pointer') return
+      const shell = shellRef.current
+      if (!shell) return
+      for (const f of shell.querySelectorAll('iframe')) {
+        if (f.contentWindow === ev.source) {
+          // Iframe-local px → viewport px: the board is scaled with CSS zoom.
+          const r = f.getBoundingClientRect()
+          moveTo(r.left + (d.x ?? 0) * scale, r.top + (d.y ?? 0) * scale)
+          return
+        }
+      }
     }
     window.addEventListener('mousemove', onMove)
-    return () => window.removeEventListener('mousemove', onMove)
-  }, [page.fx?.cursor])
+    window.addEventListener('message', onMsg)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('message', onMsg)
+    }
+  }, [page.fx?.cursor, scale])
 
   const navigate = (targetPageId: string) => {
     if (pages.some((p) => p.id === targetPageId)) setPageId(targetPageId)
@@ -90,6 +113,7 @@ export function LivePreview({
 
   return (
     <div
+      ref={shellRef}
       className="flex-1 w-full overflow-y-auto overflow-x-hidden relative"
       style={{ background: BG[theme], cursor: cursorKind === 'blend' ? 'none' : undefined }}
     >
@@ -186,14 +210,14 @@ export function LivePreview({
                   background: cursorAccent,
                   mixBlendMode: 'difference',
                   transform: 'translate(-120px, -120px)',
-                  transition: 'transform .14s cubic-bezier(.2,.8,.3,1)',
+                  willChange: 'transform',
                 }
               : {
                   width: 34,
                   height: 34,
                   background: `radial-gradient(circle, ${cursorAccent}aa, transparent 70%)`,
                   transform: 'translate(-120px, -120px)',
-                  transition: 'transform .12s ease-out',
+                  willChange: 'transform',
                 }
           }
         />
