@@ -22,7 +22,7 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 3050,
+    boardHeight: 3160,
     fx: { loader: 'orbit', loaderAccent: AMBER, loaderMs: 1300, cursor: 'glow', cursorAccent: AMBER },
     instances: [
       inst(preset('src/sections/SiteNavbar.tsx'), 0, 0, {
@@ -36,21 +36,21 @@ function build(): Page[] {
         h: 560,
         args: { accent: AMBER, background: '#0a0a0c', speed: 8 },
       }),
-      inst(preset('src/text/SplitText.tsx'), 140, 200, {
+      inst(preset('src/text/SplitText.tsx'), 140, 180, {
         w: 760,
         args: { text: 'ARC RELAY' },
         style: { fontSize: 88, color: INK, fontWeight: '800' },
       }),
-      inst(preset('src/text/TextShimmer.tsx'), 142, 344, {
+      inst(preset('src/text/TextShimmer.tsx'), 142, 372, {
         w: 640,
         args: { children: 'The relay between your hands and the machine.' },
         style: { fontSize: 22 },
       }),
-      inst(preset('src/buttons/ShimmerButton.tsx'), 142, 430, {
+      inst(preset('src/buttons/ShimmerButton.tsx'), 142, 440, {
         args: { children: 'Request access', shimmerColor: AMBER, background: 'rgba(10,10,12,1)' },
         linkTo: accessId,
       }),
-      inst(preset('src/buttons/GhostButton.tsx'), 380, 436, {
+      inst(preset('src/buttons/GhostButton.tsx'), 380, 468, {
         args: { children: 'Read the specs' },
         linkTo: specsId,
         style: { color: MUTED },
@@ -112,11 +112,11 @@ function build(): Page[] {
         anim: { preset: 'fade', trigger: 'scroll', duration: 0.8, delay: 0, easing: 'ease-out', once: true },
       }),
       // — Rolling band + close —
-      inst(preset('src/effects/Marquee.tsx'), 0, 2450, {
+      inst(preset('src/effects/Marquee.tsx'), 0, 2600, {
         w: 1280,
         args: { children: 'SIGNAL OVER HYPE — SIGNAL OVER HYPE — SIGNAL OVER HYPE —' },
       }),
-      inst(preset('src/sections/CtaSection.tsx'), 0, 2560, {
+      inst(preset('src/sections/CtaSection.tsx'), 0, 2700, {
         w: 1280,
         args: {
           title: 'The relay opens soon.',
@@ -125,7 +125,7 @@ function build(): Page[] {
         },
         links: { cta: accessId },
       }),
-      inst(preset('src/sections/SiteFooter.tsx'), 0, 2880, {
+      inst(preset('src/sections/SiteFooter.tsx'), 0, 3000, {
         w: 1280,
         args: { brand: 'ARC RELAY', links: 'Signal, Specs, Access, Press', copyright: '© 2026 Arc Industries.' },
       }),
@@ -138,7 +138,7 @@ function build(): Page[] {
     nodeX: 340,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 1950,
+    boardHeight: 1800,
     fx: { loader: 'bar', loaderAccent: AMBER, loaderMs: 900, cursor: 'glow', cursorAccent: AMBER },
     instances: [
       inst(preset('src/sections/SiteNavbar.tsx'), 0, 0, {
@@ -146,7 +146,7 @@ function build(): Page[] {
         args: { brand: 'ARC RELAY', links: 'Signal, Specs, Access', cta: 'Request access' },
         links: { cta: accessId, Signal: launchId, Access: accessId },
       }),
-      inst(preset('src/sections/LampHeader.tsx'), 320, 100, {
+      inst(preset('src/sections/LampHeader.tsx'), 440, 100, {
         args: {
           title: 'Under the hood',
           subtitle: 'Instrumented, measured, and honest about both.',
@@ -167,8 +167,8 @@ function build(): Page[] {
       inst(preset('src/basics/PanelBand.tsx'), 100, 1120, { args: { width: 1080, height: 300 } }),
       inst(preset('src/kinetic-lab/LiquidFill.tsx'), 160, 1170, { args: { defaultValue: 72 } }),
       inst(preset('src/kinetic-ui/KineticRingProgress.tsx'), 440, 1180, { args: { defaultValue: 64 } }),
-      inst(preset('src/text/AnimatedNumbers.tsx'), 720, 1200, {}),
-      inst(preset('src/badges/StatusBadge.tsx'), 1000, 1200, {}),
+      inst(preset('src/text/AnimatedNumbers.tsx', 'AnimatedNumberTicker'), 720, 1210, {}),
+      inst(preset('src/badges/StatusBadge.tsx'), 1100, 1210, {}),
       inst(preset('src/feedback/ProgressBar.tsx'), 160, 1490, { w: 480 }),
       inst(preset('src/basics/TextBlock.tsx'), 700, 1480, {
         args: {
@@ -199,10 +199,10 @@ function build(): Page[] {
         h: 1040,
         args: { count: 10, accent: '#8a8272', background: '#0a0a0c' },
       }),
-      inst(preset('src/basics/Heading.tsx'), 470, 110, {
+      inst(preset('src/basics/Heading.tsx'), 510, 110, {
         args: { text: 'Access is limited.', size: 34, color: INK },
       }),
-      inst(preset('src/cards/BrutalistNewsletterCard.tsx'), 470, 200, {
+      inst(preset('src/cards/BrutalistNewsletterCard.tsx'), 490, 190, {
         args: {
           title: 'REQUEST ACCESS',
           description: 'First batch ships to 500 desks. No spam — one confirmation, one shipping note.',
@@ -210,7 +210,7 @@ function build(): Page[] {
           accent: AMBER,
         },
       }),
-      inst(preset('src/basics/TextBlock.tsx'), 472, 640, {
+      inst(preset('src/basics/TextBlock.tsx'), 475, 640, {
         args: {
           text: 'Allocation is one unit per person. Review takes about a week; payment only after approval.',
           maxWidth: 330,
@@ -218,7 +218,7 @@ function build(): Page[] {
           color: '#8a8578',
         },
       }),
-      inst(preset('src/buttons/GhostButton.tsx'), 555, 760, {
+      inst(preset('src/buttons/GhostButton.tsx'), 561, 740, {
         args: { children: '← Back to launch' },
         linkTo: launchId,
         style: { color: MUTED },

@@ -31,21 +31,21 @@ function build(): Page[] {
       inst(preset('src/basics/Divider.tsx'), 140, 472, { args: { width: 1000 } }),
       inst(preset('src/kinetic-ui/KineticTabs.tsx'), 140, 510, {}),
       inst(preset('src/kinetic-ui/KineticSegmented.tsx'), 700, 520, {}),
-      inst(preset('src/kinetic-ui/KineticChips.tsx'), 1000, 520, {}),
+      inst(preset('src/kinetic-ui/KineticChips.tsx'), 700, 620, {}),
       // — Input —
       inst(preset('src/basics/Heading.tsx'), 140, 700, { args: { text: 'Input', size: 22 } }),
       inst(preset('src/basics/Divider.tsx'), 140, 742, { args: { width: 1000 } }),
       inst(preset('src/kinetic-ui/KineticInput.tsx'), 140, 790, {}),
       inst(preset('src/inputs/FloatingLabelInput.tsx'), 460, 795, {}),
       inst(preset('src/inputs/SearchInput.tsx'), 760, 790, {}),
-      inst(preset('src/inputs/SelectDemo.tsx'), 1040, 780, {}),
+      inst(preset('src/inputs/SelectDemo.tsx'), 1010, 780, {}),
       // — Choice & switches —
       inst(preset('src/basics/Heading.tsx'), 140, 980, { args: { text: 'Choice & switches', size: 22 } }),
       inst(preset('src/basics/Divider.tsx'), 140, 1022, { args: { width: 1000 } }),
       inst(preset('src/inputs/RadioGroupDemo.tsx'), 140, 1070, {}),
       inst(preset('src/kinetic-ui/KineticCheckbox.tsx'), 460, 1090, {}),
       inst(preset('src/kinetic-ui/KineticSwitch.tsx'), 760, 1090, {}),
-      inst(preset('src/toggles/GlossySwitch.tsx'), 1000, 1070, {}),
+      inst(preset('src/toggles/GlossySwitch.tsx'), 1060, 1075, {}),
       // — Feedback —
       inst(preset('src/basics/Heading.tsx'), 140, 1300, { args: { text: 'Feedback', size: 22 } }),
       inst(preset('src/basics/Divider.tsx'), 140, 1342, { args: { width: 1000 } }),
@@ -53,7 +53,7 @@ function build(): Page[] {
       inst(preset('src/feedback/ProgressBar.tsx'), 140, 1500, { w: 380 }),
       inst(preset('src/kinetic-ui/KineticProgressBar.tsx'), 560, 1500, {}),
       inst(preset('src/feedback/ToasterDemo.tsx'), 760, 1390, {}),
-      inst(preset('src/kinetic-ui/KineticToast.tsx'), 1000, 1390, {}),
+      inst(preset('src/kinetic-ui/KineticToast.tsx'), 830, 1510, {}),
       // — Overlays (grouped on a quiet panel) —
       inst(preset('src/basics/Heading.tsx'), 140, 1650, { args: { text: 'Overlays', size: 22 } }),
       inst(preset('src/basics/PanelBand.tsx'), 100, 1700, { args: { width: 1080, height: 240 } }),
@@ -61,7 +61,7 @@ function build(): Page[] {
       inst(preset('src/overlays/DropdownMenuDemo.tsx'), 420, 1750, {}),
       inst(preset('src/overlays/PopoverDemo.tsx'), 680, 1750, {}),
       inst(preset('src/kinetic-ui/KineticTooltip.tsx'), 940, 1750, {}),
-      inst(preset('src/kinetic-ui/KineticDropdown.tsx'), 1090, 1750, {}),
+      inst(preset('src/kinetic-ui/KineticDropdown.tsx'), 1045, 1750, {}),
       // — Identity —
       inst(preset('src/basics/Heading.tsx'), 140, 2020, { args: { text: 'Identity', size: 22 } }),
       inst(preset('src/basics/Divider.tsx'), 140, 2062, { args: { width: 1000 } }),
