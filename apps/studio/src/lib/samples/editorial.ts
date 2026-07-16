@@ -93,7 +93,7 @@ function build(): Page[] {
 export const editorial: SampleProject = {
   id: 'field-notes',
   title: 'Field Notes',
-  tagline: 'Editorial portfolio — imagery first',
+  tagline: 'Editorial portfolio, imagery first',
   detail:
     'Poster carousels, clip-reveal and hover-expand image studies, texture cards and a rolling type band. Quiet type, loud photographs.',
   accent: '#b8b2a4',

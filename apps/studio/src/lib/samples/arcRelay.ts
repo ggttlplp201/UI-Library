@@ -236,7 +236,7 @@ function build(): Page[] {
 export const arcRelay: SampleProject = {
   id: 'arc-relay',
   title: 'Arc Relay',
-  tagline: 'Cinematic product launch — 3 linked pages',
+  tagline: 'Cinematic product launch, 3 linked pages',
   detail:
     'Beams, huge type, animated signal numbers, real body copy and hardware imagery, a scroll set-piece, and a focused access page. One amber accent on a near-black stage.',
   accent: AMBER,

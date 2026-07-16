@@ -17,6 +17,38 @@ export async function fetchPresets(): Promise<PresetLibrary> {
   }
 }
 
+/** One folder in the import screen's browser. */
+export interface FolderEntry {
+  name: string
+  path: string
+  /** Has a package.json — probably what the user is looking for */
+  looksLikeProject: boolean
+}
+
+export interface FolderListing {
+  path: string
+  parent: string | null
+  home: string
+  dirs: FolderEntry[]
+}
+
+/** Browse the local filesystem (dev-server side) for the import screen. */
+export async function listFolder(path?: string): Promise<FolderListing> {
+  const res = await fetch('/api/fs', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(path ? { path } : {}),
+  })
+  let payload: (FolderListing & { ok: boolean; error?: string }) | null = null
+  try {
+    payload = await res.json()
+  } catch {
+    throw new Error(`Could not read that folder (${res.status})`)
+  }
+  if (!payload?.ok) throw new Error(payload?.error ?? `Could not read that folder (${res.status})`)
+  return payload
+}
+
 export async function scanFolder(path: string): Promise<ScanResult> {
   const res = await fetch('/api/scan', {
     method: 'POST',
