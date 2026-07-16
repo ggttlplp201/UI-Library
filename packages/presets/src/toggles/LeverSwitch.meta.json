@@ -1,0 +1,10 @@
+{
+  "library": "UIverse.io",
+  "source": "https://uiverse.io/njesenberger/brave-firefox-90",
+  "author": "njesenberger",
+  "license": "MIT",
+  "attributionRequired": true,
+  "ingest": "manual-port",
+  "styleFamily": "uiverse",
+  "qualityTier": "vetted"
+}

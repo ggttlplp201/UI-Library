@@ -1,0 +1,10 @@
+{
+  "library": "UIverse.io",
+  "source": "https://uiverse.io/marcelodolza/kind-panther-75",
+  "author": "marcelodolza",
+  "license": "MIT",
+  "attributionRequired": true,
+  "ingest": "manual-port",
+  "styleFamily": "uiverse",
+  "qualityTier": "vetted"
+}
