@@ -26,6 +26,7 @@ export const SiteFooter = ({
         {items.map((item) => (
           <span
             key={item}
+            data-link-slot={item}
             className="cursor-pointer text-[12px] text-muted-foreground transition-colors hover:text-foreground"
           >
             {item}

@@ -346,6 +346,7 @@ export const PillNav: React.FC<PillNavProps> = ({
                   <a
                     role="menuitem"
                     href={item.href}
+                    data-link-slot={item.label}
                     className={basePillClasses}
                     style={pillStyle}
                     aria-label={item.ariaLabel || item.label}

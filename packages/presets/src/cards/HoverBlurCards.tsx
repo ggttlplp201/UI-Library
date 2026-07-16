@@ -60,7 +60,7 @@ export const HoverBlurCards = ({
     `}</style>
     <div className="uv-hbc-cards">
       {[color1, color2, color3].map((color, i) => (
-        <div key={i} className="uv-hbc-card" style={{ backgroundColor: color }}>
+        <div key={i} className="uv-hbc-card" data-link-slot={`card ${i + 1}`} style={{ backgroundColor: color }}>
           <p className="uv-hbc-tip">{tip}</p>
           <p className="uv-hbc-second-text">{subtitle}</p>
         </div>

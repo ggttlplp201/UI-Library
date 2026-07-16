@@ -33,6 +33,7 @@ export const KineticAvatarStack = ({
         {items.map((txt, i) => (
           <div
             key={`${txt}-${i}`}
+            data-link-slot={txt}
             style={{
               width: 44,
               height: 44,
@@ -56,7 +57,7 @@ export const KineticAvatarStack = ({
         ))}
       </div>
       {showStatus && (
-        <div style={{ position: "relative", width: 52, height: 52 }}>
+        <div data-link-slot="RS" style={{ position: "relative", width: 52, height: 52, cursor: "pointer" }}>
           <div
             style={{
               width: 52,
