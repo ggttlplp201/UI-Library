@@ -351,6 +351,11 @@ function measureBounds() {
       if (r.width === 0 && r.height === 0) continue
       if (r.right - base.left > width) width = r.right - base.left
       if (r.bottom - base.top > height) height = r.bottom - base.top
+      // Viewport-centered overlays (fixed 50%/50% dialogs) overflow the TOP of
+      // a trigger-sized frame — extending right/bottom alone under-reports.
+      // The frame must be at least the overlay's own size for it to fit.
+      if (r.width > width) width = r.width
+      if (r.height > height) height = r.height
     }
   }
   return { width, height }
@@ -362,9 +367,18 @@ function measureBounds() {
 let lastW = -1
 let lastH = -1
 let sizeRaf = 0
+let sizeTimer = 0
 const reportSize = () => {
+  // rAF for coalescing — but raced against a timeout, because rAF never fires
+  // in a hidden/background tab and a size change must not stall until the tab
+  // is foregrounded again.
   cancelAnimationFrame(sizeRaf)
-  sizeRaf = requestAnimationFrame(() => {
+  clearTimeout(sizeTimer)
+  let done = false
+  const run = () => {
+    if (done) return
+    done = true
+    clearTimeout(sizeTimer)
     const r = measureBounds()
     const w = Math.ceil(r.width)
     const h = Math.ceil(r.height)
@@ -375,13 +389,18 @@ const reportSize = () => {
     lastW = w
     lastH = h
     post({ type: 'size', width: w, height: h })
-  })
+  }
+  sizeRaf = requestAnimationFrame(run)
+  sizeTimer = setTimeout(run, 80)
 }
 const sizeObserver = new ResizeObserver(reportSize)
 sizeObserver.observe(rootEl)
 // Portals mount straight into <body>, invisible to the root's ResizeObserver —
-// watch the body so an opening menu/dialog grows the frame to fit.
+// watch the body so an opening menu/dialog grows the frame to fit. And when
+// the Studio then RESIZES this iframe, fixed-positioned overlays re-center to
+// the new viewport — re-measure so the reported size converges.
 new MutationObserver(reportSize).observe(document.body, { childList: true, subtree: true })
+window.addEventListener('resize', reportSize)
 
 // Collect the document's generated CSS (Tailwind utilities/theme) so an export
 // snapshot is self-contained.
