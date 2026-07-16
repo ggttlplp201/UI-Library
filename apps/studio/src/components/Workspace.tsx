@@ -1181,7 +1181,9 @@ export function Workspace({
               onSlotsReported={reportSlots}
             />
           )}
-          {showCode && view === 'canvas' && (
+          {/* The code pane earns its space: it appears when a component is
+              selected instead of parking an empty drawer under the canvas. */}
+          {showCode && view === 'canvas' && selectedId && (
             <CodePane
               payload={codePayload}
               title={selectedEntry ? `${selectedEntry.name} — ${selectedEntry.filePath}` : null}

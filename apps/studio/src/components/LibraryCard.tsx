@@ -1,10 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import { composeRenderProps, deriveControls, initialArgs } from '../lib/controls'
-import { PreviewFrame } from './PreviewFrame'
+import { readThumb, writeThumb, type ThumbSnap } from '../lib/thumbcache'
+import { PreviewFrame, type PreviewHandle } from './PreviewFrame'
 
 /** MIME-ish key carrying the dragged component's entry id to the Canvas (Phase 4). */
 export const DRAG_MIME = 'application/x-css-entry'
+
+/** Instant static replay of a cached thumbnail (no live iframe, no vite round-trip). */
+function Snapshot({ snap }: { snap: ThumbSnap }) {
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(0)
+  useEffect(() => {
+    const el = boxRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    setScale(Math.min(r.width / snap.w, r.height / snap.h, 1))
+  }, [snap])
+  const doc = `<!doctype html><html><head><style>html,body{margin:0;padding:0;background:transparent;overflow:hidden}#r{width:max-content}</style><style>${snap.css}</style></head><body><div id="r">${snap.html}</div></body></html>`
+  return (
+    <div ref={boxRef} className="w-full h-full flex items-center justify-center overflow-hidden">
+      <iframe
+        title="thumbnail"
+        srcDoc={doc}
+        style={{
+          width: snap.w,
+          height: snap.h,
+          border: 0,
+          colorScheme: 'light',
+          pointerEvents: 'none',
+          transform: `scale(${scale})`,
+          transformOrigin: 'center center',
+        }}
+      />
+    </div>
+  )
+}
 
 export function LibraryCard({
   entry,
@@ -27,6 +58,21 @@ export function LibraryCard({
   // Mount the preview iframe once the card scrolls near the viewport, so we
   // don't boot dozens of iframes at once — visible cards render without hover.
   const [inView, setInView] = useState(eager)
+  // Cached snapshot from a previous session: shown instantly, no live render.
+  const [snap] = useState<ThumbSnap | null>(() =>
+    entry.source === 'preset' ? readThumb(entry.id) : null,
+  )
+  const [ready, setReady] = useState(false)
+  const frameRef = useRef<PreviewHandle>(null)
+  const sizeRef = useRef<{ w: number; h: number } | null>(null)
+
+  // A cached snapshot only ever exists for a component that previewed fine —
+  // report that to the library curation just like a live render would.
+  const onOutcomeRef = useRef(onOutcome)
+  onOutcomeRef.current = onOutcome
+  useEffect(() => {
+    if (snap) onOutcomeRef.current?.(true)
+  }, [snap])
 
   useEffect(() => {
     const el = cardRef.current
@@ -66,20 +112,46 @@ export function LibraryCard({
       }`}
     >
       {/* The WHOLE card is the drag/click handle, so the preview iframe stays
-          pointer-transparent here. Components go live once on the canvas. */}
-      <div className="relative h-[84px] flex items-center justify-center overflow-hidden bg-artboard">
-        {inView && (
-          <PreviewFrame
-            root={root}
-            filePath={entry.filePath}
-            exportName={entry.exportName}
-            renderProps={defaultProps}
-            fit
-            interactive={false}
-            placeholderOnBlank
-            onOutcome={onOutcome}
-            className="w-full h-full"
-          />
+          pointer-transparent here. Components go live once on the canvas.
+          While a live render is pending the tile stays dark (no white flash in
+          a dark UI); it switches to the artboard surface when content lands. */}
+      <div
+        className={`relative h-[84px] flex items-center justify-center overflow-hidden transition-colors ${
+          snap || ready ? 'bg-artboard' : 'bg-card'
+        }`}
+      >
+        {snap ? (
+          <Snapshot snap={snap} />
+        ) : (
+          inView && (
+            <PreviewFrame
+              ref={frameRef}
+              root={root}
+              filePath={entry.filePath}
+              exportName={entry.exportName}
+              renderProps={defaultProps}
+              fit
+              interactive={false}
+              placeholderOnBlank
+              onSize={(s) => {
+                sizeRef.current = { w: s.width, h: s.height }
+              }}
+              onOutcome={(ok) => {
+                setReady(true)
+                onOutcome?.(ok)
+                // Cache the rendered preview for the next session. A short
+                // settle delay lets entrance animations land first.
+                if (ok && entry.source === 'preset') {
+                  setTimeout(async () => {
+                    const r = await frameRef.current?.serialize()
+                    const size = sizeRef.current
+                    if (r?.html && size) writeThumb(entry.id, r.html, r.css, size.w, size.h)
+                  }, 800)
+                }
+              }}
+              className="w-full h-full"
+            />
+          )
         )}
         {/* Badges overlay the thumbnail so the footer keeps its full width
             for the component NAME (previously truncated to two letters). */}

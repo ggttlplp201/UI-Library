@@ -4,6 +4,15 @@ import { fetchGeneratedCode, type CodeSyncPayload, type GeneratedCode } from '..
 const MIN_H = 120
 const MAX_H = () => Math.round(window.innerHeight * 0.75)
 
+// Sync-engine skip reasons arrive as developer strings; show people-words.
+const FRIENDLY_SKIPS: Record<string, string> = {
+  'Element has no editable text content':
+    "This element's text can't be edited by double-clicking — use the Controls tab instead.",
+}
+function friendlySkipReason(reason: string): string {
+  return FRIENDLY_SKIPS[reason] ?? reason
+}
+
 /**
  * Live "generated code" pane (plan §5.6): shows the selected instance's
  * component source with its canvas edits written back by the AST sync
@@ -148,8 +157,8 @@ export function CodePane({
       {result && result.skipped.length > 0 && (
         <div className="px-3 py-1 border-b border-border shrink-0">
           {result.skipped.map((s) => (
-            <p key={s.step} className="text-[10px] text-amber-500">
-              {s.step}: {s.reason}
+            <p key={s.step} className="text-[10px] text-amber-500/90">
+              ⚠ {friendlySkipReason(s.reason)}
             </p>
           ))}
         </div>
