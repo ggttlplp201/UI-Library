@@ -88,9 +88,13 @@ export function LivePreview({
       if (!shell) return
       for (const f of shell.querySelectorAll('iframe')) {
         if (f.contentWindow === ev.source) {
-          // Iframe-local px → viewport px: the board is scaled with CSS zoom.
+          // Iframe-local px → viewport px. The visual rect already includes
+          // every transform above the frame (board zoom AND per-instance
+          // scaleX/scaleY), so map per axis by rendered ÷ layout size.
           const r = f.getBoundingClientRect()
-          moveTo(r.left + (d.x ?? 0) * scale, r.top + (d.y ?? 0) * scale)
+          const fx = f.clientWidth > 0 ? r.width / f.clientWidth : scale
+          const fy = f.clientHeight > 0 ? r.height / f.clientHeight : scale
+          moveTo(r.left + (d.x ?? 0) * fx, r.top + (d.y ?? 0) * fy)
           return
         }
       }

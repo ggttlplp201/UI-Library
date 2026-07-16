@@ -102,12 +102,25 @@ export default function App() {
     writeSession({ kind: 'presets' })
   }
 
-  // "New import" from the workspace: keep the current session saved (backing
-  // out of the import screen returns to it) and go where the label promises.
+  // "New import" from the workspace: remember what was open so backing out of
+  // the import screen returns to the SAME workspace, not the start screen.
+  const [leftBehind, setLeftBehind] = useState<{
+    result: ScanResult
+    sample: SampleProject | null
+  } | null>(null)
   const startNewImport = () => {
+    if (result) setLeftBehind({ result, sample })
     setResult(null)
     setSample(null)
     setImporting(true)
+  }
+  const backFromImport = () => {
+    setImporting(false)
+    if (leftBehind) {
+      setResult(leftBehind.result)
+      setSample(leftBehind.sample)
+      setLeftBehind(null)
+    }
   }
 
   if (restoring) {
@@ -125,13 +138,7 @@ export default function App() {
     if (!importing) {
       return <StartScreen onOpenSample={openSample} onStartBuilding={() => setImporting(true)} />
     }
-    return (
-      <ImportScreen
-        onScanned={openScanned}
-        onUsePresets={openPresets}
-        onBack={() => setImporting(false)}
-      />
-    )
+    return <ImportScreen onScanned={openScanned} onUsePresets={openPresets} onBack={backFromImport} />
   }
   return <Workspace result={result} sample={sample ?? undefined} onReset={startNewImport} />
 }

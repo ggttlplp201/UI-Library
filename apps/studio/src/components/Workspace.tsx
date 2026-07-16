@@ -164,19 +164,23 @@ export function Workspace({
   // ——— Undo / redo ———
   // Snapshot stack over the whole composition. Rapid updates (drags emit one
   // per frame) coalesce: a snapshot is taken only after the state has been
-  // quiet for a beat, so one drag = one undo step.
+  // quiet for a beat, so one drag = one undo step. Snapshots strip the
+  // transient `replay` counter ("Preview animation" clicks) so it never
+  // becomes — or pollutes — an undo step.
+  const snapshotOf = (p: Page[]) =>
+    JSON.stringify(p, (key, value) => (key === 'replay' ? undefined : value))
   const undoStack = useRef<string[]>([])
   const redoStack = useRef<string[]>([])
-  const lastStable = useRef<string>(JSON.stringify(pages))
+  const lastStable = useRef<string>(snapshotOf(pages))
   const historyMuted = useRef(false)
   useEffect(() => {
     if (historyMuted.current) {
       historyMuted.current = false
-      lastStable.current = JSON.stringify(pages)
+      lastStable.current = snapshotOf(pages)
       return
     }
     const t = setTimeout(() => {
-      const now = JSON.stringify(pages)
+      const now = snapshotOf(pages)
       if (now === lastStable.current) return
       undoStack.current.push(lastStable.current)
       if (undoStack.current.length > 100) undoStack.current.shift()
@@ -189,7 +193,7 @@ export function Workspace({
     (direction: 'undo' | 'redo') => {
       // A pending (not yet coalesced) edit still counts — fold it in first so
       // undo right after a change undoes THAT change, not the one before it.
-      const now = JSON.stringify(pages)
+      const now = snapshotOf(pages)
       if (now !== lastStable.current) {
         undoStack.current.push(lastStable.current)
         redoStack.current = []
@@ -202,7 +206,17 @@ export function Workspace({
       to.push(lastStable.current)
       lastStable.current = snapshot
       historyMuted.current = true
-      setPages(JSON.parse(snapshot) as Page[])
+      // Carry the live replay counters over so restoring a snapshot doesn't
+      // re-trigger (or reset) anyone's animation preview.
+      const replayById = new Map<string, number | undefined>()
+      for (const p of pages) for (const i of p.instances) replayById.set(i.id, i.replay)
+      const restored = (JSON.parse(snapshot) as Page[]).map((p) => ({
+        ...p,
+        instances: p.instances.map((i) =>
+          replayById.get(i.id) !== undefined ? { ...i, replay: replayById.get(i.id) } : i,
+        ),
+      }))
+      setPages(restored)
       setSelectedIds([])
     },
     [pages],
