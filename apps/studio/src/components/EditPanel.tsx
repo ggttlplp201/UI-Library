@@ -20,6 +20,11 @@ export function EditPanel({
   onStyleChange,
   position,
   onPositionChange,
+  sizeW,
+  sizeH,
+  onSizeChange,
+  textLock,
+  onTextLockChange,
   pages,
   linkTo,
   onLinkToChange,
@@ -45,6 +50,13 @@ export function EditPanel({
   onStyleChange: (next: StyleOverride) => void
   position: { x: number; y: number }
   onPositionChange: (x: number, y: number) => void
+  /** Explicit smart-fit size (undefined = auto/content-sized) */
+  sizeW?: number
+  sizeH?: number
+  onSizeChange?: (w: number | undefined, h: number | undefined) => void
+  /** Edge-resize stretches text (true) vs re-fits it (false, default) */
+  textLock?: boolean
+  onTextLockChange?: (locked: boolean) => void
   /** Pages the selected instance can navigate to (export renders a real link) */
   pages: { id: string; name: string }[]
   linkTo?: string
@@ -114,6 +126,51 @@ export function EditPanel({
                 />
               </label>
             </div>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest">
+                Size
+              </span>
+              <label className="flex items-center gap-1">
+                <span className="text-[10px] text-muted-foreground">W</span>
+                <input
+                  type="number"
+                  min={24}
+                  placeholder="auto"
+                  value={sizeW != null ? Math.round(sizeW) : ''}
+                  onChange={(e) =>
+                    onSizeChange?.(e.target.value === '' ? undefined : Number(e.target.value), sizeH)
+                  }
+                  className={posClass}
+                />
+              </label>
+              <label className="flex items-center gap-1">
+                <span className="text-[10px] text-muted-foreground">H</span>
+                <input
+                  type="number"
+                  min={24}
+                  placeholder="auto"
+                  value={sizeH != null ? Math.round(sizeH) : ''}
+                  onChange={(e) =>
+                    onSizeChange?.(sizeW, e.target.value === '' ? undefined : Number(e.target.value))
+                  }
+                  className={posClass}
+                />
+              </label>
+            </div>
+            <label
+              className="flex items-center gap-1.5 mt-1.5 cursor-pointer select-none"
+              title="Locked: stretching the box also stretches the text (it can distort). Unlocked: the text re-fits itself when you resize."
+            >
+              <input
+                type="checkbox"
+                checked={textLock ?? false}
+                onChange={(e) => onTextLockChange?.(e.target.checked)}
+                className="accent-[var(--primary,#7c6fff)]"
+              />
+              <span className="text-[10px] text-muted-foreground">
+                Lock text to shape (stretch instead of re-fit)
+              </span>
+            </label>
             <div className="flex items-center gap-2 mt-1.5">
               <span
                 className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest shrink-0"

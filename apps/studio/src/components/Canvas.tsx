@@ -93,9 +93,14 @@ interface TransformState {
   originY: number
   naturalW: number
   naturalH: number
+  /** Smart-fit resize: displayed box at drag start ((w ?? nat.w) × scale) */
+  originDisplayW: number
+  originDisplayH: number
+  /** Whether edge handles stretch (text locked) or resize the real box */
+  textLock: boolean
 }
 
-type TransformPatch = { scaleX?: number; scaleY?: number; rotation?: number }
+type TransformPatch = { scaleX?: number; scaleY?: number; rotation?: number; w?: number; h?: number }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
 
@@ -261,12 +266,14 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     }
   }
 
-  // Artboard height: whatever the user dragged out, but never clipping content.
+  // Artboard height: ONLY the bottom-edge grip grows the page — the board
+  // must not chase components being dragged near its bottom edge. Content can
+  // hang past the edge (bleed); the stage still scrolls far enough to reach it.
   const contentBottom = instances.reduce((b, i) => {
     const nat = natural[i.id]
     return Math.max(b, i.y + (nat ? nat.h * (i.scaleY ?? 1) : 0))
   }, 0)
-  const boardH = Math.max(MIN_BOARD_HEIGHT, boardHeight ?? 0, Math.ceil(contentBottom) + 80)
+  const boardH = Math.max(MIN_BOARD_HEIGHT, boardHeight ?? 0)
   const heightDrag = useRef<{ startY: number; startH: number } | null>(null)
 
   /** Client → artboard coordinates (compensates zoom). */
@@ -395,6 +402,9 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
       originY: inst.y,
       naturalW: nat?.w || rect.width / sx || 1,
       naturalH: nat?.h || rect.height / sy || 1,
+      originDisplayW: (inst.w ?? nat?.w ?? (rect.width / sx || 1)) * sx,
+      originDisplayH: (inst.h ?? nat?.h ?? (rect.height / sy || 1)) * sy,
+      textLock: inst.textLock ?? false,
     }
   }
   const moveTransform = (e: React.PointerEvent, id: string) => {
@@ -410,9 +420,8 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     } else if (t.mode === 'rotate') {
       const angle = (Math.atan2(e.clientY - t.centerY, e.clientX - t.centerX) * 180) / Math.PI
       onTransform(id, { rotation: Math.round(t.originRotation + (angle - t.originAngle)) })
-    } else {
-      // Edge: stretch one axis (length). Left/top handles also shift the origin
-      // so the opposite edge stays put (exact when unrotated).
+    } else if (t.textLock) {
+      // Text locked: edges stretch the scale — text distorts with the box.
       const z = zoomRef.current || 1
       const dx = (e.clientX - t.pointerX) / z
       const dy = (e.clientY - t.pointerY) / z
@@ -426,6 +435,26 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
       } else if (t.edge === 'n') {
         onTransform(id, { scaleY: clamp(t.originScaleY - dy / t.naturalH, 0.1, 12) })
         onMove(id, t.originX, Math.max(0, t.originY + dy))
+      }
+    } else {
+      // Smart fit (default): edges resize the REAL box — the component
+      // re-renders at the new size and its text reflows instead of stretching.
+      const z = zoomRef.current || 1
+      const dx = (e.clientX - t.pointerX) / z
+      const dy = (e.clientY - t.pointerY) / z
+      const minPx = 24
+      if (t.edge === 'e') {
+        onTransform(id, { w: Math.max(minPx, (t.originDisplayW + dx) / t.originScaleX) })
+      } else if (t.edge === 'w') {
+        const newW = Math.max(minPx, (t.originDisplayW - dx) / t.originScaleX)
+        onTransform(id, { w: newW })
+        onMove(id, Math.max(0, t.originX + (t.originDisplayW - newW * t.originScaleX)), t.originY)
+      } else if (t.edge === 's') {
+        onTransform(id, { h: Math.max(minPx, (t.originDisplayH + dy) / t.originScaleY) })
+      } else if (t.edge === 'n') {
+        const newH = Math.max(minPx, (t.originDisplayH - dy) / t.originScaleY)
+        onTransform(id, { h: newH })
+        onMove(id, t.originX, Math.max(0, t.originY + (t.originDisplayH - newH * t.originScaleY)))
       }
     }
   }
@@ -443,7 +472,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           className="relative"
           style={{
             width: Math.max(vpWidth, artboardWidth * zoom + BOARD_MARGIN * 2),
-            height: boardH * zoom + BOARD_MARGIN * 2 + 40,
+            height: Math.max(boardH, contentBottom) * zoom + BOARD_MARGIN * 2 + 40,
           }}
         >
       <div
@@ -692,6 +721,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                     renderProps={composeRenderProps(inst.args, inst.style)}
                     anim={inst.anim}
                     fx={inst.fx}
+                    host={inst.w || inst.h ? { w: inst.w, h: inst.h } : undefined}
                     replayKey={inst.replay}
                     interactive={live}
                     onUserClick={
@@ -717,6 +747,8 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                         dim < TINY_DIM &&
                         inst.scaleX === undefined &&
                         inst.scaleY === undefined &&
+                        inst.w === undefined &&
+                        inst.h === undefined &&
                         !autoScaled.current.has(inst.id)
                       ) {
                         autoScaled.current.add(inst.id)

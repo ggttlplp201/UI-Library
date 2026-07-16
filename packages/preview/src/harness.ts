@@ -191,7 +191,7 @@ class ErrorBoundary extends React.Component {
   render() { return this.state.err ? null : this.props.children }
 }
 
-async function renderComponent({ module, exportName, props, anim, fx }) {
+async function renderComponent({ module, exportName, props, anim, fx, host }) {
   const token = ++renderToken
   try {
     let mod
@@ -209,6 +209,7 @@ async function renderComponent({ module, exportName, props, anim, fx }) {
     const Comp = mod[exportName] || mod.default
     if (!Comp) { post({ type: 'error', message: 'Export "' + exportName + '" not found in ' + module }); return }
     root.render(React.createElement(ErrorBoundary, { key: token, token }, React.createElement(Comp, props || {})))
+    applyHost(host)
     // Double-rAF lets layout settle — but rAF never fires in hidden/background
     // tabs, so race it against a timeout or the preview would report nothing
     // until the tab becomes visible.
@@ -228,6 +229,7 @@ async function renderComponent({ module, exportName, props, anim, fx }) {
       // that never accept/spread a \`style\` prop (most demo components), so
       // apply them straight to the rendered root element as well.
       applyStyleOverride(props && props.style)
+      applyHost(host)
       applyAnim(anim)
       applyFx(fx)
       const r = rootEl.getBoundingClientRect()
@@ -243,6 +245,25 @@ async function renderComponent({ module, exportName, props, anim, fx }) {
   } catch (e) {
     if (token === renderToken) post({ type: 'error', message: String((e && e.message) || e) })
   }
+}
+
+// Smart-fit resize: the Studio can pin the mount root to an explicit size and
+// the component's own root is stamped to fill it, so text/content reflows to
+// the box instead of stretching. The inline stamp (not a class) survives
+// serialization, so exports keep the resized layout.
+function applyHost(host) {
+  const w = host && host.w
+  const h = host && host.h
+  rootEl.style.width = w ? w + 'px' : ''
+  rootEl.style.height = h ? h + 'px' : ''
+  // The body is a flex row and the iframe starts at the OLD content width —
+  // without this the pinned root flex-shrinks back to min-content.
+  rootEl.style.flexShrink = w || h ? '0' : ''
+  const child = rootEl.firstElementChild
+  if (!child) return
+  child.style.width = w ? '100%' : ''
+  child.style.height = h ? '100%' : ''
+  if (w || h) child.style.boxSizing = 'border-box'
 }
 
 // Only the Style-tab's CSS keys — never layout/transform, which components

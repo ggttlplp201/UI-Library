@@ -42,6 +42,11 @@ export interface PreviewFrameProps {
    */
   autoSize?: boolean
   /**
+   * Smart-fit resize: render the component AT this size (board px) — the
+   * harness pins its mount root and the component fills it, so text reflows.
+   */
+  host?: { w?: number; h?: number }
+  /**
    * Thumbnail mode: render the component at its natural size, then scale it
    * down (never up) to fit this container, centered. Prevents squishing/
    * clipping in the fixed-size library cards. Overrides autoSize.
@@ -82,6 +87,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     onUserClick,
     onSlots,
     autoSize = true,
+    host,
     fit = false,
     interactive = true,
     placeholderOnBlank = false,
@@ -104,6 +110,8 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   animRef.current = anim
   const fxRef = useRef(fx)
   fxRef.current = fx
+  const hostRef = useRef(host)
+  hostRef.current = host
   const onSizeRef = useRef(onSize)
   onSizeRef.current = onSize
   const onUserClickRef = useRef(onUserClick)
@@ -151,6 +159,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         props: propsRef.current,
         anim: compiled ? { ...compiled, playNow } : null,
         fx: fxRef.current ?? null,
+        host: hostRef.current ?? null,
       },
       '*',
     )
@@ -208,6 +217,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   const propsKey = JSON.stringify(renderProps)
   const animKey = JSON.stringify(anim ?? null)
   const fxKey = JSON.stringify(fx ?? null)
+  const hostKey = JSON.stringify(host ?? null)
   // A replayKey bump means "Preview animation": ask the harness to play the
   // effect immediately even when its trigger is hover/click/scroll.
   const lastReplayRef = useRef(replayKey)
@@ -215,7 +225,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     const isReplay = replayKey !== lastReplayRef.current
     lastReplayRef.current = replayKey
     postRender(isReplay)
-  }, [postRender, propsKey, animKey, fxKey, replayKey])
+  }, [postRender, propsKey, animKey, fxKey, hostKey, replayKey])
 
   // Track the container size for fit (thumbnail) scaling.
   useEffect(() => {

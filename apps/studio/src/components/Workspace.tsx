@@ -807,6 +807,11 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       onStyleChange={setStyle}
       position={{ x: selected?.x ?? 0, y: selected?.y ?? 0 }}
       onPositionChange={(x, y) => selected && patchInstance(selected.id, { x, y })}
+      sizeW={selected?.w}
+      sizeH={selected?.h}
+      onSizeChange={(w, h) => selected && patchInstance(selected.id, { w, h })}
+      textLock={selected?.textLock}
+      onTextLockChange={(locked) => selected && patchInstance(selected.id, { textLock: locked })}
       pages={pages.map((p) => ({ id: p.id, name: p.name }))}
       linkTo={selected?.linkTo}
       onLinkToChange={setLinkTo}

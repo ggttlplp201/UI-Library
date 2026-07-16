@@ -31,6 +31,19 @@ export interface Instance {
   scaleX?: number
   /** Vertical scale; default 1 */
   scaleY?: number
+  /**
+   * Explicit content width/height (board px, pre-scale). Set by edge-resize in
+   * smart-fit mode: the component renders AT this size so text reflows instead
+   * of stretching. Undefined = natural (content-sized).
+   */
+  w?: number
+  h?: number
+  /**
+   * Lock text to the box: edge handles stretch via scale (text distorts with
+   * the component). Off (default) = smart fit: edges resize the real box and
+   * text reflows.
+   */
+  textLock?: boolean
   /** Rotation in degrees (rotate handle); default 0 */
   rotation?: number
   args: Record<string, unknown>
