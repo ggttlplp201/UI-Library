@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import type { ControlSpec, StyleOverride } from '../lib/controls'
-import type { PageFx } from '../lib/canvas'
+import { ARTBOARD_WIDTHS, DEFAULT_ARTBOARD_WIDTH, type PageFx } from '../lib/canvas'
 import { CURSORS, LOADERS, LOADER_CSS, loaderById, loaderHtml } from '../lib/pagefx'
 import { ControlInput } from './controls/ControlInput'
 import { StyleTab } from './StyleTab'
@@ -30,6 +30,8 @@ export function EditPanel({
   pageName,
   pageFx,
   onPageFxChange,
+  artboardWidth,
+  onArtboardWidthChange,
   selectionCount = 0,
 }: {
   side: PanelSide
@@ -58,6 +60,9 @@ export function EditPanel({
   /** Active page's effects (loading screen, cursor) */
   pageFx?: PageFx
   onPageFxChange?: (fx: PageFx) => void
+  /** Active page's design width (artboard) */
+  artboardWidth?: number
+  onArtboardWidthChange?: (w: number) => void
   /** How many instances are selected (multi-select shows a group hint, not page settings) */
   selectionCount?: number
 }) {
@@ -175,6 +180,24 @@ export function EditPanel({
           <p className="text-[10px] text-muted-foreground mt-1 mb-3">
             Select a component to edit it — or set what this page does on its own:
           </p>
+
+          <p
+            className="text-[10px] font-semibold mb-1.5"
+            title="The page's design width. Visitors on smaller screens see the page scaled to fit."
+          >
+            Page width
+          </p>
+          <select
+            value={artboardWidth ?? DEFAULT_ARTBOARD_WIDTH}
+            onChange={(e) => onArtboardWidthChange?.(Number(e.target.value))}
+            className="w-full rounded-md px-2 py-1 mb-3 text-xs bg-input border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {ARTBOARD_WIDTHS.map((w) => (
+              <option key={w.value} value={w.value}>
+                {w.label}
+              </option>
+            ))}
+          </select>
 
           <p className="text-[10px] font-semibold mb-1.5" title="Shown while the page loads (and on navigation) in the exported site">
             Loading screen

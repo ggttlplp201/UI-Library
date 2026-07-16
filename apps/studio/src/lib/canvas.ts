@@ -80,7 +80,23 @@ export interface Page {
   /** Node position in the Pages graph view */
   nodeX: number
   nodeY: number
+  /** Artboard (design surface) width in px; pages saved before artboards default to 1280 */
+  artboardWidth?: number
+  /** Explicit artboard height set by dragging the bottom edge; content can still push past it */
+  boardHeight?: number
 }
+
+/** Artboard widths offered by the page settings switcher. */
+export const ARTBOARD_WIDTHS = [
+  { value: 1440, label: '1440 — desktop wide' },
+  { value: 1280, label: '1280 — desktop' },
+  { value: 1024, label: '1024 — small laptop' },
+  { value: 768, label: '768 — tablet' },
+  { value: 390, label: '390 — phone' },
+]
+export const DEFAULT_ARTBOARD_WIDTH = 1280
+/** Artboard height floor — an empty page still shows a page-sized surface. */
+export const MIN_BOARD_HEIGHT = 720
 
 let counter = 0
 export function newInstanceId(): string {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RegistryEntry, ScanResult } from '@component-style-studio/registry'
 import { deriveControls, initialArgs, type ControlSpec, type StyleOverride } from '../lib/controls'
 import {
+  DEFAULT_ARTBOARD_WIDTH,
   newInstanceId,
   newPageId,
   pageSlug,
@@ -133,6 +134,23 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     return () => clearTimeout(t)
   }, [pages, openTabs, storageKey])
 
+  // In-app clipboard for Cmd/Ctrl+C/V and Cmd/Ctrl+D: cloned instances get
+  // fresh ids and a small offset so the copy is visibly a copy.
+  const clipboardRef = useRef<Instance[]>([])
+  const pasteInstances = useCallback(
+    (source: Instance[]) => {
+      const clones = source.map((i) => ({
+        ...(JSON.parse(JSON.stringify(i)) as Instance),
+        id: newInstanceId(),
+        x: i.x + 16,
+        y: i.y + 16,
+      }))
+      setInstances((prev) => [...prev, ...clones])
+      setSelectedIds(clones.map((c) => c.id))
+    },
+    [setInstances],
+  )
+
   // Canvas keyboard shortcuts (ignored while typing in a field): Escape
   // deselects, Delete/Backspace removes the selection, arrows nudge it
   // (Shift = 10px). Uses the stable state setters so it depends only on which
@@ -148,8 +166,32 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
           t.isContentEditable)
       )
         return
-      // Leave browser/OS shortcuts (Cmd/Ctrl/Alt combos) alone.
-      if (e.metaKey || e.ctrlKey || e.altKey) return
+      // Copy / paste / duplicate selected components (Cmd on Mac, Ctrl elsewhere).
+      if (e.metaKey || e.ctrlKey) {
+        const k = e.key.toLowerCase()
+        if (k === 'c' && selectedIds.length > 0) {
+          // Don't hijack copying real text (e.g. from the code drawer).
+          if (window.getSelection()?.toString()) return
+          e.preventDefault()
+          clipboardRef.current = instances
+            .filter((i) => selectedIds.includes(i.id))
+            .map((i) => JSON.parse(JSON.stringify(i)) as Instance)
+          return
+        }
+        if (k === 'v' && clipboardRef.current.length > 0) {
+          e.preventDefault()
+          pasteInstances(clipboardRef.current)
+          return
+        }
+        if (k === 'd' && selectedIds.length > 0) {
+          e.preventDefault()
+          pasteInstances(instances.filter((i) => selectedIds.includes(i.id)))
+          return
+        }
+        return
+      }
+      // Leave other browser/OS shortcuts (Alt combos) alone.
+      if (e.altKey) return
       if (e.key === 'Escape') {
         setPreviewHtml(null)
         setSelectedIds([])
@@ -183,7 +225,7 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [selectedIds, setInstances])
+  }, [selectedIds, setInstances, instances, pasteInstances])
 
   const entries = useMemo(
     () => [...result.entries, ...presets.entries],
@@ -509,7 +551,13 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       const cursorAttr = fx?.cursor
         ? ` data-cursor="${fx.cursor}" data-cursor-accent="${fx.cursorAccent || '#E3B23C'}"`
         : ''
-      sections.push(`<section data-page="${slug}" class="ss-page"${cursorAttr}>\n${snap.body}\n</section>`)
+      // The artboard the user designed at, scaled by the runtime to fit the
+      // visitor's viewport (Canva-style: design width shrinks proportionally).
+      const bw = page.artboardWidth ?? DEFAULT_ARTBOARD_WIDTH
+      const bh = Math.max(page.boardHeight ?? 0, snap.contentHeight)
+      sections.push(
+        `<section data-page="${slug}" class="ss-page"${cursorAttr}>\n<div class="ss-board" data-w="${bw}" style="width:${bw}px;min-height:${bh}px;position:relative;margin:0 auto;">\n${snap.body}\n</div>\n</section>`,
+      )
       const loaderDef = loaderById(fx?.loader)
       if (loaderDef) {
         overlays.push(
@@ -622,6 +670,16 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       try { __ssFxAttach(el, JSON.parse(el.getAttribute('data-fx'))); } catch (err) { /* bad cfg */ }
     });
   }
+  // Scale each page's design-width board down to the visitor's viewport
+  // (never up past 100%). CSS zoom keeps layout height in sync.
+  function fitBoards() {
+    document.querySelectorAll('.ss-board').forEach(function (b) {
+      var w = Number(b.getAttribute('data-w')) || 1280;
+      b.style.zoom = String(Math.min(1, window.innerWidth / w));
+    });
+  }
+  window.addEventListener('resize', fitBoards);
+  fitBoards();
   window.addEventListener('hashchange', function () {
     current = location.hash.replace(/^#\\/?/, '') || first;
     show();
@@ -758,6 +816,12 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
       pageName={activePage.name}
       pageFx={activePage.fx}
       onPageFxChange={setPageFx}
+      artboardWidth={activePage.artboardWidth ?? DEFAULT_ARTBOARD_WIDTH}
+      onArtboardWidthChange={(w) =>
+        setPages((prev) =>
+          prev.map((p) => (p.id === activePageIdResolved ? { ...p, artboardWidth: w } : p)),
+        )
+      }
       selectionCount={selectedIds.length}
       animationSlot={
         <AnimationTab value={selected?.anim} onChange={setAnim} onReplay={replayAnim} />
@@ -990,6 +1054,13 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
               entryById={entryById}
               rootFor={rootFor}
               theme={canvasTheme}
+              artboardWidth={activePage.artboardWidth ?? DEFAULT_ARTBOARD_WIDTH}
+              boardHeight={activePage.boardHeight}
+              onBoardHeightChange={(h) =>
+                setPages((prev) =>
+                  prev.map((p) => (p.id === activePageIdResolved ? { ...p, boardHeight: h } : p)),
+                )
+              }
               selectedId={selectedId}
               onSelect={setSelectedId}
               selectedIds={selectedIds}

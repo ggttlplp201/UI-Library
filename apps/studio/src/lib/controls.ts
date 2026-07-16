@@ -71,7 +71,7 @@ const UNEDITABLE = [
 // Components that render a void/childless host element — don't inject children.
 const VOID_LIKE = /input|image|img|avatar|separator|divider|^hr$|^br$|icon$/i
 
-const COLOR_NAME = /colou?r|background|\bbg\b|fill|stroke|tint|shade/i
+const COLOR_NAME = /colou?r|background|\bbg\b|fill|stroke|tint|shade|accent|\bhue\b|glow/i
 
 function parseUnion(type: string): string[] | null {
   const parts = type.split('|').map((p) => p.trim())

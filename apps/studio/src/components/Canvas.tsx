@@ -1,7 +1,7 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import { compileAnim } from '../lib/animation'
-import type { Instance } from '../lib/canvas'
+import { MIN_BOARD_HEIGHT, type Instance } from '../lib/canvas'
 import { composeRenderProps } from '../lib/controls'
 import { PreviewFrame, type PreviewHandle } from './PreviewFrame'
 import { DRAG_MIME } from './LibraryCard'
@@ -18,6 +18,8 @@ export interface PageSnapshot {
   animCss: string[]
   /** How many instances actually serialized (readiness signal for retries) */
   serialized: number
+  /** Content-driven board height (bottom-most instance edge + padding) */
+  contentHeight: number
 }
 
 /** Imperative handle so the header's Export button can snapshot the canvas. */
@@ -26,11 +28,16 @@ export interface CanvasHandle {
   snapshotPage: () => Promise<PageSnapshot>
 }
 
-const CANVAS_BG: Record<CanvasTheme, string> = { dark: '#0c0c0f', light: '#ffffff' }
+// The artboard is the page the user designs; the gutter is the studio floor
+// around it (Canva-style). Board bg matches the exported page background.
+const BOARD_BG: Record<CanvasTheme, string> = { dark: '#0c0c0f', light: '#ffffff' }
+const GUTTER_BG: Record<CanvasTheme, string> = { dark: '#1a1a1f', light: '#e8e8ec' }
 const DOT_COLOR: Record<CanvasTheme, string> = {
   dark: 'rgba(255,255,255,0.10)',
   light: 'rgba(0,0,0,0.10)',
 }
+/** Breathing room around the artboard inside the scrollable viewport. */
+const BOARD_MARGIN = 48
 
 // Corner handles scale both axes proportionally (Canva-style); edge handles
 // stretch one axis (length); a dedicated handle rotates.
@@ -116,6 +123,11 @@ interface CanvasProps {
   onNavigate?: (pageId: string) => void
   /** A component reported its named link slots (data-link-slot buttons) */
   onSlotsReported?: (instanceId: string, slots: string[]) => void
+  /** Artboard (page) width for the active page */
+  artboardWidth: number
+  /** Explicit artboard height the user dragged out (content can exceed it) */
+  boardHeight?: number
+  onBoardHeightChange?: (h: number) => void
 }
 
 export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
@@ -138,9 +150,13 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     slotHrefFor,
     onNavigate,
     onSlotsReported,
+    artboardWidth,
+    boardHeight,
+    onBoardHeightChange,
   },
   ref,
 ) {
+  const viewportRef = useRef<HTMLDivElement>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
   const moveRef = useRef<MoveState | null>(null)
   // Whether the last pointer gesture actually dragged (suppresses the click).
@@ -156,9 +172,108 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
   const marqueeRef = useRef<MarqueeState | null>(null)
   const autoScaled = useRef(new Set<string>())
 
+  // Zoom: the artboard renders at `zoom` inside a scrollable viewport.
+  // Default fits the artboard's width to the panel (never above 100%).
+  const [zoom, setZoom] = useState(1)
+  const zoomRef = useRef(zoom)
+  zoomRef.current = zoom
+  // Viewport width as state so the layout centers correctly on first paint
+  // and follows panel resizes.
+  const [vpWidth, setVpWidth] = useState(0)
+  useEffect(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+    const ro = new ResizeObserver(() => setVpWidth(vp.clientWidth))
+    ro.observe(vp)
+    setVpWidth(vp.clientWidth)
+    return () => ro.disconnect()
+  }, [])
+  const fitZoom = () => {
+    const vw = viewportRef.current?.clientWidth ?? 0
+    if (vw > 0) setZoom(clamp((vw - BOARD_MARGIN * 2) / artboardWidth, 0.15, 1))
+  }
+  // Refit when the page's artboard width changes or the panel first measures.
+  const vpReady = vpWidth > 0
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(fitZoom, [artboardWidth, vpReady])
+  // Cmd/Ctrl+scroll zooms (native listener: React's wheel handler is passive,
+  // so preventDefault to stop browser page-zoom only works here).
+  useEffect(() => {
+    const vp = viewportRef.current
+    if (!vp) return
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      setZoom((z) => clamp(z * (1 - e.deltaY * 0.0022), 0.15, 2))
+    }
+    vp.addEventListener('wheel', onWheel, { passive: false })
+    return () => vp.removeEventListener('wheel', onWheel)
+  }, [])
+
+  // Selection handles live inside the zoomed board — compensate so they stay
+  // a grabbable size on screen at any zoom.
+  const handlePx = Math.round(12 / Math.max(zoom, 0.35))
+
+  // Canva-style snapping: while dragging, edges/centers pull toward the
+  // artboard's edges/center and other elements' edges/centers, drawing pink
+  // guide lines. Alt disables. Threshold is constant on screen (6px).
+  const [guides, setGuides] = useState<{ v: number[]; h: number[] }>({ v: [], h: [] })
+  const boxOf = (i: Instance) => {
+    const nat = natural[i.id]
+    return { w: (nat?.w ?? 0) * (i.scaleX ?? 1), h: (nat?.h ?? 0) * (i.scaleY ?? 1) }
+  }
+  const applySnap = (
+    movingIds: string[],
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    disabled: boolean,
+  ): { x: number; y: number; v: number[]; hz: number[] } => {
+    if (disabled) return { x, y, v: [], hz: [] }
+    const th = 6 / Math.max(zoomRef.current, 0.15)
+    const vTargets: number[] = [0, artboardWidth / 2, artboardWidth]
+    const hTargets: number[] = [0, boardH]
+    for (const other of instances) {
+      if (movingIds.includes(other.id)) continue
+      const ob = boxOf(other)
+      if (ob.w === 0) continue
+      vTargets.push(other.x, other.x + ob.w / 2, other.x + ob.w)
+      hTargets.push(other.y, other.y + ob.h / 2, other.y + ob.h)
+    }
+    let bestV: { d: number; t: number; edge: number } | null = null
+    for (const t of vTargets)
+      for (const edge of [0, w / 2, w]) {
+        const d = Math.abs(x + edge - t)
+        if (d < th && (!bestV || d < bestV.d)) bestV = { d, t, edge }
+      }
+    let bestH: { d: number; t: number; edge: number } | null = null
+    for (const t of hTargets)
+      for (const edge of [0, h / 2, h]) {
+        const d = Math.abs(y + edge - t)
+        if (d < th && (!bestH || d < bestH.d)) bestH = { d, t, edge }
+      }
+    return {
+      x: bestV ? bestV.t - bestV.edge : x,
+      y: bestH ? bestH.t - bestH.edge : y,
+      v: bestV ? [bestV.t] : [],
+      hz: bestH ? [bestH.t] : [],
+    }
+  }
+
+  // Artboard height: whatever the user dragged out, but never clipping content.
+  const contentBottom = instances.reduce((b, i) => {
+    const nat = natural[i.id]
+    return Math.max(b, i.y + (nat ? nat.h * (i.scaleY ?? 1) : 0))
+  }, 0)
+  const boardH = Math.max(MIN_BOARD_HEIGHT, boardHeight ?? 0, Math.ceil(contentBottom) + 80)
+  const heightDrag = useRef<{ startY: number; startH: number } | null>(null)
+
+  /** Client → artboard coordinates (compensates zoom). */
   const localPoint = (clientX: number, clientY: number) => {
     const rect = surfaceRef.current?.getBoundingClientRect()
-    return { x: clientX - (rect?.left ?? 0), y: clientY - (rect?.top ?? 0) }
+    const z = zoomRef.current || 1
+    return { x: (clientX - (rect?.left ?? 0)) / z, y: (clientY - (rect?.top ?? 0)) / z }
   }
 
   useImperativeHandle(ref, () => ({
@@ -233,11 +348,17 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
         }
         parts.push(markup)
       }
+      const contentHeight =
+        instances.reduce((b, i) => {
+          const nat = natural[i.id]
+          return Math.max(b, i.y + (nat ? nat.h * (i.scaleY ?? 1) : 0))
+        }, 0) + 80
       return {
         body: parts.join('\n'),
         cssBlocks: [...cssBlocks],
         animCss: [...animCss],
         serialized,
+        contentHeight: Math.ceil(contentHeight),
       }
     },
   }))
@@ -292,8 +413,9 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     } else {
       // Edge: stretch one axis (length). Left/top handles also shift the origin
       // so the opposite edge stays put (exact when unrotated).
-      const dx = e.clientX - t.pointerX
-      const dy = e.clientY - t.pointerY
+      const z = zoomRef.current || 1
+      const dx = (e.clientX - t.pointerX) / z
+      const dy = (e.clientY - t.pointerY) / z
       if (t.edge === 'e') {
         onTransform(id, { scaleX: clamp(t.originScaleX + dx / t.naturalW, 0.1, 12) })
       } else if (t.edge === 'w') {
@@ -314,11 +436,28 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
   }
 
   return (
-    <main className="flex-1 min-w-0 relative overflow-hidden" style={{ background: CANVAS_BG[theme] }}>
+    <main className="flex-1 min-w-0 relative overflow-hidden" style={{ background: GUTTER_BG[theme] }}>
+      <div ref={viewportRef} className="absolute inset-0 overflow-auto">
+        {/* Stage sizes the scrollable area; the artboard centers within it. */}
+        <div
+          className="relative"
+          style={{
+            width: Math.max(vpWidth, artboardWidth * zoom + BOARD_MARGIN * 2),
+            height: boardH * zoom + BOARD_MARGIN * 2 + 40,
+          }}
+        >
       <div
         ref={surfaceRef}
-        className="absolute inset-0"
+        data-artboard
+        className="absolute shadow-[0_2px_24px_rgba(0,0,0,0.35)]"
         style={{
+          left: Math.max(BOARD_MARGIN, (vpWidth - artboardWidth * zoom) / 2),
+          top: BOARD_MARGIN,
+          width: artboardWidth,
+          height: boardH,
+          transform: `scale(${zoom})`,
+          transformOrigin: 'top left',
+          background: BOARD_BG[theme],
           backgroundImage: `radial-gradient(${DOT_COLOR[theme]} 1px, transparent 1px)`,
           backgroundSize: '20px 20px',
           backgroundPosition: '-1px -1px',
@@ -356,6 +495,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           // Select every instance whose box intersects the marquee.
           const surfRect = surfaceRef.current?.getBoundingClientRect()
           if (!surfRect) return
+          const z = zoomRef.current || 1
           const L = Math.min(m.x0, m.x1)
           const R = Math.max(m.x0, m.x1)
           const T = Math.min(m.y0, m.y1)
@@ -363,9 +503,9 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           const hits: string[] = []
           surfaceRef.current?.querySelectorAll<HTMLElement>('[data-inst]').forEach((el) => {
             const r = el.getBoundingClientRect()
-            const l = r.left - surfRect.left
-            const t = r.top - surfRect.top
-            if (l < R && l + r.width > L && t < B && t + r.height > T) {
+            const l = (r.left - surfRect.left) / z
+            const t = (r.top - surfRect.top) / z
+            if (l < R && l + r.width / z > L && t < B && t + r.height / z > T) {
               const id = el.dataset.inst
               if (id) hits.push(id)
             }
@@ -384,6 +524,21 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           onAdd(entryId, Math.max(0, x - 20), Math.max(0, y - 16))
         }}
       >
+        {/* Snap guides (Canva's pink lines) — full-height/width hairlines. */}
+        {guides.v.map((gx) => (
+          <div
+            key={`gv-${gx}`}
+            className="absolute z-30 pointer-events-none"
+            style={{ left: gx, top: 0, bottom: 0, width: Math.max(1, 1 / zoom), background: '#ec4899' }}
+          />
+        ))}
+        {guides.h.map((gy) => (
+          <div
+            key={`gh-${gy}`}
+            className="absolute z-30 pointer-events-none"
+            style={{ top: gy, left: 0, right: 0, height: Math.max(1, 1 / zoom), background: '#ec4899' }}
+          />
+        ))}
         {marquee && (
           <div
             className="absolute z-20 border border-primary/70 bg-primary/10 rounded-sm pointer-events-none"
@@ -464,11 +619,36 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
               onPointerMove={(e) => {
                 const m = moveRef.current
                 if (!m || m.id !== inst.id) return
-                const dx = e.clientX - m.pointerX
-                const dy = e.clientY - m.pointerY
+                const z = zoomRef.current || 1
+                let dx = (e.clientX - m.pointerX) / z
+                let dy = (e.clientY - m.pointerY) / z
                 if (Math.abs(dx) + Math.abs(dy) > 2) {
                   m.moved = true
                   moveRefMoved.current = true
+                }
+                // Snap the grabbed instance; the rest of the group rides the
+                // same (snapped) delta so relative layout is preserved.
+                const primary = m.origins.find(([gid]) => gid === inst.id)?.[1]
+                if (primary) {
+                  const b = boxOf(inst)
+                  const snapped = applySnap(
+                    m.origins.map(([gid]) => gid),
+                    primary.x + dx,
+                    primary.y + dy,
+                    b.w,
+                    b.h,
+                    e.altKey,
+                  )
+                  dx = snapped.x - primary.x
+                  dy = snapped.y - primary.y
+                  setGuides((g) =>
+                    g.v.length === snapped.v.length &&
+                    g.h.length === snapped.hz.length &&
+                    g.v[0] === snapped.v[0] &&
+                    g.h[0] === snapped.hz[0]
+                      ? g
+                      : { v: snapped.v, h: snapped.hz },
+                  )
                 }
                 for (const [gid, o] of m.origins) {
                   onMove(gid, Math.max(0, o.x + dx), Math.max(0, o.y + dy))
@@ -476,6 +656,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
               }}
               onPointerUp={(e) => {
                 if (moveRef.current?.id === inst.id) moveRef.current = null
+                setGuides((g) => (g.v.length || g.h.length ? { v: [], h: [] } : g))
                 if (e.currentTarget.hasPointerCapture(e.pointerId))
                   e.currentTarget.releasePointerCapture(e.pointerId)
               }}
@@ -629,8 +810,8 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                     {CORNERS.map((c, i) => (
                       <span
                         key={`corner-${i}`}
-                        className={`absolute z-10 w-3 h-3 rounded-full bg-primary border border-white ${c.className}`}
-                        style={{ cursor: c.cursor }}
+                        className={`absolute z-10 rounded-full bg-primary border border-white ${c.className}`}
+                        style={{ cursor: c.cursor, width: handlePx, height: handlePx }}
                         title="Drag to scale"
                         onClick={(e) => e.stopPropagation()}
                         onPointerDown={(e) => startTransform(e, inst, 'scale')}
@@ -640,8 +821,8 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                     ))}
                     {/* Dedicated rotate handle, below the component. */}
                     <span
-                      className="absolute z-10 -bottom-9 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-card border border-primary text-primary text-[11px] leading-none flex items-center justify-center shadow-sm"
-                      style={{ cursor: 'grab' }}
+                      className="absolute z-10 -bottom-9 left-1/2 -translate-x-1/2 rounded-full bg-card border border-primary text-primary leading-none flex items-center justify-center shadow-sm"
+                      style={{ cursor: 'grab', width: handlePx * 1.6, height: handlePx * 1.6, fontSize: handlePx * 0.9 }}
                       title="Drag to rotate"
                       onClick={(e) => e.stopPropagation()}
                       onPointerDown={(e) => startTransform(e, inst, 'rotate')}
@@ -656,6 +837,70 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
             </div>
           )
         })}
+
+        {/* Bottom-edge grip: drag to make the page taller (or shorter, down
+            to its content). Sits on the artboard's bottom edge. */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center"
+          style={{ bottom: -14, width: 120, height: 28, cursor: 'ns-resize', touchAction: 'none' }}
+          title="Drag to change page height"
+          onPointerDown={(e) => {
+            e.stopPropagation()
+            ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+            heightDrag.current = { startY: e.clientY, startH: boardH }
+          }}
+          onPointerMove={(e) => {
+            const d = heightDrag.current
+            if (!d) return
+            const z = zoomRef.current || 1
+            onBoardHeightChange?.(Math.round(Math.max(MIN_BOARD_HEIGHT, d.startH + (e.clientY - d.startY) / z)))
+          }}
+          onPointerUp={(e) => {
+            heightDrag.current = null
+            const el = e.currentTarget as HTMLElement
+            if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId)
+          }}
+        >
+          <span className="w-16 h-1.5 rounded-full bg-primary/70 border border-white/40" />
+        </div>
+      </div>
+        </div>
+      </div>
+
+      {/* Zoom controls — fixed to the panel, outside the scroll. */}
+      <div className="absolute bottom-3 right-3 z-30 flex items-center gap-0.5 rounded-lg bg-card/95 border border-border shadow-md px-1 py-0.5">
+        <button
+          type="button"
+          className="px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+          title="Zoom out"
+          onClick={() => setZoom((z) => clamp(z / 1.2, 0.15, 2))}
+        >
+          −
+        </button>
+        <button
+          type="button"
+          className="px-1 py-0.5 text-[11px] tabular-nums text-muted-foreground hover:text-foreground min-w-[3.2rem]"
+          title="Reset to 100%"
+          onClick={() => setZoom(1)}
+        >
+          {Math.round(zoom * 100)}%
+        </button>
+        <button
+          type="button"
+          className="px-1.5 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+          title="Zoom in"
+          onClick={() => setZoom((z) => clamp(z * 1.2, 0.15, 2))}
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className="px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground border-l border-border ml-0.5"
+          title="Fit page width"
+          onClick={fitZoom}
+        >
+          Fit
+        </button>
       </div>
     </main>
   )
