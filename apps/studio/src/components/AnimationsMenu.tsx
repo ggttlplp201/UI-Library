@@ -1,5 +1,18 @@
-import { ANIM_TRIGGERS, ANIMATIONS, type AnimPresetDef } from '../lib/animation'
+import { useState } from 'react'
+import { ANIM_TRIGGERS, ANIMATIONS, compileAnim, type AnimPresetDef } from '../lib/animation'
 import { FX_CATALOG, type FxDef } from '@component-style-studio/preview/fx'
+
+// Every preset's keyframes, compiled once — the hover chips reference them.
+const PREVIEW_KEYFRAMES = ANIMATIONS.map((a) => {
+  const c = compileAnim({ preset: a.id, duration: a.duration, delay: 0, easing: 'ease-out' })
+  return c ? c.keyframesCss : ''
+}).join('\n')
+
+/** Compiled animation shorthand for a preset's hover demo chip. */
+function previewAnimation(a: AnimPresetDef): string | undefined {
+  const c = compileAnim({ preset: a.id, duration: Math.min(a.duration, 1.2), delay: 0, easing: 'ease-out' })
+  return c?.animationValue
+}
 
 const TRIGGER_BADGE: Record<string, string> = {
   entrance: 'bg-sky-500/15 text-sky-300',
@@ -35,8 +48,11 @@ export function AnimationsMenu({
   onApplyFx: (fx: FxDef) => void
   onClearFx: () => void
 }) {
+  // Hovered card id: its demo chip replays the animation from the start.
+  const [demoId, setDemoId] = useState<string | null>(null)
   return (
     <div className="flex-1 overflow-y-auto px-2 pb-3">
+      <style>{PREVIEW_KEYFRAMES}</style>
       <p className="text-[10px] text-muted-foreground px-1 py-2">
         {canApply
           ? 'Click an animation to apply it to the selected component.'
@@ -51,21 +67,36 @@ export function AnimationsMenu({
               type="button"
               disabled={!canApply}
               onClick={() => onApply(a)}
+              onMouseEnter={() => setDemoId(a.id)}
+              onMouseLeave={() => setDemoId((cur) => (cur === a.id ? null : cur))}
               className={`text-left rounded-lg border px-2.5 py-2 transition-colors disabled:opacity-45 disabled:cursor-default ${
                 applied
                   ? 'border-primary/50 bg-secondary'
                   : 'border-border/50 bg-muted/20 hover:border-border hover:bg-secondary/40'
               }`}
             >
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-medium">{a.name}</span>
-                <span
-                  className={`ml-auto text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded ${TRIGGER_BADGE[a.defaultTrigger]}`}
-                >
-                  {ANIM_TRIGGERS.find((t) => t.id === a.defaultTrigger)?.label}
+              <div className="flex items-center gap-2">
+                {/* Demo chip: plays this animation whenever the card is hovered. */}
+                <span className="w-10 h-8 shrink-0 rounded-md bg-background/60 border border-border/60 flex items-center justify-center overflow-hidden">
+                  <span
+                    className="inline-block px-1.5 py-0.5 rounded bg-primary/80 text-[9px] font-bold text-white"
+                    style={demoId === a.id ? { animation: previewAnimation(a) } : undefined}
+                  >
+                    Aa
+                  </span>
                 </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] font-medium">{a.name}</span>
+                    <span
+                      className={`ml-auto text-[8px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded ${TRIGGER_BADGE[a.defaultTrigger]}`}
+                    >
+                      {ANIM_TRIGGERS.find((t) => t.id === a.defaultTrigger)?.label}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{a.description}</p>
+                </div>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{a.description}</p>
             </button>
           )
         })}

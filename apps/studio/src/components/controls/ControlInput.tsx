@@ -2,6 +2,16 @@ import { useRef } from 'react'
 import type { ControlSpec } from '../../lib/controls'
 import { fileLabel, fileToDataUrl, imageSrcOf, shapeImage } from '../../lib/images'
 
+/** "shimmerDuration" → "Shimmer duration" — controls read like settings, not code. */
+export function prettyControlName(name: string): string {
+  const spaced = name
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase()
+}
+
 export function ControlInput({
   control,
   value,
@@ -13,8 +23,11 @@ export function ControlInput({
 }) {
   const label = (
     <label className="flex items-center justify-between gap-2 mb-1">
-      <span className="text-[11px] font-medium text-foreground truncate" title={control.description}>
-        {control.name}
+      <span
+        className="text-[11px] font-medium text-foreground truncate"
+        title={`${control.name}${control.description ? ' — ' + control.description : ''}`}
+      >
+        {prettyControlName(control.name)}
         {control.required && <span className="text-destructive"> *</span>}
       </span>
       <span className="text-[9px] font-mono text-muted-foreground">{control.kind}</span>
@@ -24,6 +37,9 @@ export function ControlInput({
   return (
     <div className="mb-3">
       {label}
+      {control.description && (
+        <p className="text-[10px] leading-snug text-muted-foreground mb-1">{control.description}</p>
+      )}
       {renderInput(control, value, onChange)}
     </div>
   )
@@ -34,7 +50,29 @@ function renderInput(control: ControlSpec, value: unknown, onChange: (value: unk
     'w-full rounded-md px-2.5 py-1.5 text-xs bg-input border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring'
 
   switch (control.kind) {
-    case 'select':
+    case 'select': {
+      const opts = control.options ?? []
+      // A handful of options reads better as one-tap chips than a dropdown.
+      if (opts.length > 0 && opts.length <= 4) {
+        return (
+          <div className="flex flex-wrap gap-1">
+            {opts.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => onChange(opt)}
+                className={`px-2 py-1 rounded-md text-[11px] border transition-colors ${
+                  String(value ?? '') === opt
+                    ? 'border-primary/60 bg-primary/15 text-foreground'
+                    : 'border-border bg-input text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        )
+      }
       return (
         <select
           value={String(value ?? '')}
@@ -42,13 +80,14 @@ function renderInput(control: ControlSpec, value: unknown, onChange: (value: unk
           className={inputClass}
         >
           {!control.required && <option value="">—</option>}
-          {control.options?.map((opt) => (
+          {opts.map((opt) => (
             <option key={opt} value={opt}>
               {opt}
             </option>
           ))}
         </select>
       )
+    }
     case 'list': {
       // Row editor for string[] props (menu items, tab labels, words):
       // edit each row, remove with ×, append with + Add.
@@ -101,15 +140,33 @@ function renderInput(control: ControlSpec, value: unknown, onChange: (value: unk
           />
         </button>
       )
-    case 'number':
+    case 'number': {
+      // Slider + field: the range is inferred from the default so durations
+      // get 0-few-seconds and pixel sizes get a sensible sweep.
+      const cur = value == null ? Number(control.defaultValue ?? 0) : Number(value)
+      const base = Math.abs(Number(control.defaultValue ?? cur ?? 10)) || 10
+      const max = Math.max(Math.ceil(base * 4), cur, 1)
+      const step = base <= 2 ? 0.1 : base <= 20 ? 1 : Math.ceil(base / 20)
       return (
-        <input
-          type="number"
-          value={value == null ? '' : Number(value)}
-          onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
-          className={inputClass}
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="range"
+            min={0}
+            max={max}
+            step={step}
+            value={Number.isFinite(cur) ? cur : 0}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className="flex-1 accent-[#7c6fff]"
+          />
+          <input
+            type="number"
+            value={value == null ? '' : Number(value)}
+            onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
+            className={inputClass + ' !w-16 shrink-0'}
+          />
+        </div>
       )
+    }
     case 'color':
       return (
         <div className="flex gap-2">
