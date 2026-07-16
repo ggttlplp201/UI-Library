@@ -70,6 +70,7 @@ do not edit by hand.
 | DynamicDescription | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
 | DynamicDiv | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
 | DynamicIsland | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
+| DynamicIslandDemo | `src/overlays/DynamicIslandDemo.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
 | DynamicIslandProvider | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
 | DynamicIslandSizePresets | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
 | DynamicTitle | `src/overlays/DynamicIsland.tsx` | MIT | https://www.cult-ui.com/docs/components/dynamic-island |
@@ -148,10 +149,12 @@ do not edit by hand.
 |---|---|---|---|
 | Accordion | `src/disclosure/Accordion.tsx` | MIT | https://ui.shadcn.com/docs/components/accordion |
 | AccordionContent | `src/disclosure/Accordion.tsx` | MIT | https://ui.shadcn.com/docs/components/accordion |
+| AccordionDemo | `src/disclosure/AccordionDemo.tsx` | MIT | https://ui.shadcn.com/docs/components/accordion |
 | AccordionItem | `src/disclosure/Accordion.tsx` | MIT | https://ui.shadcn.com/docs/components/accordion |
 | AccordionTrigger | `src/disclosure/Accordion.tsx` | MIT | https://ui.shadcn.com/docs/components/accordion |
 | Checkbox | `src/inputs/Checkbox.tsx` | MIT | https://ui.shadcn.com/docs/components/checkbox |
 | Command | `src/inputs/Command.tsx` | MIT | https://ui.shadcn.com/docs/components/command |
+| CommandDemo | `src/inputs/CommandDemo.tsx` | MIT | https://ui.shadcn.com/docs/components/command |
 | CommandDialog | `src/inputs/Command.tsx` | MIT | https://ui.shadcn.com/docs/components/command |
 | CommandEmpty | `src/inputs/Command.tsx` | MIT | https://ui.shadcn.com/docs/components/command |
 | CommandGroup | `src/inputs/Command.tsx` | MIT | https://ui.shadcn.com/docs/components/command |
@@ -163,6 +166,7 @@ do not edit by hand.
 | Dialog | `src/overlays/Dialog.tsx` | MIT | https://ui.shadcn.com/docs/components/dialog |
 | DialogClose | `src/overlays/Dialog.tsx` | MIT | https://ui.shadcn.com/docs/components/dialog |
 | DialogContent | `src/overlays/Dialog.tsx` | MIT | https://ui.shadcn.com/docs/components/dialog |
+| DialogDemo | `src/overlays/DialogDemo.tsx` | MIT | https://ui.shadcn.com/docs/components/dialog |
 | DialogDescription | `src/overlays/Dialog.tsx` | MIT | https://ui.shadcn.com/docs/components/dialog |
 | DialogFooter | `src/overlays/Dialog.tsx` | MIT | https://ui.shadcn.com/docs/components/dialog |
 | DialogHeader | `src/overlays/Dialog.tsx` | MIT | https://ui.shadcn.com/docs/components/dialog |
@@ -173,6 +177,7 @@ do not edit by hand.
 | DropdownMenu | `src/overlays/DropdownMenu.tsx` | MIT | https://ui.shadcn.com/docs/components/dropdown-menu |
 | DropdownMenuCheckboxItem | `src/overlays/DropdownMenu.tsx` | MIT | https://ui.shadcn.com/docs/components/dropdown-menu |
 | DropdownMenuContent | `src/overlays/DropdownMenu.tsx` | MIT | https://ui.shadcn.com/docs/components/dropdown-menu |
+| DropdownMenuDemo | `src/overlays/DropdownMenuDemo.tsx` | MIT | https://ui.shadcn.com/docs/components/dropdown-menu |
 | DropdownMenuGroup | `src/overlays/DropdownMenu.tsx` | MIT | https://ui.shadcn.com/docs/components/dropdown-menu |
 | DropdownMenuItem | `src/overlays/DropdownMenu.tsx` | MIT | https://ui.shadcn.com/docs/components/dropdown-menu |
 | DropdownMenuLabel | `src/overlays/DropdownMenu.tsx` | MIT | https://ui.shadcn.com/docs/components/dropdown-menu |
@@ -188,13 +193,17 @@ do not edit by hand.
 | Popover | `src/overlays/Popover.tsx` | MIT | https://ui.shadcn.com/docs/components/popover |
 | PopoverAnchor | `src/overlays/Popover.tsx` | MIT | https://ui.shadcn.com/docs/components/popover |
 | PopoverContent | `src/overlays/Popover.tsx` | MIT | https://ui.shadcn.com/docs/components/popover |
+| PopoverDemo | `src/overlays/PopoverDemo.tsx` | MIT | https://ui.shadcn.com/docs/components/popover |
 | PopoverTrigger | `src/overlays/Popover.tsx` | MIT | https://ui.shadcn.com/docs/components/popover |
 | RadioGroup | `src/inputs/RadioGroup.tsx` | MIT | https://ui.shadcn.com/docs/components/radio-group |
+| RadioGroupDemo | `src/inputs/RadioGroupDemo.tsx` | MIT | https://ui.shadcn.com/docs/components/radio-group |
 | RadioGroupItem | `src/inputs/RadioGroup.tsx` | MIT | https://ui.shadcn.com/docs/components/radio-group |
 | ScrollArea | `src/lib/scroll-area.tsx` | MIT | https://ui.shadcn.com/docs/components/scroll-area |
+| ScrollAreaDemo | `src/scroll/ScrollAreaDemo.tsx` | MIT | https://ui.shadcn.com/docs/components/scroll-area |
 | ScrollBar | `src/lib/scroll-area.tsx` | MIT | https://ui.shadcn.com/docs/components/scroll-area |
 | Select | `src/inputs/Select.tsx` | MIT | https://ui.shadcn.com/docs/components/select |
 | SelectContent | `src/inputs/Select.tsx` | MIT | https://ui.shadcn.com/docs/components/select |
+| SelectDemo | `src/inputs/SelectDemo.tsx` | MIT | https://ui.shadcn.com/docs/components/select |
 | SelectGroup | `src/inputs/Select.tsx` | MIT | https://ui.shadcn.com/docs/components/select |
 | SelectItem | `src/inputs/Select.tsx` | MIT | https://ui.shadcn.com/docs/components/select |
 | SelectLabel | `src/inputs/Select.tsx` | MIT | https://ui.shadcn.com/docs/components/select |
@@ -205,9 +214,11 @@ do not edit by hand.
 | SelectValue | `src/inputs/Select.tsx` | MIT | https://ui.shadcn.com/docs/components/select |
 | Tabs | `src/navigation/Tabs.tsx` | MIT | https://ui.shadcn.com/docs/components/tabs |
 | TabsContent | `src/navigation/Tabs.tsx` | MIT | https://ui.shadcn.com/docs/components/tabs |
+| TabsDemo | `src/navigation/TabsDemo.tsx` | MIT | https://ui.shadcn.com/docs/components/tabs |
 | TabsList | `src/navigation/Tabs.tsx` | MIT | https://ui.shadcn.com/docs/components/tabs |
 | TabsTrigger | `src/navigation/Tabs.tsx` | MIT | https://ui.shadcn.com/docs/components/tabs |
 | Toaster | `src/feedback/Toaster.tsx` | MIT | https://ui.shadcn.com/docs/components/sonner |
+| ToasterDemo | `src/feedback/ToasterDemo.tsx` | MIT | https://ui.shadcn.com/docs/components/sonner |
 
 ## Skiper UI
 
@@ -270,6 +281,7 @@ do not edit by hand.
 | ThemeToggleViewTransition | `src/toggles/ThemeToggleViewTransition.tsx` | Free tier (attribution required) | https://skiper-ui.com |
 | Tooltip | `src/effects/BorderArrowTooltip.tsx` | Free tier (attribution required) | https://skiper-ui.com |
 | TooltipContent | `src/effects/BorderArrowTooltip.tsx` | Free tier (attribution required) | https://skiper-ui.com |
+| TooltipDemo | `src/effects/TooltipDemo.tsx` | Free tier (attribution required) | https://skiper-ui.com |
 | TooltipProvider | `src/effects/BorderArrowTooltip.tsx` | Free tier (attribution required) | https://skiper-ui.com |
 | TooltipTrigger | `src/effects/BorderArrowTooltip.tsx` | Free tier (attribution required) | https://skiper-ui.com |
 | VideoPlayer | `src/video/VideoPlayer.tsx` | Free tier (attribution required) | https://skiper-ui.com |
@@ -284,3 +296,35 @@ do not edit by hand.
 | VideoPlayerVolumeRange | `src/video/VideoPlayer.tsx` | Free tier (attribution required) | https://skiper-ui.com |
 | VideoPopOverDemo | `src/video/VideoPlayer.tsx` | Free tier (attribution required) | https://skiper-ui.com |
 | VolumeToggleIcon | `src/effects/AnimatedIcons.tsx` | Free tier (attribution required) | https://skiper-ui.com |
+
+## UIverse.io
+
+- Author: Gautammsharma
+- License: MIT — **attribution required**
+
+| Component | File | License | Source |
+|---|---|---|---|
+| BookmarkToggle | `src/toggles/BookmarkToggle.tsx` | MIT | https://uiverse.io/Galahhad/mighty-warthog-42 |
+| BouncingBallsLoader | `src/feedback/BouncingBallsLoader.tsx` | MIT | https://uiverse.io/mobinkakei/grumpy-turtle-41 |
+| BrutalistNewsletterCard | `src/cards/BrutalistNewsletterCard.tsx` | MIT | https://uiverse.io/0xnihilism/nasty-husky-13 |
+| ComicButton | `src/buttons/ComicButton.tsx` | MIT | https://uiverse.io/Gautammsharma/wicked-cobra-3 |
+| DeleteExpandButton | `src/buttons/DeleteExpandButton.tsx` | MIT | https://uiverse.io/vinodjangid07/smart-emu-83 |
+| FlipCreditCard | `src/cards/FlipCreditCard.tsx` | MIT | https://uiverse.io/Praashoo7/black-lizard-62 |
+| FloatingLabelInput | `src/inputs/FloatingLabelInput.tsx` | MIT | https://uiverse.io/alexruix/slippery-snail-18 |
+| Glass3DCard | `src/cards/Glass3DCard.tsx` | MIT | https://uiverse.io/Smit-Prajapati/smart-liger-5 |
+| GlassSocialButtons | `src/buttons/GlassSocialButtons.tsx` | MIT | https://uiverse.io/Itskrish01/shaggy-eel-44 |
+| GlossyJoinButton | `src/buttons/GlossyJoinButton.tsx` | MIT | https://uiverse.io/marcelodolza/stupid-vampirebat-24 |
+| GlossySwitch | `src/toggles/GlossySwitch.tsx` | MIT | https://uiverse.io/Yaya12085/bright-dolphin-91 |
+| GlowFlipCard | `src/cards/GlowFlipCard.tsx` | MIT | https://uiverse.io/ElSombrero2/tricky-robin-67 |
+| GradientStrokeLoader | `src/feedback/GradientStrokeLoader.tsx` | MIT | https://uiverse.io/SelfMadeSystem/pretty-treefrog-77 |
+| HoverBlurCards | `src/cards/HoverBlurCards.tsx` | MIT | https://uiverse.io/kamehame-ha/chilly-snake-91 |
+| IconSlideButton | `src/buttons/IconSlideButton.tsx` | MIT | https://uiverse.io/Creatlydev/pretty-grasshopper-57 |
+| IndustrialSwitch | `src/toggles/IndustrialSwitch.tsx` | MIT | https://uiverse.io/Pradeepsaranbishnoi/honest-penguin-58 |
+| LogoutExpandButton | `src/buttons/LogoutExpandButton.tsx` | MIT | https://uiverse.io/vinodjangid07/thin-duck-22 |
+| NewtonsCradleLoader | `src/feedback/NewtonsCradleLoader.tsx` | MIT | https://uiverse.io/dovatgabriel/jolly-kangaroo-36 |
+| PushButton3D | `src/buttons/PushButton3D.tsx` | MIT | https://uiverse.io/zymantas-katinas/pink-lizard-56 |
+| SendButton | `src/buttons/SendButton.tsx` | MIT | https://uiverse.io/adamgiebl/smart-moth-68 |
+| SocialHoverGrid | `src/hover/SocialHoverGrid.tsx` | MIT | https://uiverse.io/Praashoo7/smooth-crab-52 |
+| SparkleButton | `src/buttons/SparkleButton.tsx` | MIT | https://uiverse.io/MuhammadHasann/mean-bird-62 |
+| WaveLabelInput | `src/inputs/WaveLabelInput.tsx` | MIT | https://uiverse.io/liyaxu123/warm-eel-62 |
+| WordRotateLoader | `src/feedback/WordRotateLoader.tsx` | MIT | https://uiverse.io/kennyotsu/fresh-lizard-20 |

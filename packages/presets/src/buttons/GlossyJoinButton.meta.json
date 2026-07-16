@@ -1,0 +1,10 @@
+{
+  "library": "UIverse.io",
+  "source": "https://uiverse.io/marcelodolza/stupid-vampirebat-24",
+  "author": "marcelodolza",
+  "license": "MIT",
+  "attributionRequired": true,
+  "ingest": "manual-port",
+  "styleFamily": "uiverse",
+  "qualityTier": "vetted"
+}

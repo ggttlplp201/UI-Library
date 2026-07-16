@@ -1,0 +1,10 @@
+{
+  "library": "UIverse.io",
+  "source": "https://uiverse.io/adamgiebl/smart-moth-68",
+  "author": "adamgiebl",
+  "license": "MIT",
+  "attributionRequired": true,
+  "ingest": "manual-port",
+  "styleFamily": "uiverse",
+  "qualityTier": "vetted"
+}

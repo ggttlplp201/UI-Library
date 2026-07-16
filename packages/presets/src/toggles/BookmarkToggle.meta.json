@@ -1,0 +1,10 @@
+{
+  "library": "UIverse.io",
+  "source": "https://uiverse.io/Galahhad/mighty-warthog-42",
+  "author": "Galahhad",
+  "license": "MIT",
+  "attributionRequired": true,
+  "ingest": "manual-port",
+  "styleFamily": "uiverse",
+  "qualityTier": "vetted"
+}
