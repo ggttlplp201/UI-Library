@@ -140,5 +140,21 @@ export default function App() {
     }
     return <ImportScreen onScanned={openScanned} onUsePresets={openPresets} onBack={backFromImport} />
   }
-  return <Workspace result={result} sample={sample ?? undefined} onReset={startNewImport} />
+  return (
+    <Workspace
+      result={result}
+      sample={sample ?? undefined}
+      onReset={startNewImport}
+      onHome={() => {
+        // Deliberate exit to the start screen: don't silently restore back
+        // into this workspace on the next reload, but keep its saved state so
+        // reopening it picks up where it left off.
+        setResult(null)
+        setSample(null)
+        setImporting(false)
+        setLeftBehind(null)
+        writeSession(null)
+      }}
+    />
+  )
 }

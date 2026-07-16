@@ -44,10 +44,13 @@ export function Workspace({
   result,
   sample,
   onReset,
+  onHome,
 }: {
   result: ScanResult
   sample?: SampleProject
   onReset: () => void
+  /** Back to the start screen (sample gallery); the workspace stays saved */
+  onHome: () => void
 }) {
   const [presets, setPresets] = useState<PresetLibrary>(NO_PRESETS)
   // The composition is a set of PAGES; the canvas edits one page at a time and
@@ -975,12 +978,19 @@ export function Workspace({
   return (
     <div className="h-svh flex flex-col">
       <header className="h-11 shrink-0 border-b border-border bg-card flex items-center gap-3 px-3">
-        <div className="flex items-center gap-2">
+        {/* The brand is the way home: back to the start screen with the
+            sample gallery. Everything here is autosaved, so it's a safe hop. */}
+        <button
+          type="button"
+          onClick={onHome}
+          title="Back to the start screen (samples live there) — this workspace stays saved"
+          className="flex items-center gap-2 rounded-md px-1 py-0.5 -mx-1 hover:bg-secondary transition-colors"
+        >
           <div className="w-4 h-4 rounded-sm bg-primary flex items-center justify-center">
             <span className="font-mono text-[9px] font-bold text-primary-foreground leading-none">S</span>
           </div>
           <span className="text-sm font-semibold tracking-[-0.02em]">Style Studio</span>
-        </div>
+        </button>
         <div className="w-px h-4 bg-border" />
         <span
           className="text-[11px] font-mono text-muted-foreground truncate max-w-80"
