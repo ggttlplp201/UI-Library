@@ -28,7 +28,7 @@ function build(): Page[] {
           title: 'Component systems',
           subtitle: 'One coherent surface — selection, input, feedback, overlays.',
           accent: '#4B3BFF',
-          background: '#0a0a0c',
+          background: 'transparent',
         },
       }),
       // — Selection —
@@ -58,7 +58,7 @@ function build(): Page[] {
       inst(preset('src/feedback/ProgressBar.tsx'), 140, 1500, { w: 380 }),
       inst(preset('src/kinetic-ui/KineticProgressBar.tsx'), 560, 1500, {}),
       inst(preset('src/feedback/ToasterDemo.tsx'), 760, 1390, {}),
-      inst(preset('src/kinetic-ui/KineticToast.tsx'), 830, 1510, {}),
+      inst(preset('src/kinetic-ui/KineticToast.tsx'), 140, 1600, {}),
       // — Overlays (grouped on a quiet panel) —
       inst(preset('src/basics/Heading.tsx'), 140, 1650, { args: { text: 'Overlays', size: 22 } }),
       inst(preset('src/basics/PanelBand.tsx'), 100, 1700, { args: { width: 1080, height: 240 } }),

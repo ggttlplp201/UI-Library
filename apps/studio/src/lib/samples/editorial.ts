@@ -62,7 +62,7 @@ function build(): Page[] {
       // Photo spread — asymmetric pair with captions.
       inst(preset('src/basics/ImageBlock.tsx'), 140, 1760, {
         args: {
-          imageSrc: 'https://picsum.photos/seed/field-a/1000/680',
+          imageSrc: 'https://picsum.photos/id/1041/1000/680',
           width: 520,
           height: 350,
           caption: 'Harbor light, 6:14 — the only ten minutes it stopped raining.',
@@ -71,10 +71,10 @@ function build(): Page[] {
       }),
       inst(preset('src/basics/ImageBlock.tsx'), 720, 1730, {
         args: {
-          imageSrc: 'https://picsum.photos/seed/field-b/800/560',
+          imageSrc: 'https://picsum.photos/id/1080/800/560?grayscale',
           width: 420,
           height: 280,
-          caption: 'Stairwell, printworks. Unplanned.',
+          caption: 'Market fruit, shot for texture. Unplanned.',
         },
         anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.6, delay: 0.15, easing: 'ease-out', once: true },
       }),

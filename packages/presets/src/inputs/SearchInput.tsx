@@ -19,7 +19,10 @@ export function SearchInput({ placeholder = 'Search components...' }: SearchInpu
         <circle cx="11" cy="11" r="8" />
         <path d="m21 21-4.35-4.35" />
       </svg>
-      <span className="text-[#6b6b7a] text-[13px]">{placeholder}</span>
+      <input
+        placeholder={placeholder}
+        className="flex-1 min-w-0 bg-transparent border-none outline-none text-[13px] text-foreground placeholder:text-[#6b6b7a]"
+      />
     </div>
   )
 }

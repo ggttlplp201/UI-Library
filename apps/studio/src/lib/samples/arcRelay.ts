@@ -160,7 +160,7 @@ function build(): Page[] {
           title: 'Under the hood',
           subtitle: 'Instrumented, measured, and honest about both.',
           accent: AMBER,
-          background: '#0a0a0c',
+          background: 'transparent',
         },
       }),
       inst(preset('src/basics/Heading.tsx'), 140, 540, {

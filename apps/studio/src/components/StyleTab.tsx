@@ -1,11 +1,7 @@
 import type { StyleOverride } from '../lib/controls'
+import { WEB_FONTS } from '../lib/fonts'
 
-const FONT_FAMILIES: { label: string; value: string }[] = [
-  { label: 'Default', value: '' },
-  { label: 'System sans', value: 'system-ui, sans-serif' },
-  { label: 'Serif', value: 'Georgia, serif' },
-  { label: 'Mono', value: 'ui-monospace, monospace' },
-]
+const FONT_FAMILIES = WEB_FONTS
 
 const FONT_WEIGHTS = ['', '300', '400', '500', '600', '700', '800']
 

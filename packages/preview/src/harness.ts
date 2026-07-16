@@ -65,7 +65,14 @@ document.addEventListener('submit', (e) => e.preventDefault(), true)
 // inside this iframe — forward what the Studio needs: Escape (close preview)
 // and pointer moves (page cursor effects must keep tracking over components).
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') post({ type: 'esc' })
+  if (e.key !== 'Escape') return
+  // Escape inside an editable field belongs to the field, not the preview.
+  const t = e.target
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return
+  // Defer the check: if a component (open menu/dialog) consumed this Escape
+  // it will have preventDefault'ed by the time handlers finish — closing its
+  // own layer should NOT also close the Studio's preview.
+  setTimeout(() => { if (!e.defaultPrevented) post({ type: 'esc' }) }, 0)
 })
 document.addEventListener('pointermove', (e) => {
   post({ type: 'pointer', x: e.clientX, y: e.clientY })
@@ -439,6 +446,9 @@ export const PREVIEW_HTML = `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Inter+Tight:wght@400;600;800&family=Space+Grotesk:wght@400;500;700&family=Manrope:wght@400;600;800&family=Sora:wght@400;600;700&family=DM+Sans:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;800&family=Archivo:wght@400;600;800&family=Syne:wght@400;600;800&family=Archivo+Black&family=Bebas+Neue&family=Playfair+Display:wght@400;600;800&family=Fraunces:wght@400;600;900&family=EB+Garamond:wght@400;600&family=IBM+Plex+Mono:wght@400;600&family=JetBrains+Mono:wght@400;600&family=Space+Mono:wght@400;700&family=Caveat:wght@500;700&display=swap" />
     <style>
       html, body { margin: 0; padding: 0; height: 100%; background: transparent; }
       /* flex-start (not center): the frame can be wider than the root when

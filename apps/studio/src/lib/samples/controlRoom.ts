@@ -34,7 +34,7 @@ function build(): Page[] {
           title: 'Control room',
           subtitle: 'Fills, rings, faders and switch banks — every instrument live.',
           accent: PHOSPHOR,
-          background: '#0a0c0a',
+          background: 'transparent',
         },
       }),
       // — TELEMETRY zone —

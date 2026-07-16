@@ -12,6 +12,7 @@ import {
   type PageFx,
 } from '../lib/canvas'
 import { LOADER_CSS, PAGE_FX_CATEGORIES, loaderById, loaderHtml } from '../lib/pagefx'
+import { GOOGLE_FONTS_URL } from '../lib/fonts'
 import { FX_CSS, FX_JS } from '@component-style-studio/preview/fx'
 import { PagesView } from './PagesView'
 import {
@@ -823,6 +824,9 @@ export function Workspace({
       // class — the export must carry it or .dark rules stop matching.
       `<html${canvasTheme === 'dark' ? ' class="dark"' : ''}><head><meta charset="utf-8" />`,
       '<title>Style Studio export</title>',
+      // Font-catalog stylesheet: style-tab font overrides must render in the
+      // export exactly as they did in the studio.
+      `<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" /><link rel="stylesheet" href="${GOOGLE_FONTS_URL}" />`,
       `<style>${[...cssBlocks].join('\n')}</style>`,
       `<style>${[...animCss].join('\n')}\n${FX_CSS}</style>`,
       // display:block beats the preview harness's body{display:flex} rule that
