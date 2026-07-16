@@ -96,6 +96,36 @@ export const CURSORS: CursorDef[] = [
   },
 ]
 
+/**
+ * Self-contained animated demo of a cursor effect for the page-settings
+ * picker: a fake pointer glides in a loop over sample content while the
+ * effect element (blend disc / glow dot) trails it. `ACC` = accent color.
+ */
+export function cursorPreviewHtml(id: string, accent: string): string {
+  const fx =
+    id === 'blend'
+      ? `<div style="position:absolute;top:0;left:0;width:34px;height:34px;border-radius:50%;background:${accent};mix-blend-mode:difference;animation:ss-cursor-path 3.2s ease-in-out infinite;margin:-17px 0 0 -17px"></div>`
+      : `<div style="position:absolute;top:0;left:0;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle,${accent}bb,transparent 70%);animation:ss-cursor-path 3.2s ease-in-out infinite;margin:-13px 0 0 -13px"></div>`
+  return `
+<style>
+@keyframes ss-cursor-path {
+  0%   { transform: translate(34px, 30px); }
+  30%  { transform: translate(150px, 48px); }
+  55%  { transform: translate(96px, 66px); }
+  80%  { transform: translate(190px, 28px); }
+  100% { transform: translate(34px, 30px); }
+}
+</style>
+<div style="position:relative;width:100%;height:100%;overflow:hidden;font-family:system-ui">
+  <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px">
+    <span style="color:#e8e8ed;font-size:15px;font-weight:700">Sample</span>
+    <span style="padding:3px 10px;border-radius:999px;background:#e8e8ed;color:#111;font-size:11px;font-weight:600">Button</span>
+  </div>
+  ${fx}
+  <svg style="position:absolute;top:0;left:0;width:12px;height:12px;animation:ss-cursor-path 3.2s ease-in-out infinite;filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))" viewBox="0 0 24 24"><path fill="#fff" stroke="#000" stroke-width="1.5" d="M5 3l14 8-6.5 1.5L9 19z"/></svg>
+</div>`
+}
+
 export const loaderById = (id?: string) => LOADERS.find((l) => l.id === id)
 export const cursorById = (id?: string) => CURSORS.find((c) => c.id === id)
 

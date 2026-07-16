@@ -259,11 +259,15 @@ function applyHost(host) {
   // The body is a flex row and the iframe starts at the OLD content width —
   // without this the pinned root flex-shrinks back to min-content.
   rootEl.style.flexShrink = w || h ? '0' : ''
-  const child = rootEl.firstElementChild
-  if (!child) return
-  child.style.width = w ? '100%' : ''
-  child.style.height = h ? '100%' : ''
-  if (w || h) child.style.boxSizing = 'border-box'
+  // Stamp every rendered element child to fill the pinned root — skipping
+  // <style>/<script> tags many presets render before their real markup.
+  for (const child of rootEl.children) {
+    const tag = child.tagName
+    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'LINK' || tag === 'META') continue
+    child.style.width = w ? '100%' : ''
+    child.style.height = h ? '100%' : ''
+    if (w || h) child.style.boxSizing = 'border-box'
+  }
 }
 
 // Only the Style-tab's CSS keys — never layout/transform, which components

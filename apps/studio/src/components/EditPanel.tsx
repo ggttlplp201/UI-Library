@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import type { ControlSpec, StyleOverride } from '../lib/controls'
 import { ARTBOARD_WIDTHS, DEFAULT_ARTBOARD_WIDTH, type PageFx } from '../lib/canvas'
-import { CURSORS, LOADERS, LOADER_CSS, loaderById, loaderHtml } from '../lib/pagefx'
+import { CURSORS, LOADERS, LOADER_CSS, cursorPreviewHtml, loaderById, loaderHtml } from '../lib/pagefx'
 import { ControlInput } from './controls/ControlInput'
 import { StyleTab } from './StyleTab'
 import { PanelSideToggle, type PanelSide } from './PanelSideToggle'
@@ -324,20 +324,31 @@ export function EditPanel({
             ))}
           </select>
           {pageFx?.cursor && (
-            <div className="flex items-center gap-2 mt-2">
-              <label className="flex items-center gap-1.5">
-                <span className="text-[10px] text-muted-foreground">Color</span>
-                <input
-                  type="color"
-                  value={pageFx.cursorAccent || '#E3B23C'}
-                  onChange={(e) => onPageFxChange?.({ ...pageFx, cursorAccent: e.target.value })}
-                  className="w-7 h-6 rounded border border-border bg-input p-0.5 cursor-pointer"
-                />
-              </label>
-              <p className="text-[10px] text-muted-foreground flex-1">
-                {CURSORS.find((c) => c.id === pageFx.cursor)?.description}
-              </p>
-            </div>
+            <>
+              {/* Live demo: a fake pointer loops over sample content with the
+                  effect trailing it, so the pick is visual, not a guess. */}
+              <div
+                className="mt-2 h-[92px] rounded-lg border border-border overflow-hidden"
+                style={{ background: '#0c0c0f' }}
+                dangerouslySetInnerHTML={{
+                  __html: cursorPreviewHtml(pageFx.cursor, pageFx.cursorAccent || '#E3B23C'),
+                }}
+              />
+              <div className="flex items-center gap-2 mt-2">
+                <label className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-muted-foreground">Color</span>
+                  <input
+                    type="color"
+                    value={pageFx.cursorAccent || '#E3B23C'}
+                    onChange={(e) => onPageFxChange?.({ ...pageFx, cursorAccent: e.target.value })}
+                    className="w-7 h-6 rounded border border-border bg-input p-0.5 cursor-pointer"
+                  />
+                </label>
+                <p className="text-[10px] text-muted-foreground flex-1">
+                  {CURSORS.find((c) => c.id === pageFx.cursor)?.description}
+                </p>
+              </div>
+            </>
           )}
           <p className="text-[10px] text-muted-foreground mt-3">
             Both play in the exported site: the loading screen on load and on navigation to this page,
