@@ -18,6 +18,8 @@ export interface LoaderDef {
   name: string
   /** Overlay content; ACC is replaced with the accent color */
   html: string
+  /** Attribution line for ported loaders — included in export credits */
+  credit?: string
 }
 
 /** Shared keyframes for every loader (kept in one block, injected once). */
@@ -27,6 +29,22 @@ export const LOADER_CSS = `
 @keyframes fx-bar{0%{left:-40%}100%{left:100%}}
 @keyframes fx-blob{0%{border-radius:42% 58% 63% 37%/41% 44% 56% 59%}50%{border-radius:63% 37% 41% 59%/58% 63% 37% 42%}100%{border-radius:42% 58% 63% 37%/41% 44% 56% 59%}}
 @keyframes fx-bars{0%,100%{transform:scaleY(.28)}50%{transform:scaleY(1)}}
+@keyframes uv-bbl-circle{0%{top:60px;height:5px;border-radius:50px 50px 25px 25px;transform:scaleX(1.7)}40%{height:20px;border-radius:50%;transform:scaleX(1)}100%{top:0%}}
+@keyframes uv-bbl-shadow{0%{transform:scaleX(1.5)}40%{transform:scaleX(1);opacity:.7}100%{transform:scaleX(.2);opacity:.4}}
+.uv-bbl-wrapper{width:200px;height:60px;position:relative;z-index:1}
+.uv-bbl-circle{width:20px;height:20px;position:absolute;border-radius:50%;background-color:var(--uv-bbl-color);left:15%;transform-origin:50%;animation:uv-bbl-circle .5s alternate infinite ease}
+.uv-bbl-circle:nth-child(2){left:45%;animation-delay:.2s}
+.uv-bbl-circle:nth-child(3){left:auto;right:15%;animation-delay:.3s}
+.uv-bbl-shadow{width:20px;height:4px;border-radius:50%;background-color:rgba(0,0,0,.9);position:absolute;top:62px;transform-origin:50%;z-index:-1;left:15%;filter:blur(1px);animation:uv-bbl-shadow .5s alternate infinite ease}
+.uv-bbl-shadow:nth-child(5){left:45%;animation-delay:.2s}
+.uv-bbl-shadow:nth-child(6){left:auto;right:15%;animation-delay:.3s}
+@keyframes uv-ncl-swing{0%{transform:rotate(0deg);animation-timing-function:ease-out}25%{transform:rotate(70deg);animation-timing-function:ease-in}50%{transform:rotate(0deg);animation-timing-function:linear}}
+@keyframes uv-ncl-swing2{0%{transform:rotate(0deg);animation-timing-function:linear}50%{transform:rotate(0deg);animation-timing-function:ease-out}75%{transform:rotate(-70deg);animation-timing-function:ease-in}}
+.uv-ncl{position:relative;display:flex;align-items:center;justify-content:center;width:50px;height:50px}
+.uv-ncl-dot{position:relative;display:flex;align-items:center;height:100%;width:25%;transform-origin:center top}
+.uv-ncl-dot::after{content:'';display:block;width:100%;height:25%;border-radius:50%;background-color:var(--uv-ncl-color)}
+.uv-ncl-dot:first-child{animation:uv-ncl-swing 1.2s linear infinite}
+.uv-ncl-dot:last-child{animation:uv-ncl-swing2 1.2s linear infinite}
 `
 
 export const LOADERS: LoaderDef[] = [
@@ -64,6 +82,25 @@ export const LOADERS: LoaderDef[] = [
       '<span style="position:absolute;top:0;left:50%;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:ACC"></span>' +
       '<span style="position:absolute;bottom:0;left:50%;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:ACC"></span>' +
       '<span style="position:absolute;top:50%;left:0;width:9px;height:9px;margin-top:-4.5px;border-radius:50%;background:ACC"></span></div>',
+  },
+  {
+    id: 'bouncing-balls',
+    name: 'Bouncing balls',
+    credit:
+      'Bouncing balls loader — mobinkakei via UIverse.io (MIT) — https://uiverse.io/mobinkakei/grumpy-turtle-41',
+    html:
+      '<div class="uv-bbl-wrapper" style="--uv-bbl-color:ACC">' +
+      '<div class="uv-bbl-circle"></div><div class="uv-bbl-circle"></div><div class="uv-bbl-circle"></div>' +
+      '<div class="uv-bbl-shadow"></div><div class="uv-bbl-shadow"></div><div class="uv-bbl-shadow"></div></div>',
+  },
+  {
+    id: 'newtons-cradle',
+    name: "Newton's cradle",
+    credit:
+      "Newton's cradle loader — dovatgabriel via UIverse.io (MIT) — https://uiverse.io/dovatgabriel/jolly-kangaroo-36",
+    html:
+      '<div class="uv-ncl" style="--uv-ncl-color:ACC">' +
+      '<div class="uv-ncl-dot"></div><div class="uv-ncl-dot"></div><div class="uv-ncl-dot"></div><div class="uv-ncl-dot"></div></div>',
   },
   {
     id: 'equalizer',

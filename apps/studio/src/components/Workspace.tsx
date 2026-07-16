@@ -26,6 +26,7 @@ import {
 import { CodePane } from './CodePane'
 import { LibraryPanel } from './LibraryPanel'
 import { LivePreview } from './LivePreview'
+import { sampleSitePages } from '../lib/sampleSite'
 import { EditPanel } from './EditPanel'
 import { AnimationTab } from './AnimationTab'
 import { Canvas, type CanvasHandle, type CanvasTheme } from './Canvas'
@@ -56,6 +57,9 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
     } catch {
       // corrupted/legacy state — start fresh
     }
+    // Fresh preset-library session: open on a real sample landing site so the
+    // first screen shows what the app is for. Imported projects start empty.
+    if (!result.root) return sampleSitePages()
     return [{ id: newPageId(), name: 'Home', instances: [], nodeX: 90, nodeY: 130 }]
   })
   const [activePageId, setActivePageId] = useState<string | null>(null)
@@ -699,6 +703,11 @@ export function Workspace({ result, onReset }: { result: ScanResult; onReset: ()
 })();
 `
     const creditLines = creditsFor(pages.flatMap((p) => p.instances))
+    // Ported page loaders carry their own attribution.
+    for (const pg of pages) {
+      const def = loaderById(pg.fx?.loader)
+      if (def?.credit && !creditLines.includes(def.credit)) creditLines.push(def.credit)
+    }
     const html = [
       '<!doctype html>',
       ...(creditLines.length > 0

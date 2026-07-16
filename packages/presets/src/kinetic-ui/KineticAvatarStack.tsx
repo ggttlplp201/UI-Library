@@ -10,8 +10,8 @@ const AV_COLORS = ["#4B3BFF", "#12A150", "#E08600", "#E5484D"];
  */
 export const KineticAvatarStack = ({
   initials = "AL, MK, JD, +5",
-  showStatus = true,
-  showSkeleton = true,
+  showStatus = false,
+  showSkeleton = false,
 }: {
   /** Comma-separated avatar initials */
   initials?: string;
