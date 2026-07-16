@@ -103,6 +103,20 @@ export const LOADERS: LoaderDef[] = [
       '<div class="uv-ncl-dot"></div><div class="uv-ncl-dot"></div><div class="uv-ncl-dot"></div><div class="uv-ncl-dot"></div></div>',
   },
   {
+    // Cupertino kit EFFECT (design handoff): the fine iOS activity ring.
+    id: 'cu-spinner',
+    name: 'Cupertino spinner',
+    html: '<div style="width:20px;height:20px;border-radius:50%;border:2.5px solid rgba(128,136,144,.25);border-top-color:ACC;animation:fx-spin .8s linear infinite"></div>',
+  },
+  {
+    // Cupertino kit EFFECT (design handoff): rounded indeterminate bar.
+    id: 'cu-bar',
+    name: 'Cupertino bar',
+    html:
+      '<div style="position:relative;width:220px;height:6px;border-radius:3px;overflow:hidden;background:rgba(128,136,144,.25)">' +
+      '<div style="position:absolute;top:0;width:40%;height:100%;border-radius:3px;background:ACC;animation:fx-bar 1.3s ease-in-out infinite"></div></div>',
+  },
+  {
     id: 'equalizer',
     name: 'Equalizer',
     html:
