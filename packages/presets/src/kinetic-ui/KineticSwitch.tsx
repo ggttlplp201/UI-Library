@@ -28,6 +28,12 @@ export const KineticSwitch = ({
         minWidth: 240,
         fontFamily: KUI.body,
         color: KUI.ink,
+        // Self-contained surface: the label must survive any page background.
+        background: KUI.card,
+        border: `1px solid ${KUI.border}`,
+        borderRadius: KUI.radius,
+        padding: "10px 14px",
+        boxShadow: KUI.shadow,
       }}
     >
       <span style={{ fontSize: 14, fontWeight: 500 }}>{label}</span>

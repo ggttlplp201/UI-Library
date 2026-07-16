@@ -24,6 +24,11 @@ function build(): Page[] {
       cursorAccent: PHOSPHOR,
     },
     instances: [
+      inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
+        w: 1280,
+        h: 2000,
+        args: { accent: '#12A150', base: '#090c09', glowStrength: 0.1 },
+      }),
       inst(preset('src/sections/LampHeader.tsx'), 320, 50, {
         args: {
           title: 'Control room',

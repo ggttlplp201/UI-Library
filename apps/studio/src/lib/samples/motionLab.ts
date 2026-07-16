@@ -22,6 +22,11 @@ function build(): Page[] {
       cursorAccent: '#E5484D',
     },
     instances: [
+      inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
+        w: 1280,
+        h: 3800,
+        args: { accent: '#E5484D', base: '#0b0a0a', glowStrength: 0.11 },
+      }),
       inst(preset('src/text/SplitText.tsx'), 140, 90, {
         args: { text: 'MOTION LAB' },
         style: { fontSize: 72, color: '#f2f0eb', fontWeight: '800' },

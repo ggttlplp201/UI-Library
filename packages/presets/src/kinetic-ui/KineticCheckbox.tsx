@@ -27,12 +27,15 @@ export const KineticCheckbox = ({
         display: "flex",
         alignItems: "center",
         gap: 11,
-        background: "none",
-        border: "none",
         cursor: "pointer",
-        padding: 0,
         fontFamily: KUI.body,
         color: KUI.ink,
+        // Self-contained surface: the label must survive any page background.
+        background: KUI.card,
+        border: `1px solid ${KUI.border}`,
+        borderRadius: KUI.radius,
+        padding: "10px 14px",
+        boxShadow: KUI.shadow,
       }}
     >
       <span

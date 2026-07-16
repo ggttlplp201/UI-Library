@@ -201,8 +201,12 @@ class ErrorBoundary extends React.Component {
   render() { return this.state.err ? null : this.props.children }
 }
 
-async function renderComponent({ module, exportName, props, anim, fx, host }) {
+async function renderComponent({ module, exportName, props, anim, fx, host, theme }) {
   const token = ++renderToken
+  // Match the page's theme: on dark pages the token-driven components
+  // (text-foreground, bg-card, …) must resolve their .dark values or their
+  // near-black text simply vanishes into the background.
+  document.documentElement.classList.toggle('dark', theme === 'dark')
   try {
     let mod
     try {
@@ -332,10 +336,24 @@ function measureBounds() {
   }
   const maxW = base.width * 1.5 + 40
   const maxH = base.height * 1.5 + 40
-  return {
-    width: Math.min(right - base.left, maxW),
-    height: Math.min(bottom - base.top, maxH),
+  let width = Math.min(right - base.left, maxW)
+  let height = Math.min(bottom - base.top, maxH)
+  // Open overlays (Radix dialogs, menus, popovers) portal to <body>, OUTSIDE
+  // the root — without measuring them the frame stays trigger-sized and the
+  // open content renders cropped. Union them in uncapped: the 1.5x cap only
+  // exists for translated marquee tracks inside the root.
+  for (const el of document.body.children) {
+    if (el === rootEl) continue
+    const tag = el.tagName
+    if (tag === 'STYLE' || tag === 'SCRIPT' || tag === 'LINK') continue
+    for (const n of [el, ...el.querySelectorAll('*')]) {
+      const r = n.getBoundingClientRect()
+      if (r.width === 0 && r.height === 0) continue
+      if (r.right - base.left > width) width = r.right - base.left
+      if (r.bottom - base.top > height) height = r.bottom - base.top
+    }
   }
+  return { width, height }
 }
 
 // (animated numbers, late-loading images, reflowing inputs), and a stale
@@ -344,7 +362,7 @@ function measureBounds() {
 let lastW = -1
 let lastH = -1
 let sizeRaf = 0
-const sizeObserver = new ResizeObserver(() => {
+const reportSize = () => {
   cancelAnimationFrame(sizeRaf)
   sizeRaf = requestAnimationFrame(() => {
     const r = measureBounds()
@@ -358,8 +376,12 @@ const sizeObserver = new ResizeObserver(() => {
     lastH = h
     post({ type: 'size', width: w, height: h })
   })
-})
+}
+const sizeObserver = new ResizeObserver(reportSize)
 sizeObserver.observe(rootEl)
+// Portals mount straight into <body>, invisible to the root's ResizeObserver —
+// watch the body so an opening menu/dialog grows the frame to fit.
+new MutationObserver(reportSize).observe(document.body, { childList: true, subtree: true })
 
 // Collect the document's generated CSS (Tailwind utilities/theme) so an export
 // snapshot is self-contained.

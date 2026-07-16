@@ -22,6 +22,8 @@ export interface PreviewFrameProps {
   fx?: { id: string; accent?: string; text?: string }
   /** Bump to replay the animation without other changes */
   replayKey?: number
+  /** Page theme the component renders inside (resolves .dark tokens). Default light. */
+  theme?: 'dark' | 'light'
   className?: string
   /** Called with rendered content size, for size-to-content hosts (canvas) */
   onSize?: (size: { width: number; height: number }) => void
@@ -82,6 +84,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     anim,
     fx,
     replayKey,
+    theme,
     className,
     onSize,
     onUserClick,
@@ -112,6 +115,8 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   fxRef.current = fx
   const hostRef = useRef(host)
   hostRef.current = host
+  const themeRef = useRef(theme)
+  themeRef.current = theme
   const onSizeRef = useRef(onSize)
   onSizeRef.current = onSize
   const onUserClickRef = useRef(onUserClick)
@@ -160,6 +165,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
         anim: compiled ? { ...compiled, playNow } : null,
         fx: fxRef.current ?? null,
         host: hostRef.current ?? null,
+        theme: themeRef.current ?? 'light',
       },
       '*',
     )
@@ -225,6 +231,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
   const animKey = JSON.stringify(anim ?? null)
   const fxKey = JSON.stringify(fx ?? null)
   const hostKey = JSON.stringify(host ?? null)
+  const themeKey = theme ?? 'light'
   // A replayKey bump means "Preview animation": ask the harness to play the
   // effect immediately even when its trigger is hover/click/scroll.
   const lastReplayRef = useRef(replayKey)
@@ -232,7 +239,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, PreviewFrameProps>(functio
     const isReplay = replayKey !== lastReplayRef.current
     lastReplayRef.current = replayKey
     postRender(isReplay)
-  }, [postRender, propsKey, animKey, fxKey, hostKey, replayKey])
+  }, [postRender, propsKey, animKey, fxKey, hostKey, themeKey, replayKey])
 
   // Track the container size for fit (thumbnail) scaling.
   useEffect(() => {

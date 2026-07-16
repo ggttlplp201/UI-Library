@@ -16,6 +16,11 @@ function build(): Page[] {
     boardHeight: 3140,
     fx: { loader: 'bar', loaderAccent: '#111111', loaderMs: 900 },
     instances: [
+      inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
+        w: 1280,
+        h: 3140,
+        args: { accent: '#b8b2a4', base: '#0b0b0a', glowStrength: 0.07 },
+      }),
       // Poster wall opens the page — imagery first, no headline shouting.
       inst(preset('src/carousels/Carousels.tsx', 'Carousel_003'), 0, 60, {
         w: 1280,

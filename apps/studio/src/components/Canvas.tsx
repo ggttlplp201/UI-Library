@@ -726,6 +726,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
                     anim={inst.anim}
                     fx={inst.fx}
                     host={inst.w || inst.h ? { w: inst.w, h: inst.h } : undefined}
+                    theme={theme}
                     replayKey={inst.replay}
                     interactive={live}
                     onUserClick={

@@ -819,7 +819,9 @@ export function Workspace({
       ...(creditLines.length > 0
         ? [`<!--\n  Credits — this page includes components that require attribution:\n${creditLines.map((c) => `  · ${c}`).join('\n')}\n-->`]
         : []),
-      '<html><head><meta charset="utf-8" />',
+      // Serialized components resolved their token colors under this theme
+      // class — the export must carry it or .dark rules stop matching.
+      `<html${canvasTheme === 'dark' ? ' class="dark"' : ''}><head><meta charset="utf-8" />`,
       '<title>Style Studio export</title>',
       `<style>${[...cssBlocks].join('\n')}</style>`,
       `<style>${[...animCss].join('\n')}\n${FX_CSS}</style>`,

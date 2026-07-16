@@ -144,6 +144,11 @@ function build(): Page[] {
     boardHeight: 1800,
     fx: { loader: 'bar', loaderAccent: AMBER, loaderMs: 900, cursor: 'glow', cursorAccent: AMBER },
     instances: [
+      inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
+        w: 1280,
+        h: 1800,
+        args: { accent: AMBER, base: '#0a0a0c', glowStrength: 0.1 },
+      }),
       inst(preset('src/sections/SiteNavbar.tsx'), 0, 0, {
         w: 1280,
         args: { brand: 'ARC RELAY', links: 'Launch, Specs, Access', cta: 'Request access' },

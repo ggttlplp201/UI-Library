@@ -111,6 +111,18 @@ export function LivePreview({
     if (pages.some((p) => p.id === targetPageId)) setPageId(targetPageId)
   }
 
+  // Replay: re-run every entrance/scroll animation (components remount and
+  // play again) and the page's loading screen, without leaving the preview.
+  const [replayTick, setReplayTick] = useState(0)
+  const replay = () => {
+    setReplayTick((t) => t + 1)
+    if (page.fx?.loader && loaderById(page.fx.loader)) {
+      if (loaderTimer.current) clearTimeout(loaderTimer.current)
+      setLoaderVisible(true)
+      loaderTimer.current = setTimeout(() => setLoaderVisible(false), page.fx.loaderMs ?? 1400)
+    }
+  }
+
   const cursorKind = page.fx?.cursor
   const cursorAccent = page.fx?.cursorAccent || '#E3B23C'
   const loaderDef = loaderById(page.fx?.loader)
@@ -166,6 +178,8 @@ export function LivePreview({
                       anim={inst.anim}
                       fx={inst.fx}
                       host={inst.w || inst.h ? { w: inst.w, h: inst.h } : undefined}
+                      theme={theme}
+                      replayKey={replayTick}
                       interactive
                       onSize={(next) =>
                         setSizes((prev) =>
@@ -186,6 +200,16 @@ export function LivePreview({
           })}
         </div>
       </div>
+
+      {/* Replay the page's entrances + loader without leaving the preview */}
+      <button
+        type="button"
+        onClick={replay}
+        title="Replay this page's animations and loading screen"
+        className="fixed bottom-4 right-4 z-[60] px-3 py-1.5 rounded-full text-[11px] font-medium bg-black/70 text-white/90 border border-white/15 backdrop-blur hover:bg-black/85 hover:text-white active:scale-95 transition-all"
+      >
+        ↻ Replay intro
+      </button>
 
       {/* Loading screen overlay (page fx) */}
       {loaderDef && (

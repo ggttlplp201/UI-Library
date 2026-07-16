@@ -17,6 +17,11 @@ function build(): Page[] {
     boardHeight: 2350,
     fx: { loader: 'dots', loaderAccent: '#4B3BFF', loaderMs: 800 },
     instances: [
+      inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
+        w: 1280,
+        h: 2350,
+        args: { accent: '#4B3BFF', base: '#0a0a0f', glowStrength: 0.14 },
+      }),
       // Header band: what screen this is.
       inst(preset('src/sections/LampHeader.tsx'), 320, 40, {
         args: {

@@ -66,7 +66,19 @@ export const KineticSegmented = ({
           </button>
         ))}
       </div>
-      <div style={{ marginTop: 16, fontSize: 13, color: KUI.muted, textAlign: "center" }}>
+      <div
+        style={{
+          margin: "14px auto 0",
+          width: "fit-content",
+          fontSize: 13,
+          color: KUI.muted,
+          textAlign: "center",
+          background: KUI.card,
+          border: `1px solid ${KUI.border}`,
+          borderRadius: 999,
+          padding: "4px 12px",
+        }}
+      >
         Viewing <b style={{ color: KUI.ink }}>{items[Math.min(seg, n - 1)] ?? ""}</b>
       </div>
     </div>
