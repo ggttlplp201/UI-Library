@@ -15,7 +15,7 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 1700,
+    boardHeight: 2000,
     fx: {
       loader: 'newtons-cradle',
       loaderAccent: PHOSPHOR,
@@ -32,27 +32,38 @@ function build(): Page[] {
           background: '#0a0c0a',
         },
       }),
-      // Gauge row.
-      inst(preset('src/kinetic-lab/LiquidFill.tsx'), 140, 440, { args: { defaultValue: 64 } }),
-      inst(preset('src/kinetic-ui/KineticRingProgress.tsx'), 430, 445, { args: { defaultValue: 82 } }),
-      inst(preset('src/kinetic-ui/KineticSlider.tsx'), 720, 470, { args: { defaultValue: 36 } }),
-      inst(preset('src/kinetic-lab/RadialMenu.tsx'), 1040, 430, {}),
-      // Switch bank.
-      inst(preset('src/toggles/IndustrialSwitch.tsx'), 140, 760, {}),
-      inst(preset('src/toggles/IndustrialSwitch.tsx'), 400, 760, { args: { ledColor: '#E5484D' } }),
-      inst(preset('src/kinetic-lab/ElasticToggle.tsx'), 680, 780, {}),
-      inst(preset('src/kinetic-ui/KineticSwitch.tsx'), 950, 790, {}),
-      // Readouts.
-      inst(preset('src/feedback/ProgressBar.tsx'), 140, 1030, { w: 460 }),
-      inst(preset('src/text/AnimatedNumbers.tsx'), 680, 1000, {}),
-      inst(preset('src/badges/StatusBadge.tsx'), 1040, 1010, {}),
-      // Console island + spark.
-      inst(preset('src/overlays/DynamicIslandDemo.tsx'), 140, 1200, {}),
-      inst(preset('src/buttons/MusicToggleButton.tsx'), 720, 1230, {}),
-      inst(preset('src/buttons/PushButton3D.tsx'), 950, 1240, {
+      // — TELEMETRY zone —
+      inst(preset('src/basics/Heading.tsx'), 140, 430, { args: { text: 'TELEMETRY', size: 16, color: PHOSPHOR, tracking: 0.18, weight: 600 } }),
+      inst(preset('src/basics/PanelBand.tsx'), 100, 470, { args: { width: 1080, height: 300, background: 'rgba(18,161,80,0.05)', borderColor: 'rgba(18,161,80,0.18)' } }),
+      inst(preset('src/kinetic-lab/LiquidFill.tsx'), 160, 520, { args: { defaultValue: 64 } }),
+      inst(preset('src/kinetic-ui/KineticRingProgress.tsx'), 450, 525, { args: { defaultValue: 82 } }),
+      inst(preset('src/text/AnimatedNumbers.tsx'), 740, 545, {}),
+      inst(preset('src/badges/StatusBadge.tsx'), 1020, 545, {}),
+      // — POWER zone —
+      inst(preset('src/basics/Heading.tsx'), 140, 850, { args: { text: 'POWER', size: 16, color: PHOSPHOR, tracking: 0.18, weight: 600 } }),
+      inst(preset('src/basics/PanelBand.tsx'), 100, 890, { args: { width: 520, height: 300, background: 'rgba(18,161,80,0.05)', borderColor: 'rgba(18,161,80,0.18)' } }),
+      inst(preset('src/toggles/IndustrialSwitch.tsx'), 140, 940, {}),
+      inst(preset('src/toggles/IndustrialSwitch.tsx'), 380, 940, { args: { ledColor: '#E5484D' } }),
+      inst(preset('src/kinetic-lab/ElasticToggle.tsx'), 200, 1090, {}),
+      inst(preset('src/kinetic-ui/KineticSwitch.tsx'), 420, 1100, {}),
+      // — SIGNAL zone —
+      inst(preset('src/basics/Heading.tsx'), 680, 850, { args: { text: 'SIGNAL', size: 16, color: PHOSPHOR, tracking: 0.18, weight: 600 } }),
+      inst(preset('src/basics/PanelBand.tsx'), 660, 890, { args: { width: 520, height: 300, background: 'rgba(18,161,80,0.05)', borderColor: 'rgba(18,161,80,0.18)' } }),
+      inst(preset('src/kinetic-ui/KineticSlider.tsx'), 700, 950, { args: { defaultValue: 36 } }),
+      inst(preset('src/kinetic-lab/RadialMenu.tsx'), 1010, 930, {}),
+      inst(preset('src/feedback/ProgressBar.tsx'), 700, 1090, { w: 280 }),
+      // — CONSOLE row —
+      inst(preset('src/basics/Heading.tsx'), 140, 1280, { args: { text: 'CONSOLE', size: 16, color: PHOSPHOR, tracking: 0.18, weight: 600 } }),
+      inst(preset('src/basics/Divider.tsx'), 140, 1318, { args: { width: 1000, color: 'rgba(18,161,80,0.25)' } }),
+      inst(preset('src/overlays/DynamicIslandDemo.tsx'), 140, 1360, {}),
+      inst(preset('src/buttons/MusicToggleButton.tsx'), 720, 1400, {}),
+      inst(preset('src/buttons/PushButton3D.tsx'), 950, 1410, {
         args: { label: 'ARM', hue: 130 },
       }),
-      inst(preset('src/text/TextShimmer.tsx'), 140, 1520, {
+      inst(preset('src/basics/TextBlock.tsx'), 142, 1700, {
+        args: { text: 'Every instrument on this panel is a live component — drag a switch, spin the ring, arm the relay.', maxWidth: 520, size: 13, color: '#7fae91' },
+      }),
+      inst(preset('src/text/TextShimmer.tsx'), 140, 1780, {
         args: { children: 'ALL SYSTEMS NOMINAL' },
         style: { fontSize: 18 },
       }),

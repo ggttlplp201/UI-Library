@@ -14,7 +14,7 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 2050,
+    boardHeight: 2350,
     fx: { loader: 'dots', loaderAccent: '#4B3BFF', loaderMs: 800 },
     instances: [
       // Header band: what screen this is.
@@ -26,38 +26,50 @@ function build(): Page[] {
           background: '#0a0a0c',
         },
       }),
-      // Row 1 — navigation & selection.
-      inst(preset('src/kinetic-ui/KineticTabs.tsx'), 140, 440, {}),
-      inst(preset('src/kinetic-ui/KineticSegmented.tsx'), 700, 450, {}),
-      inst(preset('src/kinetic-ui/KineticChips.tsx'), 1000, 450, {}),
-      // Row 2 — text input.
-      inst(preset('src/kinetic-ui/KineticInput.tsx'), 140, 650, {}),
-      inst(preset('src/inputs/FloatingLabelInput.tsx'), 460, 655, {}),
-      inst(preset('src/inputs/SearchInput.tsx'), 760, 650, {}),
-      inst(preset('src/inputs/SelectDemo.tsx'), 1040, 640, {}),
-      // Row 3 — choice & toggles.
-      inst(preset('src/inputs/RadioGroupDemo.tsx'), 140, 850, {}),
-      inst(preset('src/kinetic-ui/KineticCheckbox.tsx'), 460, 870, {}),
-      inst(preset('src/kinetic-ui/KineticSwitch.tsx'), 760, 870, {}),
-      inst(preset('src/toggles/GlossySwitch.tsx'), 1000, 850, {}),
-      // Row 4 — feedback.
-      inst(preset('src/feedback/AlertBanner.tsx'), 140, 1090, { w: 560 }),
-      inst(preset('src/feedback/ProgressBar.tsx'), 140, 1200, { w: 380 }),
-      inst(preset('src/kinetic-ui/KineticProgressBar.tsx'), 560, 1200, {}),
-      inst(preset('src/feedback/ToasterDemo.tsx'), 760, 1090, {}),
-      inst(preset('src/kinetic-ui/KineticToast.tsx'), 1000, 1090, {}),
-      // Row 5 — overlays, live.
-      inst(preset('src/overlays/DialogDemo.tsx'), 140, 1400, {}),
-      inst(preset('src/overlays/DropdownMenuDemo.tsx'), 400, 1400, {}),
-      inst(preset('src/overlays/PopoverDemo.tsx'), 660, 1400, {}),
-      inst(preset('src/kinetic-ui/KineticTooltip.tsx'), 920, 1400, {}),
-      inst(preset('src/kinetic-ui/KineticDropdown.tsx'), 1080, 1400, {}),
-      // Row 6 — identity chips.
-      inst(preset('src/badges/AvatarChip.tsx'), 140, 1780, {}),
-      inst(preset('src/badges/PillBadge.tsx'), 360, 1790, {}),
-      inst(preset('src/badges/StatusBadge.tsx'), 560, 1790, {}),
-      inst(preset('src/kinetic-ui/KineticBadge.tsx'), 740, 1790, {}),
-      inst(preset('src/kinetic-ui/KineticAvatarStack.tsx'), 940, 1770, {}),
+      // — Selection —
+      inst(preset('src/basics/Heading.tsx'), 140, 430, { args: { text: 'Selection', size: 22 } }),
+      inst(preset('src/basics/Divider.tsx'), 140, 472, { args: { width: 1000 } }),
+      inst(preset('src/kinetic-ui/KineticTabs.tsx'), 140, 510, {}),
+      inst(preset('src/kinetic-ui/KineticSegmented.tsx'), 700, 520, {}),
+      inst(preset('src/kinetic-ui/KineticChips.tsx'), 1000, 520, {}),
+      // — Input —
+      inst(preset('src/basics/Heading.tsx'), 140, 700, { args: { text: 'Input', size: 22 } }),
+      inst(preset('src/basics/Divider.tsx'), 140, 742, { args: { width: 1000 } }),
+      inst(preset('src/kinetic-ui/KineticInput.tsx'), 140, 790, {}),
+      inst(preset('src/inputs/FloatingLabelInput.tsx'), 460, 795, {}),
+      inst(preset('src/inputs/SearchInput.tsx'), 760, 790, {}),
+      inst(preset('src/inputs/SelectDemo.tsx'), 1040, 780, {}),
+      // — Choice & switches —
+      inst(preset('src/basics/Heading.tsx'), 140, 980, { args: { text: 'Choice & switches', size: 22 } }),
+      inst(preset('src/basics/Divider.tsx'), 140, 1022, { args: { width: 1000 } }),
+      inst(preset('src/inputs/RadioGroupDemo.tsx'), 140, 1070, {}),
+      inst(preset('src/kinetic-ui/KineticCheckbox.tsx'), 460, 1090, {}),
+      inst(preset('src/kinetic-ui/KineticSwitch.tsx'), 760, 1090, {}),
+      inst(preset('src/toggles/GlossySwitch.tsx'), 1000, 1070, {}),
+      // — Feedback —
+      inst(preset('src/basics/Heading.tsx'), 140, 1300, { args: { text: 'Feedback', size: 22 } }),
+      inst(preset('src/basics/Divider.tsx'), 140, 1342, { args: { width: 1000 } }),
+      inst(preset('src/feedback/AlertBanner.tsx'), 140, 1390, { w: 560 }),
+      inst(preset('src/feedback/ProgressBar.tsx'), 140, 1500, { w: 380 }),
+      inst(preset('src/kinetic-ui/KineticProgressBar.tsx'), 560, 1500, {}),
+      inst(preset('src/feedback/ToasterDemo.tsx'), 760, 1390, {}),
+      inst(preset('src/kinetic-ui/KineticToast.tsx'), 1000, 1390, {}),
+      // — Overlays (grouped on a quiet panel) —
+      inst(preset('src/basics/Heading.tsx'), 140, 1650, { args: { text: 'Overlays', size: 22 } }),
+      inst(preset('src/basics/PanelBand.tsx'), 100, 1700, { args: { width: 1080, height: 240 } }),
+      inst(preset('src/overlays/DialogDemo.tsx'), 160, 1750, {}),
+      inst(preset('src/overlays/DropdownMenuDemo.tsx'), 420, 1750, {}),
+      inst(preset('src/overlays/PopoverDemo.tsx'), 680, 1750, {}),
+      inst(preset('src/kinetic-ui/KineticTooltip.tsx'), 940, 1750, {}),
+      inst(preset('src/kinetic-ui/KineticDropdown.tsx'), 1090, 1750, {}),
+      // — Identity —
+      inst(preset('src/basics/Heading.tsx'), 140, 2020, { args: { text: 'Identity', size: 22 } }),
+      inst(preset('src/basics/Divider.tsx'), 140, 2062, { args: { width: 1000 } }),
+      inst(preset('src/badges/AvatarChip.tsx'), 140, 2110, {}),
+      inst(preset('src/badges/PillBadge.tsx'), 360, 2120, {}),
+      inst(preset('src/badges/StatusBadge.tsx'), 560, 2120, {}),
+      inst(preset('src/kinetic-ui/KineticBadge.tsx'), 740, 2120, {}),
+      inst(preset('src/kinetic-ui/KineticAvatarStack.tsx'), 940, 2100, {}),
     ],
   }
   return [page]

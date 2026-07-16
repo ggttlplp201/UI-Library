@@ -13,7 +13,7 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 3300,
+    boardHeight: 3600,
     fx: {
       loader: 'equalizer',
       loaderAccent: '#E5484D',
@@ -31,30 +31,43 @@ function build(): Page[] {
         args: { texts: ['reveals', 'zooms', 'counters', 'cursors'] },
         style: { fontSize: 40, color: '#E5484D', fontWeight: '700' },
       }),
-      // Scroll the panel: characters pull themselves together.
-      inst(preset('src/scroll/CharacterScrollReveal.tsx'), 320, 360, {}),
-      // Rolling text band.
-      inst(preset('src/text/LoopText.tsx'), 0, 880, { w: 1280 }),
-      // Sticky zoom set-piece.
-      inst(preset('src/scroll/StickyCardZoom.tsx'), 140, 1060, {}),
-      // Fade-list rhythm.
-      inst(preset('src/scroll/ScrollFadeList.tsx'), 140, 1850, {}),
-      inst(preset('src/scroll/TextReveal.tsx'), 700, 1850, {}),
-      // Numbers that move.
-      inst(preset('src/text/NumberTicker.tsx'), 140, 2500, {
+      inst(preset('src/basics/TextBlock.tsx'), 142, 300, {
+        args: {
+          text: 'Six set pieces. Scroll slowly — each one is driven by where you are on the page, not by a timer.',
+          maxWidth: 460,
+          color: '#a8a29a',
+        },
+      }),
+      // 01 — character reveal
+      inst(preset('src/basics/Heading.tsx'), 140, 430, { args: { text: '01 — Character reveal', size: 22, color: '#E5484D' } }),
+      inst(preset('src/scroll/CharacterScrollReveal.tsx'), 320, 500, {}),
+      // 02 — rolling band
+      inst(preset('src/basics/Heading.tsx'), 140, 1010, { args: { text: '02 — Rolling band', size: 22, color: '#E5484D' } }),
+      inst(preset('src/text/LoopText.tsx'), 0, 1080, { w: 1280 }),
+      // 03 — sticky zoom
+      inst(preset('src/basics/Heading.tsx'), 140, 1290, { args: { text: '03 — Sticky zoom', size: 22, color: '#E5484D' } }),
+      inst(preset('src/scroll/StickyCardZoom.tsx'), 140, 1360, {}),
+      // 04 — fade rhythm
+      inst(preset('src/basics/Heading.tsx'), 140, 2120, { args: { text: '04 — Fade rhythm', size: 22, color: '#E5484D' } }),
+      inst(preset('src/scroll/ScrollFadeList.tsx'), 140, 2190, {}),
+      inst(preset('src/scroll/TextReveal.tsx'), 700, 2190, {}),
+      // 05 — numbers that move
+      inst(preset('src/basics/Heading.tsx'), 140, 2760, { args: { text: '05 — Numbers that move', size: 22, color: '#E5484D' } }),
+      inst(preset('src/text/NumberTicker.tsx'), 140, 2830, {
         args: { value: 4096 },
         style: { fontSize: 64, color: '#f2f0eb', fontWeight: '800' },
         anim: { preset: 'fade', trigger: 'scroll', duration: 0.5, delay: 0, easing: 'ease-out', once: true },
       }),
-      inst(preset('src/text/AnimatedNumbers.tsx'), 500, 2500, {}),
-      // Hover instruments.
-      inst(preset('src/hover/AnimatedLink.tsx'), 140, 2800, {}),
-      inst(preset('src/hover/ClipReveal.tsx'), 500, 2760, {}),
-      inst(preset('src/effects/ClickSpark.tsx'), 950, 2780, {
+      inst(preset('src/text/AnimatedNumbers.tsx'), 500, 2830, {}),
+      // 06 — hover instruments
+      inst(preset('src/basics/Heading.tsx'), 140, 3040, { args: { text: '06 — Hover instruments', size: 22, color: '#E5484D' } }),
+      inst(preset('src/hover/AnimatedLink.tsx'), 140, 3120, {}),
+      inst(preset('src/hover/ClipReveal.tsx'), 500, 3090, {}),
+      inst(preset('src/effects/ClickSpark.tsx'), 950, 3100, {
         args: { children: 'Click here' },
         style: { fontSize: 24, color: '#f2f0eb' },
       }),
-      inst(preset('src/effects/Marquee.tsx'), 0, 3050, {
+      inst(preset('src/effects/Marquee.tsx'), 0, 3420, {
         w: 1280,
         args: { children: 'MOTION · IS · INFORMATION · MOTION · IS · INFORMATION ·' },
       }),
