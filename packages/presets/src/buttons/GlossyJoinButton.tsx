@@ -256,8 +256,12 @@ export const GlossyJoinButton = ({
       }
       .uv-gjb-splash {
         position: absolute;
-        top: 0;
-        left: 0;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        /* display:none keeps the burst out of the measured bounds until it
+           actually fires — the canvas frame hugs the visible button. */
+        display: none;
         pointer-events: none;
         stroke-dasharray: 60 60;
         stroke-dashoffset: 60;
@@ -304,6 +308,7 @@ export const GlossyJoinButton = ({
         transform: translate(3px, -3px);
       }
       .uv-gjb:active .uv-gjb-splash {
+        display: block;
         animation: uv-gjb-splash 0.8s cubic-bezier(0.3, 0, 0, 1) forwards 0.05s;
       }
       .uv-gjb:focus .uv-gjb-path {
