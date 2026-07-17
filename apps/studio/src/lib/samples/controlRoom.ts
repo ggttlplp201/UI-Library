@@ -2,10 +2,10 @@ import { newPageId, type Page } from '../canvas'
 import { inst, preset, type SampleProject } from './types'
 
 /**
- * Control Room — the instrument panel rebuilt in the Depot register: one
- * frosted glass console over a cold near-black stage, mono data tables,
- * oversized stat numerals, and flanking glass bays of live instruments.
- * Ice-blue signal instead of chrome.
+ * Control Room — the instrument panel in the Depot register, effects and
+ * all: a frosted glass console floats over full-bleed photography, its mono
+ * index inverts row by row and swaps the photograph behind the glass as you
+ * hover. Glass bays of live instruments below, ice-blue signal throughout.
  */
 const ICE = '#9FC2D4'
 const INK = '#eef3f6'
@@ -28,6 +28,16 @@ const bay = (x: number, y: number, width: number, height: number) =>
     args: { width, height, background: GLASS, borderColor: GLASS_EDGE, radius: 18 },
   })
 
+/** Oversized stat numeral + mono sublabel, Depot console-floor style. */
+const stat = (x: number, y: number, value: string, label: string) => [
+  inst(preset('src/basics/Heading.tsx'), x, y, {
+    args: { text: value, size: 40, color: INK, font: DISPLAY, weight: 700 },
+  }),
+  inst(preset('src/basics/TextBlock.tsx'), x, y + 52, {
+    args: { text: label, size: 9, color: DIM, font: MONO, lineHeight: 1.5 },
+  }),
+]
+
 function build(): Page[] {
   const page: Page = {
     id: newPageId(),
@@ -35,7 +45,7 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 2200,
+    boardHeight: 2400,
     fx: {
       loader: 'newtons-cradle',
       loaderAccent: ICE,
@@ -46,113 +56,67 @@ function build(): Page[] {
     instances: [
       inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
         w: 1280,
-        h: 2200,
+        h: 2400,
         args: { accent: '#7fa8bd', base: '#05080b', glowStrength: 0.11 },
       }),
-      // — The console: wordmark, mono table, stat numerals in one glass slab —
-      bay(300, 60, 680, 600),
-      inst(preset('src/basics/Heading.tsx'), 344, 105, {
-        args: { text: 'CONTROL ROOM', size: 28, color: INK, font: DISPLAY, weight: 800, tracking: -0.01 },
-      }),
-      inst(preset('src/basics/TextBlock.tsx'), 700, 108, {
+      // — The hero IS the effect: hover a row, the photograph behind the
+      //   glass swaps and the row floods white.
+      inst(preset('src/sections/ImageRevealIndex.tsx'), 0, 0, {
+        w: 1280,
+        h: 860,
         args: {
-          text: 'THOUGHTFUL FROM START TO FINISH\n— PRECISE, SIMPLE, EFFECTIVE.',
-          size: 10,
-          color: DIM,
-          font: MONO,
-          lineHeight: 1.6,
-          maxWidth: 250,
+          brand: 'CONTROL ROOM',
+          tagline: 'THOUGHTFUL FROM START TO FINISH\n— PRECISE, SIMPLE, EFFECTIVE.',
+          nav: 'PANEL | TELEMETRY | POWER | CALL',
+          label: 'INSTRUMENTS',
+          header: 'NAME | TYPE | YEAR',
+          rows: 'HOLO | IDENTITY | 2027\nNEURAL | BRANDING | 2028\nFLUX | CAMPAIGN | 2028\nGHOST | INTERFACE | 2029\nPULSE | VISUALS | 2026\nNANO | NARRATIVE | 2029\nECHO | MATE | 2030\nPHOTON | LAUNCH | 2030',
+          width: 1280,
+          height: 860,
+          ink: INK,
+          hoverBg: INK,
+          hoverInk: '#05080b',
         },
       }),
-      inst(preset('src/basics/TextBlock.tsx'), 344, 180, {
-        args: { text: 'PANEL', size: 11, color: DIM, font: MONO },
-      }),
-      inst(preset('src/basics/TextBlock.tsx'), 344, 215, {
-        args: {
-          text: 'HOLO\nNEURAL\nFLUX\nGHOST\nPULSE\nNANO\nECHO\nPHOTON',
-          size: 12,
-          color: INK,
-          font: MONO,
-          lineHeight: 1.9,
-        },
-      }),
-      inst(preset('src/basics/TextBlock.tsx'), 590, 215, {
-        args: {
-          text: 'IDENTITY\nBRANDING\nCAMPAIGN\nINTERFACE\nVISUALS\nNARRATIVE\nMATE\nLAUNCH',
-          size: 12,
-          color: DIM,
-          font: MONO,
-          lineHeight: 1.9,
-        },
-      }),
-      inst(preset('src/basics/TextBlock.tsx'), 860, 215, {
-        args: {
-          text: '2027\n2028\n2028\n2029\n2026\n2029\n2030\n2030',
-          size: 12,
-          color: DIM,
-          font: MONO,
-          lineHeight: 1.9,
-        },
-      }),
-      // Stat numerals along the console floor.
-      inst(preset('src/basics/Heading.tsx'), 344, 500, {
-        args: { text: '29+', size: 36, color: INK, font: DISPLAY, weight: 700 },
-      }),
-      inst(preset('src/basics/TextBlock.tsx'), 344, 548, {
-        args: { text: 'COMPLETED\nPROJECTS', size: 9, color: DIM, font: MONO, lineHeight: 1.5 },
-      }),
-      inst(preset('src/basics/Heading.tsx'), 505, 500, {
-        args: { text: '75K+', size: 36, color: INK, font: DISPLAY, weight: 700 },
-      }),
-      inst(preset('src/basics/TextBlock.tsx'), 505, 548, {
-        args: { text: 'MONTHLY ORGANIC\nTRAFFIC', size: 9, color: DIM, font: MONO, lineHeight: 1.5 },
-      }),
-      inst(preset('src/basics/Heading.tsx'), 690, 500, {
-        args: { text: '98%', size: 36, color: INK, font: DISPLAY, weight: 700 },
-      }),
-      inst(preset('src/basics/TextBlock.tsx'), 690, 548, {
-        args: { text: 'PANEL HAPPINESS\nINDEX', size: 9, color: DIM, font: MONO, lineHeight: 1.5 },
-      }),
-      inst(preset('src/basics/Heading.tsx'), 855, 500, {
-        args: { text: '2M+', size: 36, color: INK, font: DISPLAY, weight: 700 },
-      }),
-      inst(preset('src/basics/TextBlock.tsx'), 855, 548, {
-        args: { text: 'SIGNALS\nSERVED', size: 9, color: DIM, font: MONO, lineHeight: 1.5 },
-      }),
+      // Stat numerals land on the open floor of the glass console.
+      ...stat(370, 650, '29+', 'COMPLETED\nPROJECTS'),
+      ...stat(520, 650, '75K+', 'MONTHLY ORGANIC\nTRAFFIC'),
+      ...stat(690, 650, '98%', 'PANEL HAPPINESS\nINDEX'),
+      ...stat(845, 650, '2M+', 'SIGNALS\nSERVED'),
       // — TELEMETRY bay —
-      zone(80, 715, 'TELEMETRY'),
-      bay(60, 745, 540, 430),
-      inst(preset('src/kinetic-lab/LiquidFill.tsx'), 100, 795, { args: { defaultValue: 64 } }),
-      inst(preset('src/kinetic-ui/KineticRingProgress.tsx'), 380, 805, { args: { defaultValue: 82 } }),
-      inst(preset('src/text/AnimatedNumbers.tsx', 'AnimatedNumberTicker'), 100, 1050, {}),
-      inst(preset('src/badges/StatusBadge.tsx'), 460, 1060, {}),
+      zone(80, 920, 'TELEMETRY'),
+      bay(60, 950, 540, 430),
+      inst(preset('src/kinetic-lab/LiquidFill.tsx'), 100, 1000, { args: { defaultValue: 64 } }),
+      inst(preset('src/kinetic-ui/KineticRingProgress.tsx'), 380, 1010, { args: { defaultValue: 82 } }),
+      inst(preset('src/text/AnimatedNumbers.tsx', 'AnimatedNumberTicker'), 100, 1255, {}),
+      inst(preset('src/badges/StatusBadge.tsx'), 460, 1265, {}),
       // — POWER bay —
-      zone(700, 715, 'POWER'),
-      bay(680, 745, 540, 430),
-      inst(preset('src/toggles/IndustrialSwitch.tsx'), 720, 790, {}),
-      inst(preset('src/kinetic-lab/ElasticToggle.tsx'), 730, 1000, {}),
-      inst(preset('src/cupertino/CupertinoSwitch.tsx'), 900, 1000, {}),
-      inst(preset('src/cupertino/CupertinoStepper.tsx'), 900, 1090, {}),
+      zone(700, 920, 'POWER'),
+      bay(680, 950, 540, 430),
+      inst(preset('src/toggles/IndustrialSwitch.tsx'), 720, 995, {}),
+      inst(preset('src/kinetic-lab/ElasticToggle.tsx'), 730, 1205, {}),
+      inst(preset('src/cupertino/CupertinoSwitch.tsx'), 900, 1205, {}),
+      inst(preset('src/cupertino/CupertinoStepper.tsx'), 900, 1295, {}),
       // — SIGNAL bay —
-      zone(80, 1230, 'SIGNAL'),
-      bay(60, 1260, 540, 400),
-      inst(preset('src/kinetic-ui/KineticSlider.tsx'), 100, 1320, { w: 260, args: { defaultValue: 36 } }),
-      inst(preset('src/kinetic-lab/RadialMenu.tsx'), 400, 1300, {}),
-      inst(preset('src/cupertino/CupertinoSlider.tsx'), 100, 1450, {}),
-      inst(preset('src/cupertino/CupertinoProgress.tsx'), 100, 1560, {}),
+      zone(80, 1435, 'SIGNAL'),
+      bay(60, 1465, 540, 400),
+      inst(preset('src/kinetic-ui/KineticSlider.tsx'), 100, 1525, { w: 260, args: { defaultValue: 36 } }),
+      inst(preset('src/kinetic-lab/RadialMenu.tsx'), 400, 1505, {}),
+      inst(preset('src/cupertino/CupertinoSlider.tsx'), 100, 1655, {}),
+      inst(preset('src/cupertino/CupertinoProgress.tsx'), 100, 1765, {}),
       // — SYSTEM bay —
-      zone(700, 1230, 'SYSTEM'),
-      bay(680, 1260, 540, 400),
-      inst(preset('src/navigation/SettingsNavList.tsx'), 720, 1305, {}),
+      zone(700, 1435, 'SYSTEM'),
+      bay(680, 1465, 540, 400),
+      inst(preset('src/navigation/SettingsNavList.tsx'), 720, 1510, {}),
       // — CONSOLE row —
-      zone(80, 1720, 'CONSOLE'),
-      inst(preset('src/basics/Divider.tsx'), 60, 1750, { args: { width: 1160, color: 'rgba(159,194,212,0.25)' } }),
-      inst(preset('src/overlays/DynamicIslandDemo.tsx'), 60, 1790, {}),
-      inst(preset('src/buttons/MusicToggleButton.tsx'), 700, 1830, {}),
-      inst(preset('src/buttons/PushButton3D.tsx'), 950, 1840, {
+      zone(80, 1925, 'CONSOLE'),
+      inst(preset('src/basics/Divider.tsx'), 60, 1955, { args: { width: 1160, color: 'rgba(159,194,212,0.25)' } }),
+      inst(preset('src/overlays/DynamicIslandDemo.tsx'), 60, 1995, {}),
+      inst(preset('src/buttons/MusicToggleButton.tsx'), 700, 2035, {}),
+      inst(preset('src/buttons/PushButton3D.tsx'), 950, 2045, {
         args: { label: 'ARM', hue: 205 },
       }),
-      inst(preset('src/basics/TextBlock.tsx'), 62, 2050, {
+      inst(preset('src/basics/TextBlock.tsx'), 62, 2255, {
         args: {
           text: 'EVERY INSTRUMENT ON THIS PANEL IS LIVE — DRAG A FADER, SPIN THE RING, ARM THE RELAY.',
           maxWidth: 560,
@@ -161,7 +125,7 @@ function build(): Page[] {
           font: MONO,
         },
       }),
-      inst(preset('src/text/TextShimmer.tsx'), 60, 2110, {
+      inst(preset('src/text/TextShimmer.tsx'), 60, 2315, {
         args: { children: 'ALL SYSTEMS NOMINAL' },
         style: { fontSize: 18, fontFamily: MONO },
       }),
@@ -173,9 +137,9 @@ function build(): Page[] {
 export const controlRoom: SampleProject = {
   id: 'control-room',
   title: 'Control Room',
-  tagline: 'A frosted console over a cold dark stage',
+  tagline: 'Glass console over photography that answers your cursor',
   detail:
-    'One glass console with mono tables and oversized stat numerals, flanked by glass bays of live instruments — liquid fills, rings, faders, switch banks, Cupertino glass controls and a dynamic-island console.',
+    'A frosted console floats over full-bleed photography — hover the mono index and each row floods white while the photograph behind the glass swaps. Glass bays of live instruments below: fills, rings, faders, switch banks, Cupertino glass and a dynamic island.',
   accent: ICE,
   build,
 }
