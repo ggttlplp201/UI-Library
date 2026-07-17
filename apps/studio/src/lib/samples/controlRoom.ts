@@ -117,13 +117,7 @@ function build(): Page[] {
         args: { label: 'ARM', hue: 205 },
       }),
       inst(preset('src/basics/TextBlock.tsx'), 62, 2255, {
-        args: {
-          text: 'EVERY INSTRUMENT ON THIS PANEL IS LIVE — DRAG A FADER, SPIN THE RING, ARM THE RELAY.',
-          maxWidth: 560,
-          size: 11,
-          color: DIM,
-          font: MONO,
-        },
+        args: { text: 'ALL INSTRUMENTS LIVE.', maxWidth: 560, size: 11, color: DIM, font: MONO },
       }),
       inst(preset('src/text/TextShimmer.tsx'), 60, 2315, {
         args: { children: 'ALL SYSTEMS NOMINAL' },

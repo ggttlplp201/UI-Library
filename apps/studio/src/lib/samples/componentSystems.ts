@@ -32,6 +32,7 @@ const label = (x: number, y: number, width: number, text: string) =>
     w: width,
     args: { text, size: 15, color: '#ffffff', align: 'center', maxWidth: width, font: NOTE },
     style: { fontWeight: '600' },
+    anim: { preset: 'fade', trigger: 'scroll', duration: 0.5, delay: 0, easing: 'ease-out', once: true },
   })
 
 function build(): Page[] {
@@ -41,12 +42,12 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 2580,
+    boardHeight: 2990,
     fx: { loader: 'dots', loaderAccent: '#ffffff', loaderMs: 800 },
     instances: [
       inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
         w: 1280,
-        h: 2580,
+        h: 2990,
         args: { accent: '#ff7a3c', base: ORANGE, glowStrength: 0.1 },
       }),
       // — Masthead + working note —
@@ -54,14 +55,7 @@ function build(): Page[] {
         args: { text: 'Component\nWorkbench', size: 76, color: '#ffffff', font: DISPLAY, weight: 400, tracking: -0.01, lineHeight: 0.95 },
       }),
       inst(preset('src/basics/TextBlock.tsx'), 900, 80, {
-        args: {
-          text: 'Every unit on this mat is live. Open the menus, flip the switches, fire the toast — then lift what works onto your own pages.',
-          size: 15,
-          color: '#ffffff',
-          maxWidth: 320,
-          font: NOTE,
-          lineHeight: 1.45,
-        },
+        args: { text: 'Every unit is live.', size: 15, color: '#ffffff', maxWidth: 320, font: NOTE },
       }),
       // — Specimen 01 · Selection —
       frame(60, 280, 1160, 290),
@@ -105,17 +99,25 @@ function build(): Page[] {
       inst(preset('src/overlays/PopoverDemo.tsx'), 660, 1890, {}),
       inst(preset('src/kinetic-ui/KineticDropdown.tsx'), 940, 1890, {}),
       label(60, 2115, 1160, 'Overlays'),
-      // — Specimen 07 · Button, eight ways (one per kit) —
-      frame(60, 2190, 1160, 280),
-      inst(preset('src/boldcase/PopButton.tsx'), 100, 2240, {}),
-      inst(preset('src/overworld/TravelButton.tsx'), 500, 2240, {}),
-      inst(preset('src/voltura/VolturaButton.tsx'), 900, 2240, {}),
-      inst(preset('src/kinetic-ui/KineticButton.tsx'), 100, 2360, {}),
-      inst(preset('src/cupertino/CupertinoButton.tsx'), 250, 2360, {}),
-      inst(preset('src/chicago95/Win95Button.tsx'), 450, 2365, {}),
-      inst(preset('src/spritecraft/SpriteButton.tsx'), 620, 2365, {}),
-      inst(preset('src/glitchtype/GlitchButton.tsx'), 800, 2360, {}),
-      label(60, 2485, 1160, 'Button, eight ways — one per kit'),
+      // — Specimen 07 · Navigation —
+      frame(60, 2190, 1160, 320),
+      inst(preset('src/navigation/MorphNav.tsx'), 100, 2240, {
+        args: { word: 'CLICK', items: 'Projects | About | Contact', ink: '#ffffff', accent: '#140d0b', size: 56, width: 420 },
+      }),
+      inst(preset('src/navigation/PillNav.tsx'), 620, 2260, {}),
+      inst(preset('src/navigation/TabsDemo.tsx'), 620, 2330, {}),
+      label(60, 2525, 1160, 'Navigation'),
+      // — Specimen 08 · Buttons (one per kit) —
+      frame(60, 2600, 1160, 280),
+      inst(preset('src/boldcase/PopButton.tsx'), 100, 2650, {}),
+      inst(preset('src/overworld/TravelButton.tsx'), 500, 2650, {}),
+      inst(preset('src/voltura/VolturaButton.tsx'), 900, 2650, {}),
+      inst(preset('src/kinetic-ui/KineticButton.tsx'), 100, 2770, {}),
+      inst(preset('src/cupertino/CupertinoButton.tsx'), 250, 2770, {}),
+      inst(preset('src/chicago95/Win95Button.tsx'), 450, 2775, {}),
+      inst(preset('src/spritecraft/SpriteButton.tsx'), 620, 2775, {}),
+      inst(preset('src/glitchtype/GlitchButton.tsx'), 800, 2770, {}),
+      label(60, 2895, 1160, 'Buttons'),
     ],
   }
   return [page]

@@ -21,12 +21,12 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 2960,
+    boardHeight: 3700,
     fx: { loader: 'bar', loaderAccent: INK, loaderMs: 900 },
     instances: [
       inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
         w: 1280,
-        h: 2960,
+        h: 3700,
         args: { accent: '#EFE6A6', base: PAPER, glowStrength: 0.3 },
       }),
       // — Masthead with serif corners —
@@ -42,13 +42,12 @@ function build(): Page[] {
       }),
       inst(preset('src/basics/TextBlock.tsx'), 240, 210, {
         args: {
-          text: 'A curated pile of harbors, markets and detours — proof I do, in fact, leave the studio.\n(More notes coming whenever I find a free afternoon.)',
+          text: 'Photographs, studies, margins.',
           size: 21,
           color: SOFT,
           font: SERIF,
           align: 'center',
           maxWidth: 800,
-          lineHeight: 1.4,
           italic: true,
         },
       }),
@@ -90,23 +89,17 @@ function build(): Page[] {
         },
         anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.6, delay: 0.24, easing: 'ease-out', once: true },
       }),
-      inst(preset('src/basics/TextBlock.tsx'), 880, 730, {
-        args: { text: '↓ shot on the walk home — do not crop!', size: 26, color: REDPEN, font: HAND, rotate: -3 },
-      }),
       // — Notebook spread —
       inst(preset('src/marginalia/NotebookCard.tsx'), 60, 1440, {}),
       inst(preset('src/basics/TextBlock.tsx'), 500, 1480, {
         args: {
-          text: 'Most of this was shot between assignments: the walk to the studio, the hour after a job wrapped, the places a brief never sends you. Kept here unretouched — the notebook is the point, not the portfolio.',
+          text: 'Notes from between assignments.',
           size: 19,
           color: SOFT,
           font: SERIF,
           maxWidth: 420,
-          lineHeight: 1.55,
+          italic: true,
         },
-      }),
-      inst(preset('src/basics/TextBlock.tsx'), 1000, 1560, {
-        args: { text: 'ok but the strawberries\nwere worth it', size: 26, color: REDPEN, font: HAND, lineHeight: 1.2, rotate: 2 },
       }),
       // — Studies —
       inst(preset('src/basics/Heading.tsx'), 60, 1900, {
@@ -115,29 +108,40 @@ function build(): Page[] {
       inst(preset('src/basics/Divider.tsx'), 60, 1975, { args: { width: 1160, color: 'rgba(23,21,15,0.18)' } }),
       inst(preset('src/hover/HoverExpand.tsx', 'HoverExpand_001'), 60, 2020, {}),
       inst(preset('src/basics/TextBlock.tsx'), 60, 2400, {
-        args: {
-          text: 'Hover — every frame hides a second one.',
-          size: 19,
-          color: SOFT,
-          font: SERIF,
-          italic: true,
-        },
+        args: { text: 'Hover studies.', size: 19, color: SOFT, font: SERIF, italic: true },
       }),
-      // — Sign-off —
+      // — Index: hover a row, its photograph appears —
       inst(preset('src/basics/Divider.tsx'), 60, 2560, { args: { width: 1160, color: 'rgba(23,21,15,0.18)' } }),
-      inst(preset('src/basics/TextBlock.tsx'), 60, 2620, {
+      inst(preset('src/basics/Heading.tsx'), 60, 2620, {
+        args: { text: 'Index', size: 52, color: INK, font: SERIF, weight: 500 },
+        anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.5, delay: 0, easing: 'ease-out', once: true },
+      }),
+      inst(preset('src/sections/HoverIndexReveal.tsx'), 60, 2710, {
         args: {
-          text: 'Everything here © its walkers and harbors.\nWrite me before you borrow the strawberries.',
-          size: 18,
-          color: SOFT,
+          rows: 'Harbor | 2026\nMarket | 2025\nRiver | 2025\nRidge | 2024',
+          images:
+            'https://picsum.photos/id/1041/640/800\nhttps://picsum.photos/id/1080/640/800?grayscale\nhttps://picsum.photos/id/1015/640/800\nhttps://picsum.photos/id/1036/640/800?grayscale',
+          ink: INK,
+          accent: REDPEN,
           font: SERIF,
-          lineHeight: 1.5,
+          fontSize: 44,
+          width: 1160,
         },
       }),
-      inst(preset('src/marginalia/InkButton.tsx'), 60, 2740, {}),
-      inst(preset('src/basics/TextBlock.tsx'), 1060, 2680, {
-        args: { text: '— L.', size: 40, color: INK, font: HAND, rotate: -4 },
+      // — Signed closer —
+      inst(preset('src/text/SignatureOverType.tsx'), 60, 3220, {
+        args: {
+          lines: 'FIELD NOTES\n2019–2026',
+          signature: '— L.',
+          ink: INK,
+          signatureColor: REDPEN,
+          size: 140,
+          signatureSize: 110,
+          width: 1160,
+        },
+        anim: { preset: 'fade', trigger: 'scroll', duration: 0.7, delay: 0, easing: 'ease-out', once: true },
       }),
+      inst(preset('src/marginalia/InkButton.tsx'), 540, 3560, {}),
     ],
   }
   return [page]

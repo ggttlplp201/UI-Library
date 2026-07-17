@@ -19,6 +19,7 @@ const SERIF = "'Playfair Display', Georgia, serif"
 const act = (y: number, text: string) =>
   inst(preset('src/basics/Heading.tsx'), 60, y, {
     args: { text, size: 30, color: INKRED, font: SERIF, weight: 600, tracking: 0, italic: true },
+    anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.5, delay: 0, easing: 'ease-out', once: true },
   })
 
 /** Black film frame behind a set piece. */
@@ -34,7 +35,7 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 4800,
+    boardHeight: 5080,
     fx: {
       loader: 'equalizer',
       loaderAccent: RED,
@@ -45,7 +46,7 @@ function build(): Page[] {
     instances: [
       inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
         w: 1280,
-        h: 4800,
+        h: 5080,
         args: { accent: '#ff5a4f', base: RED, glowStrength: 0.12 },
       }),
       // — Title card: red display type + film still inside a black frame —
@@ -58,15 +59,7 @@ function build(): Page[] {
         style: { fontSize: 48, color: CREAM, fontWeight: '600', fontFamily: SERIF, fontStyle: 'italic' },
       }),
       inst(preset('src/basics/TextBlock.tsx'), 880, 110, {
-        args: {
-          text: 'Six acts. Scroll slowly — each one is driven by where you are on the page, not by a timer.',
-          maxWidth: 280,
-          size: 16,
-          color: CREAM,
-          font: SERIF,
-          lineHeight: 1.5,
-          italic: true,
-        },
+        args: { text: 'Scroll-driven set pieces.', maxWidth: 280, size: 17, color: CREAM, font: SERIF, italic: true },
       }),
       inst(preset('src/basics/ImageBlock.tsx'), 890, 250, {
         args: {
@@ -88,33 +81,22 @@ function build(): Page[] {
         },
       }),
       // — Act I · character reveal —
-      act(790, 'Act I — Character reveal'),
+      act(790, 'Reveal'),
       filmFrame(60, 850, 1160, 660),
       inst(preset('src/scroll/CharacterScrollReveal.tsx'), 340, 900, {}),
       // — Act II · rolling band —
-      act(1580, 'Act II — Rolling band'),
+      act(1580, 'Band'),
       inst(preset('src/text/LoopText.tsx'), 0, 1650, { w: 1280 }),
       // — Act III · sticky stack —
-      act(1820, 'Act III — Sticky stack'),
+      act(1820, 'Stack'),
       filmFrame(60, 1880, 1160, 800),
       inst(preset('src/scroll/StickyCardStack.tsx'), 110, 1930, {}),
       // — Act IV · fade rhythm —
-      act(2750, 'Act IV — Fade rhythm'),
+      act(2750, 'Rhythm'),
       filmFrame(60, 2810, 620, 560),
       inst(preset('src/scroll/ScrollFadeList.tsx'), 110, 2860, {}),
-      inst(preset('src/basics/TextBlock.tsx'), 760, 2900, {
-        args: {
-          text: 'Each row fades in on its own beat as it enters the scrollport — rhythm, not spectacle.',
-          maxWidth: 380,
-          size: 19,
-          color: INKRED,
-          font: SERIF,
-          lineHeight: 1.5,
-          italic: true,
-        },
-      }),
       // — Act V · numbers that move —
-      act(3440, 'Act V — Numbers that move'),
+      act(3440, 'Numbers'),
       inst(preset('src/text/NumberTicker.tsx'), 60, 3510, {
         args: { value: 4096 },
         style: { fontSize: 88, color: INKRED, fontWeight: '800', fontFamily: DISPLAY },
@@ -124,17 +106,22 @@ function build(): Page[] {
         args: { children: 'Hover me' },
         style: { color: INKRED },
       }),
-      // — Act VI · hover instruments —
-      act(3690, 'Act VI — Hover instruments'),
-      inst(preset('src/hover/AnimatedLink.tsx', 'Link003'), 60, 3770, {}),
-      inst(preset('src/hover/ClipReveal.tsx', 'ClipDiv'), 380, 3760, {}),
-      inst(preset('src/effects/ClickSpark.tsx'), 1090, 3770, {
+      // — Assemble: scattered words converge on scroll —
+      act(3690, 'Assemble'),
+      inst(preset('src/scroll/ScrollAssembleText.tsx'), 60, 3770, {
+        args: { text: 'MOTION IS INFORMATION', font: DISPLAY, size: 68, color: INKRED, spread: 180, width: 1160 },
+      }),
+      // — Hover instruments —
+      act(3970, 'Hover'),
+      inst(preset('src/hover/AnimatedLink.tsx', 'Link003'), 60, 4050, {}),
+      inst(preset('src/hover/ClipReveal.tsx', 'ClipDiv'), 380, 4040, {}),
+      inst(preset('src/effects/ClickSpark.tsx'), 1090, 4050, {
         args: { children: 'Click here' },
         style: { fontSize: 24, color: INKRED, fontFamily: SERIF, fontStyle: 'italic' },
       }),
       // — Programme: pill index, rows flood black on hover —
-      act(4020, 'Programme'),
-      inst(preset('src/sections/HoverRowTable.tsx'), 60, 4090, {
+      act(4300, 'Programme'),
+      inst(preset('src/sections/HoverRowTable.tsx'), 60, 4370, {
         args: {
           header: 'Act | Set piece | Driver',
           rows: 'I — Reveal | Character cascade | scroll\nII — Band | Rolling type | loop\nIII — Stack | Sticky cards | pin\nIV — Rhythm | Fade rows | view()\nV — Count | Live numerals | spring\nVI — Hover | Instruments | pointer',
@@ -149,10 +136,10 @@ function build(): Page[] {
         },
       }),
       // — Closing ribbon: asterisk marquee on a black band —
-      inst(preset('src/basics/PanelBand.tsx'), 0, 4620, {
+      inst(preset('src/basics/PanelBand.tsx'), 0, 4900, {
         args: { width: 1280, height: 120, background: FILM, borderColor: FILM, radius: 0 },
       }),
-      inst(preset('src/effects/Marquee.tsx'), 0, 4646, {
+      inst(preset('src/effects/Marquee.tsx'), 0, 4926, {
         w: 1280,
         args: { children: 'Reveals * Zooms * Counters * Cursors * Motion Lab *' },
         style: { fontFamily: SERIF, fontStyle: 'italic', fontSize: 42, color: RED },

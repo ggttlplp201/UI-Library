@@ -119,7 +119,7 @@ function build(): Page[] {
           width: 440,
           height: 300,
           radius: 4,
-          caption: 'FIELD-TEST ARCHIVE — WK 30. SHOT BETWEEN RUNS.',
+          caption: 'FIELD TEST — WK 30.',
         },
         anim: { preset: 'fade', trigger: 'scroll', duration: 0.8, delay: 0, easing: 'ease-out', once: true },
       }),
@@ -205,14 +205,6 @@ function build(): Page[] {
       inst(preset('src/voltura/SparkStat.tsx'), 470, 1060, {}),
       inst(preset('src/voltura/PositionBadge.tsx'), 830, 1070, {}),
       inst(preset('src/voltura/TickerRow.tsx'), 140, 1400, { w: 1000 }),
-      inst(preset('src/basics/TextBlock.tsx'), 62, 1520, {
-        args: {
-          text: 'The strip above is the live wire, not an illustration — every figure moves because the unit under it moved.',
-          maxWidth: 480,
-          size: 13,
-          color: MUTED,
-        },
-      }),
       inst(preset('src/buttons/GhostButton.tsx'), 60, 1620, {
         args: { children: '← Back to launch' },
         linkTo: launchId,
@@ -253,7 +245,7 @@ function build(): Page[] {
       }),
       inst(preset('src/basics/TextBlock.tsx'), 475, 660, {
         args: {
-          text: 'ALLOCATION IS ONE UNIT PER PERSON. REVIEW TAKES ABOUT A WEEK; PAYMENT ONLY AFTER APPROVAL.',
+          text: 'ONE UNIT PER PERSON.',
           maxWidth: 330,
           size: 11,
           color: '#8a8578',
