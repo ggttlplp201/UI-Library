@@ -33,6 +33,9 @@ export interface StyleOverride {
   fontFamily?: string
   fontWeight?: string
   fontSize?: number
+  fontStyle?: string
+  letterSpacing?: string
+  lineHeight?: number
 }
 
 // Props that are styling/rendering plumbing, not meaningful content controls.
@@ -261,6 +264,9 @@ export function composeRenderProps(
   if (style.fontFamily) cssStyle.fontFamily = style.fontFamily
   if (style.fontWeight) cssStyle.fontWeight = style.fontWeight
   if (style.fontSize != null) cssStyle.fontSize = style.fontSize
+  if (style.fontStyle) cssStyle.fontStyle = style.fontStyle
+  if (style.letterSpacing) cssStyle.letterSpacing = style.letterSpacing
+  if (style.lineHeight != null) cssStyle.lineHeight = style.lineHeight
 
   const props: Record<string, unknown> = { ...args }
   if (style.text != null && style.text !== '') props.children = style.text

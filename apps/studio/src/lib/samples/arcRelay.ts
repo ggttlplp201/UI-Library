@@ -2,14 +2,16 @@ import { newPageId, type Page } from '../canvas'
 import { inst, preset, type SampleProject } from './types'
 
 /**
- * ARC RELAY — the flagship sample: a cinematic launch page for a fictional
- * creative-hardware interface. Near-black stage, one amber signal color,
- * beams + huge type up top, real body copy and imagery through the middle,
- * dense spec instrumentation on page two, focused access page.
+ * ARC RELAY — brutalist launch signage in the Neonflux register: a flat
+ * black stage, a colossal edge-to-edge wordmark, mono catalog numbers in the
+ * corners, spec-sheet blocks, and one amber signal color. Voltura's
+ * dark-luxe telemetry carries the specs page.
  */
 const AMBER = '#E3B23C'
 const INK = '#f4f2ec'
 const MUTED = '#b0aa9c'
+const DISPLAY = "'Inter Tight', system-ui, sans-serif"
+const MONO = "'Space Mono', ui-monospace, monospace"
 
 function build(): Page[] {
   const launchId = newPageId()
@@ -25,112 +27,131 @@ function build(): Page[] {
     boardHeight: 3160,
     fx: { loader: 'orbit', loaderAccent: AMBER, loaderMs: 1300, cursor: 'glow', cursorAccent: AMBER },
     instances: [
+      inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
+        w: 1280,
+        h: 3160,
+        args: { accent: AMBER, base: '#0a0a0a', glowStrength: 0.05 },
+      }),
       inst(preset('src/sections/SiteNavbar.tsx'), 0, 0, {
         w: 1280,
         args: { brand: 'ARC RELAY', links: 'Launch, Specs, Access', cta: 'Request access' },
         links: { cta: accessId, Launch: launchId, Specs: specsId, Access: accessId },
-        style: { backgroundColor: 'rgba(12,12,15,0.92)', color: '#f4f2ec' },
+        style: { backgroundColor: 'rgba(10,10,10,0.92)', color: INK },
       }),
-      // — The lit stage —
-      inst(preset('src/backgrounds/BackgroundBeams.tsx'), 0, 96, {
-        w: 1280,
-        h: 560,
-        args: { accent: AMBER, background: '#0a0a0c', speed: 8 },
+      // — Catalog corners, then the wordmark takes the whole stage —
+      inst(preset('src/basics/TextBlock.tsx'), 60, 130, {
+        args: { text: 'No.', size: 14, color: INK, font: MONO },
       }),
-      inst(preset('src/text/SplitText.tsx'), 140, 180, {
-        w: 760,
+      inst(preset('src/basics/TextBlock.tsx'), 1140, 130, {
+        args: { text: '001', size: 14, color: AMBER, font: MONO, align: 'right', maxWidth: 80 },
+      }),
+      inst(preset('src/text/SplitText.tsx'), 45, 190, {
+        w: 1200,
         args: { text: 'ARC RELAY' },
-        style: { fontSize: 88, color: INK, fontWeight: '800' },
+        style: { fontSize: 168, color: INK, fontWeight: '800', fontFamily: DISPLAY, letterSpacing: '-0.04em', lineHeight: 0.9 },
       }),
-      inst(preset('src/text/TextShimmer.tsx'), 142, 372, {
-        w: 640,
-        args: { children: 'The relay between your hands and the machine.' },
-        style: { fontSize: 22 },
+      inst(preset('src/basics/TextBlock.tsx'), 410, 470, {
+        args: {
+          text: 'A desk-scale signal machine — one cable between your hands and the software.',
+          size: 15,
+          color: MUTED,
+          align: 'center',
+          maxWidth: 460,
+          font: MONO,
+        },
       }),
-      inst(preset('src/buttons/ShimmerButton.tsx'), 142, 440, {
-        args: { children: 'Request access', shimmerColor: AMBER, background: 'rgba(10,10,12,1)' },
+      inst(preset('src/buttons/ShimmerButton.tsx'), 480, 580, {
+        args: { children: 'Request access', shimmerColor: AMBER, background: 'rgba(10,10,10,1)' },
         linkTo: accessId,
       }),
-      inst(preset('src/buttons/GhostButton.tsx'), 380, 450, {
+      inst(preset('src/buttons/GhostButton.tsx'), 700, 590, {
         args: { children: 'Read the specs' },
         linkTo: specsId,
         style: { color: MUTED },
       }),
-      // — The signal, measured —
-      inst(preset('src/basics/Heading.tsx'), 140, 740, {
-        args: { text: 'The signal, measured.', size: 40, color: INK },
+      // — 01 · the signal, measured —
+      inst(preset('src/basics/TextBlock.tsx'), 60, 780, {
+        args: { text: '01 — SIGNAL, MEASURED', size: 12, color: AMBER, font: MONO },
+      }),
+      inst(preset('src/basics/Heading.tsx'), 60, 815, {
+        args: { text: 'The signal, measured.', size: 52, color: INK, font: DISPLAY, tracking: -0.03, lineHeight: 0.95 },
         anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.6, delay: 0, easing: 'ease-out', once: true },
       }),
-      inst(preset('src/basics/TextBlock.tsx'), 142, 806, {
+      inst(preset('src/basics/TextBlock.tsx'), 62, 895, {
         args: {
           text: 'Every relay ships with its own numbers. Not projections — measurements from the unit on your desk, updated as it runs.',
           maxWidth: 540,
           color: MUTED,
         },
       }),
-      inst(preset('src/basics/PanelBand.tsx'), 100, 920, {
-        args: { width: 1080, height: 210 },
+      inst(preset('src/basics/PanelBand.tsx'), 60, 1000, {
+        args: { width: 1160, height: 210, background: 'rgba(244,242,236,0.03)', borderColor: 'rgba(244,242,236,0.1)', radius: 4 },
       }),
-      inst(preset('src/cards/StatCard.tsx'), 150, 960, {
-        args: { label: 'Round-trip latency', value: '12 ms', delta: '1.1 ms under spec', background: '#141312', color: '#f4f2ec' },
+      inst(preset('src/cards/StatCard.tsx'), 110, 1040, {
+        args: { label: 'Round-trip latency', value: '12 ms', delta: '1.1 ms under spec', background: '#121110', color: INK },
         anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.6, delay: 0, easing: 'ease-out', once: true },
       }),
-      inst(preset('src/cards/StatCard.tsx'), 510, 960, {
-        args: { label: 'Relay nodes online', value: '240', delta: '12 new this week', background: '#141312', color: '#f4f2ec' },
+      inst(preset('src/cards/StatCard.tsx'), 480, 1040, {
+        args: { label: 'Relay nodes online', value: '240', delta: '12 new this week', background: '#121110', color: INK },
         anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.6, delay: 0.1, easing: 'ease-out', once: true },
       }),
-      inst(preset('src/cards/StatCard.tsx'), 870, 960, {
-        args: { label: 'Signal integrity', value: '99.99%', delta: '0.002% packet loss', background: '#141312', color: '#f4f2ec' },
+      inst(preset('src/cards/StatCard.tsx'), 850, 1040, {
+        args: { label: 'Signal integrity', value: '99.99%', delta: '0.002% packet loss', background: '#121110', color: INK },
         anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.6, delay: 0.2, easing: 'ease-out', once: true },
       }),
-      // — What it is (asymmetric: copy left, hardware right) —
-      inst(preset('src/basics/Divider.tsx'), 140, 1230, { args: { width: 1000 } }),
-      inst(preset('src/basics/Heading.tsx'), 140, 1310, {
-        args: { text: 'One cable.\nEvery instrument.', size: 44, color: INK },
+      // — 02 · one cable (copy left, hardware right) —
+      inst(preset('src/basics/TextBlock.tsx'), 60, 1330, {
+        args: { text: '02 — ONE CABLE', size: 12, color: AMBER, font: MONO },
       }),
-      inst(preset('src/basics/TextBlock.tsx'), 142, 1470, {
+      inst(preset('src/basics/Heading.tsx'), 60, 1365, {
+        args: { text: 'One cable.\nEvery instrument.', size: 56, color: INK, font: DISPLAY, tracking: -0.03, lineHeight: 0.95 },
+      }),
+      inst(preset('src/basics/TextBlock.tsx'), 62, 1520, {
         args: {
           text: 'Arc Relay sits between your controllers and your software. It reads every knob, fader and key you own, converts them to one protocol, and delivers them with the latency of a wired keypress.\n\nNo drivers. No mapping software. Plug it in and the machine listens.',
           maxWidth: 460,
           color: MUTED,
         },
       }),
-      inst(preset('src/basics/ImageBlock.tsx'), 700, 1300, {
+      inst(preset('src/basics/ImageBlock.tsx'), 700, 1360, {
         args: {
           imageSrc: 'https://picsum.photos/seed/arc-bench/880/560?grayscale',
           width: 440,
           height: 300,
-          radius: 12,
-          caption: 'From the field-test archive, week 30. Shot between runs.',
+          radius: 4,
+          caption: 'FIELD-TEST ARCHIVE — WK 30. SHOT BETWEEN RUNS.',
         },
         anim: { preset: 'fade', trigger: 'scroll', duration: 0.8, delay: 0, easing: 'ease-out', once: true },
       }),
-      // — Scroll set-piece —
-      inst(preset('src/basics/Heading.tsx'), 140, 1780, {
-        args: { text: 'Hold it before you buy it.', size: 34, color: INK },
+      // — 03 · hold it —
+      inst(preset('src/basics/TextBlock.tsx'), 60, 1810, {
+        args: { text: '03 — HOLD IT FIRST', size: 12, color: AMBER, font: MONO },
       }),
-      inst(preset('src/scroll/StickyCardZoom.tsx'), 140, 1860, {
+      inst(preset('src/basics/Heading.tsx'), 60, 1845, {
+        args: { text: 'Hold it before you buy it.', size: 40, color: INK, font: DISPLAY, tracking: -0.03 },
+      }),
+      inst(preset('src/scroll/StickyCardZoom.tsx'), 140, 1920, {
         anim: { preset: 'fade', trigger: 'scroll', duration: 0.8, delay: 0, easing: 'ease-out', once: true },
       }),
-      // — Rolling band + close —
-      inst(preset('src/effects/Marquee.tsx'), 0, 2600, {
+      // — Ticker + close —
+      inst(preset('src/voltura/TickerRow.tsx'), 140, 2620, { w: 1000 }),
+      inst(preset('src/basics/Heading.tsx'), 0, 2740, {
         w: 1280,
-        args: { children: 'SIGNAL OVER HYPE — SIGNAL OVER HYPE — SIGNAL OVER HYPE —' },
+        args: { text: 'The relay opens soon.', size: 72, color: INK, font: DISPLAY, weight: 800, tracking: -0.04, align: 'center', lineHeight: 0.95 },
+        anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.6, delay: 0, easing: 'ease-out', once: true },
       }),
-      inst(preset('src/sections/CtaSection.tsx'), 0, 2700, {
-        w: 1280,
-        args: {
-          title: 'The relay opens soon.',
-          subtitle: 'First run is 500 units. Signal integrity over hype.',
-          cta: 'Request access',
-        },
-        links: { cta: accessId },
+      inst(preset('src/basics/TextBlock.tsx'), 390, 2840, {
+        args: { text: 'FIRST RUN IS 500 UNITS. SIGNAL INTEGRITY OVER HYPE.', size: 12, color: MUTED, font: MONO, align: 'center', maxWidth: 500 },
+      }),
+      inst(preset('src/buttons/SparkleButton.tsx'), 555, 2890, {
+        args: { label: 'Request access' },
+        linkTo: accessId,
       }),
       inst(preset('src/sections/SiteFooter.tsx'), 0, 3000, {
         w: 1280,
         args: { brand: 'ARC RELAY', links: 'Launch, Specs, Access', copyright: '© 2026 Arc Industries.' },
         links: { Launch: launchId, Specs: specsId, Access: accessId },
-        style: { backgroundColor: 'rgba(12,12,15,0.92)', color: '#f4f2ec' },
+        style: { backgroundColor: 'rgba(10,10,10,0.92)', color: INK },
       }),
     ],
   }
@@ -141,53 +162,58 @@ function build(): Page[] {
     nodeX: 340,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 1800,
+    boardHeight: 1760,
     fx: { loader: 'bar', loaderAccent: AMBER, loaderMs: 900, cursor: 'glow', cursorAccent: AMBER },
     instances: [
       inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
         w: 1280,
-        h: 1800,
-        args: { accent: AMBER, base: '#0a0a0c', glowStrength: 0.1 },
+        h: 1760,
+        args: { accent: AMBER, base: '#0a0a0a', glowStrength: 0.05 },
       }),
       inst(preset('src/sections/SiteNavbar.tsx'), 0, 0, {
         w: 1280,
         args: { brand: 'ARC RELAY', links: 'Launch, Specs, Access', cta: 'Request access' },
         links: { cta: accessId, Launch: launchId, Specs: specsId, Access: accessId },
-        style: { backgroundColor: 'rgba(12,12,15,0.92)', color: '#f4f2ec' },
+        style: { backgroundColor: 'rgba(10,10,10,0.92)', color: INK },
       }),
-      inst(preset('src/sections/LampHeader.tsx'), 440, 100, {
+      inst(preset('src/basics/TextBlock.tsx'), 60, 120, {
+        args: { text: 'No.', size: 14, color: INK, font: MONO },
+      }),
+      inst(preset('src/basics/TextBlock.tsx'), 1140, 120, {
+        args: { text: '002', size: 14, color: AMBER, font: MONO, align: 'right', maxWidth: 80 },
+      }),
+      inst(preset('src/basics/Heading.tsx'), 55, 170, {
+        args: { text: 'Under the hood', size: 108, color: INK, font: DISPLAY, tracking: -0.04, weight: 800, lineHeight: 0.9 },
+      }),
+      inst(preset('src/basics/TextBlock.tsx'), 62, 300, {
+        args: { text: 'INSTRUMENTED, MEASURED, AND HONEST ABOUT BOTH.', size: 12, color: MUTED, font: MONO },
+      }),
+      // — 01 · interface & protocol —
+      inst(preset('src/basics/TextBlock.tsx'), 60, 420, {
+        args: { text: '01 — INTERFACE & PROTOCOL', size: 12, color: AMBER, font: MONO },
+      }),
+      inst(preset('src/voltura/VolturaTabs.tsx'), 60, 480, {}),
+      inst(preset('src/disclosure/AccordionDemo.tsx'), 660, 470, {}),
+      // — 02 · live telemetry (voltura dark-luxe instruments) —
+      inst(preset('src/basics/TextBlock.tsx'), 60, 950, {
+        args: { text: '02 — LIVE TELEMETRY', size: 12, color: AMBER, font: MONO },
+      }),
+      inst(preset('src/basics/PanelBand.tsx'), 60, 1000, {
+        args: { width: 1160, height: 330, background: 'rgba(216,194,106,0.04)', borderColor: 'rgba(216,194,106,0.16)', radius: 4 },
+      }),
+      inst(preset('src/voltura/DepthMeter.tsx'), 110, 1050, {}),
+      inst(preset('src/voltura/SparkStat.tsx'), 470, 1060, {}),
+      inst(preset('src/voltura/PositionBadge.tsx'), 830, 1070, {}),
+      inst(preset('src/voltura/TickerRow.tsx'), 140, 1400, { w: 1000 }),
+      inst(preset('src/basics/TextBlock.tsx'), 62, 1520, {
         args: {
-          title: 'Under the hood',
-          subtitle: 'Instrumented, measured, and honest about both.',
-          accent: AMBER,
-          background: 'transparent',
-        },
-      }),
-      inst(preset('src/basics/Heading.tsx'), 140, 540, {
-        args: { text: 'Interface & protocol', size: 28, color: INK },
-      }),
-      inst(preset('src/kinetic-ui/KineticTabs.tsx'), 140, 610, {}),
-      inst(preset('src/disclosure/AccordionDemo.tsx'), 700, 600, {}),
-      inst(preset('src/basics/Divider.tsx'), 140, 990, { args: { width: 1000 } }),
-      // Telemetry band.
-      inst(preset('src/basics/Heading.tsx'), 140, 1050, {
-        args: { text: 'Live telemetry', size: 28, color: INK },
-      }),
-      inst(preset('src/basics/PanelBand.tsx'), 100, 1120, { args: { width: 1080, height: 300 } }),
-      inst(preset('src/kinetic-lab/LiquidFill.tsx'), 160, 1170, { args: { defaultValue: 72 } }),
-      inst(preset('src/kinetic-ui/KineticRingProgress.tsx'), 440, 1180, { args: { defaultValue: 64 } }),
-      inst(preset('src/text/AnimatedNumbers.tsx', 'AnimatedNumberTicker'), 720, 1210, {}),
-      inst(preset('src/badges/StatusBadge.tsx'), 1100, 1210, {}),
-      inst(preset('src/feedback/ProgressBar.tsx'), 160, 1490, { w: 480 }),
-      inst(preset('src/basics/TextBlock.tsx'), 700, 1480, {
-        args: {
-          text: 'Sustained throughput at the wall: the bar above is the live buffer, not an illustration.',
-          maxWidth: 420,
+          text: 'The strip above is the live wire, not an illustration — every figure moves because the unit under it moved.',
+          maxWidth: 480,
           size: 13,
           color: MUTED,
         },
       }),
-      inst(preset('src/buttons/GhostButton.tsx'), 140, 1650, {
+      inst(preset('src/buttons/GhostButton.tsx'), 60, 1620, {
         args: { children: '← Back to launch' },
         linkTo: launchId,
       }),
@@ -206,12 +232,18 @@ function build(): Page[] {
       inst(preset('src/backgrounds/Meteors.tsx'), 0, 0, {
         w: 1280,
         h: 1040,
-        args: { count: 10, accent: '#8a8272', background: '#0a0a0c' },
+        args: { count: 10, accent: '#8a8272', background: '#0a0a0a' },
       }),
-      inst(preset('src/basics/Heading.tsx'), 510, 110, {
-        args: { text: 'Access is limited.', size: 34, color: INK },
+      inst(preset('src/basics/TextBlock.tsx'), 60, 80, {
+        args: { text: 'No.', size: 14, color: INK, font: MONO },
       }),
-      inst(preset('src/cards/BrutalistNewsletterCard.tsx'), 490, 190, {
+      inst(preset('src/basics/TextBlock.tsx'), 1140, 80, {
+        args: { text: '003', size: 14, color: AMBER, font: MONO, align: 'right', maxWidth: 80 },
+      }),
+      inst(preset('src/basics/Heading.tsx'), 445, 120, {
+        args: { text: 'Access is limited.', size: 44, color: INK, font: DISPLAY, tracking: -0.03 },
+      }),
+      inst(preset('src/cards/BrutalistNewsletterCard.tsx'), 490, 210, {
         args: {
           title: 'REQUEST ACCESS',
           description: 'First batch ships to 500 desks. No spam — one confirmation, one shipping note.',
@@ -219,15 +251,16 @@ function build(): Page[] {
           accent: AMBER,
         },
       }),
-      inst(preset('src/basics/TextBlock.tsx'), 475, 640, {
+      inst(preset('src/basics/TextBlock.tsx'), 475, 660, {
         args: {
-          text: 'Allocation is one unit per person. Review takes about a week; payment only after approval.',
+          text: 'ALLOCATION IS ONE UNIT PER PERSON. REVIEW TAKES ABOUT A WEEK; PAYMENT ONLY AFTER APPROVAL.',
           maxWidth: 330,
-          size: 12,
+          size: 11,
           color: '#8a8578',
+          font: MONO,
         },
       }),
-      inst(preset('src/buttons/GhostButton.tsx'), 561, 740, {
+      inst(preset('src/buttons/GhostButton.tsx'), 561, 780, {
         args: { children: '← Back to launch' },
         linkTo: launchId,
         style: { color: MUTED },
@@ -241,9 +274,9 @@ function build(): Page[] {
 export const arcRelay: SampleProject = {
   id: 'arc-relay',
   title: 'Arc Relay',
-  tagline: 'Cinematic product launch, 3 linked pages',
+  tagline: 'Brutalist launch signage, 3 linked pages',
   detail:
-    'Beams, huge type, animated signal numbers, real body copy and hardware imagery, a scroll set-piece, and a focused access page. One amber accent on a near-black stage.',
+    'A colossal edge-to-edge wordmark on a flat black stage, mono catalog numbers, spec-sheet stat blocks, a scroll set-piece, and dark-luxe Voltura telemetry — one amber signal over everything.',
   accent: AMBER,
   build,
 }

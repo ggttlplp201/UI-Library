@@ -304,7 +304,7 @@ function applyHost(host) {
 
 // Only the Style-tab's CSS keys — never layout/transform, which components
 // (framer-motion especially) manage themselves.
-const OVERRIDE_KEYS = ['color', 'background', 'backgroundColor', 'fontFamily', 'fontWeight', 'fontSize']
+const OVERRIDE_KEYS = ['color', 'background', 'backgroundColor', 'fontFamily', 'fontWeight', 'fontSize', 'fontStyle', 'letterSpacing', 'lineHeight']
 
 function applyStyleOverride(style) {
   const target = rootEl.firstElementChild

@@ -9,6 +9,9 @@ export const Heading = ({
   weight = 700,
   align = "left",
   tracking = -0.02,
+  font = "system-ui, sans-serif",
+  lineHeight = 1.05,
+  italic = false,
 }: {
   /** Heading text */
   text?: string;
@@ -22,17 +25,24 @@ export const Heading = ({
   align?: "left" | "center" | "right";
   /** Letter spacing in em (negative tightens) */
   tracking?: number;
+  /** CSS font-family stack */
+  font?: string;
+  /** Line height multiplier (display type wants ≤1) */
+  lineHeight?: number;
+  /** Italic display voice */
+  italic?: boolean;
 }) => (
   <h2
     style={{
       margin: 0,
-      fontFamily: "system-ui, sans-serif",
+      fontFamily: font,
+      fontStyle: italic ? "italic" : "normal",
       fontSize: size,
       fontWeight: weight,
       color,
       textAlign: align,
       letterSpacing: `${tracking}em`,
-      lineHeight: 1.05,
+      lineHeight,
       whiteSpace: "pre-wrap",
     }}
   >

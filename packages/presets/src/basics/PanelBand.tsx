@@ -9,6 +9,8 @@ export const PanelBand = ({
   radius = 18,
   width = 1000,
   height = 320,
+  borderStyle = "solid",
+  borderWidth = 1,
 }: {
   /** Panel fill */
   background?: string;
@@ -20,13 +22,17 @@ export const PanelBand = ({
   width?: number;
   /** Panel height in px */
   height?: number;
+  /** Border style — dashed reads as a cutting-mat frame */
+  borderStyle?: "solid" | "dashed" | "dotted";
+  /** Border width in px */
+  borderWidth?: number;
 }) => (
   <div
     style={{
       width,
       height,
       background,
-      border: `1px solid ${borderColor}`,
+      border: `${borderWidth}px ${borderStyle} ${borderColor}`,
       borderRadius: radius,
       boxSizing: "border-box",
     }}

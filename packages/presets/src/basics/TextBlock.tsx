@@ -10,6 +10,9 @@ export const TextBlock = ({
   align = "left",
   lineHeight = 1.55,
   maxWidth = 560,
+  font = "system-ui, sans-serif",
+  italic = false,
+  rotate = 0,
 }: {
   /** The paragraph text */
   text?: string;
@@ -23,11 +26,19 @@ export const TextBlock = ({
   lineHeight?: number;
   /** Wrap width in px */
   maxWidth?: number;
+  /** CSS font-family stack */
+  font?: string;
+  /** Italic voice — standfirsts, asides */
+  italic?: boolean;
+  /** Rotation in degrees — handwritten margin notes */
+  rotate?: number;
 }) => (
   <p
     style={{
       margin: 0,
-      fontFamily: "system-ui, sans-serif",
+      fontFamily: font,
+      fontStyle: italic ? "italic" : "normal",
+      transform: rotate ? `rotate(${rotate}deg)` : undefined,
       fontSize: size,
       color,
       textAlign: align,
