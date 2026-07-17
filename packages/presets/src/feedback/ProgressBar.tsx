@@ -3,14 +3,16 @@ export interface ProgressBarProps {
   label?: string
   /** Completion percentage (0–100) */
   value?: number
+  /** Label/readout color (defaults to the theme's muted text) */
+  labelColor?: string
 }
 
 /** Labeled progress bar with a percentage readout. */
-export function ProgressBar({ label = 'Uploading assets', value = 68 }: ProgressBarProps) {
+export function ProgressBar({ label = 'Uploading assets', value = 68, labelColor }: ProgressBarProps) {
   const pct = Math.max(0, Math.min(100, value))
   return (
     <div className="min-w-[200px]">
-      <div className="flex justify-between mb-2 text-xs text-muted-foreground">
+      <div className="flex justify-between mb-2 text-xs text-muted-foreground" style={labelColor ? { color: labelColor } : undefined}>
         <span>{label}</span>
         <span>{pct}%</span>
       </div>

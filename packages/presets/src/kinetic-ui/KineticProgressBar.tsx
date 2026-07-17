@@ -8,11 +8,14 @@ import { KUI } from "../lib/kinetic";
 export const KineticProgressBar = ({
   defaultValue = 40,
   accent = "#4B3BFF",
+  labelColor = "#8a8a90",
 }: {
   /** Starting percentage (0–100) */
   defaultValue?: number;
   /** Accent color (fill) */
   accent?: string;
+  /** DETERMINATE label color */
+  labelColor?: string;
 }) => {
   const [progress, setProgress] = useState(() => Math.min(100, Math.max(0, defaultValue)));
   const [running, setRunning] = useState(false);
@@ -38,7 +41,7 @@ export const KineticProgressBar = ({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 260, fontFamily: KUI.body }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 12, color: "#8a8a90", fontFamily: KUI.mono }}>DETERMINATE</span>
+        <span style={{ fontSize: 12, color: labelColor, fontFamily: KUI.mono }}>DETERMINATE</span>
         <span style={{ fontSize: 12, fontWeight: 600, fontFamily: KUI.mono, color: KUI.ink }}>{progress}%</span>
       </div>
       <div style={{ width: "100%", height: 8, background: KUI.hairline, borderRadius: 999, overflow: "hidden" }}>
