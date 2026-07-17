@@ -82,6 +82,12 @@ export interface PageFx {
   cursor?: string
   /** Cursor accent color */
   cursorAccent?: string
+  /** Page background id (lib/pagefx.ts BACKGROUNDS), undefined = plain */
+  bg?: string
+  /** Background pattern/glow color */
+  bgAccent?: string
+  /** Background base color */
+  bgBase?: string
 }
 
 export interface Page {

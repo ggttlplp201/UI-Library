@@ -42,12 +42,12 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 5620,
+    boardHeight: 4840,
     fx: { loader: 'dots', loaderAccent: '#ffffff', loaderMs: 800 },
     instances: [
       inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
         w: 1280,
-        h: 5620,
+        h: 4840,
         args: { accent: '#ff7a3c', base: ORANGE, glowStrength: 0.1 },
       }),
       // — Masthead + working note —
@@ -156,12 +156,6 @@ function build(): Page[] {
       inst(preset('src/inputs/KeypadRadio.tsx'), 960, 4430, {}),
       inst(preset('src/inputs/SegmentedToggleGroup.tsx'), 100, 4580, {}),
       label(60, 4725, 1160, 'More input'),
-      // — Specimen 13 · Background patterns (full-width strips) —
-      frame(60, 4800, 1160, 700),
-      inst(preset('src/backgrounds/RetroOrbsPattern.tsx'), 100, 4850, { w: 1080, h: 150 }),
-      inst(preset('src/backgrounds/RippleWeavePattern.tsx'), 100, 5020, { w: 1080, h: 150 }),
-      inst(preset('src/backgrounds/RainBackground.tsx'), 100, 5190, { w: 1080, h: 150 }),
-      label(60, 5525, 1160, 'Backgrounds'),
     ],
   }
   return [page]

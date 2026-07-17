@@ -11,7 +11,7 @@ import {
   type Page,
   type PageFx,
 } from '../lib/canvas'
-import { LOADER_CSS, PAGE_FX_CATEGORIES, loaderById, loaderHtml } from '../lib/pagefx'
+import { BG_CSS, LOADER_CSS, PAGE_FX_CATEGORIES, backgroundCssText, loaderById, loaderHtml } from '../lib/pagefx'
 import { GOOGLE_FONTS_URL } from '../lib/fonts'
 import { FX_CSS, FX_JS } from '@component-style-studio/preview/fx'
 import { PagesView } from './PagesView'
@@ -666,8 +666,9 @@ export function Workspace({
       // visitor's viewport (Canva-style: design width shrinks proportionally).
       const bw = page.artboardWidth ?? DEFAULT_ARTBOARD_WIDTH
       const bh = Math.max(page.boardHeight ?? 0, snap.contentHeight)
+      const bgCss = backgroundCssText(fx?.bg, fx?.bgAccent || '#4B3BFF', fx?.bgBase || CONTRAST_BG[canvasTheme])
       sections.push(
-        `<section data-page="${slug}" class="ss-page"${cursorAttr}>\n<div class="ss-board" data-w="${bw}" style="width:${bw}px;min-height:${bh}px;position:relative;margin:0 auto;overflow:hidden;">\n${snap.body}\n</div>\n</section>`,
+        `<section data-page="${slug}" class="ss-page"${cursorAttr}>\n<div class="ss-board" data-w="${bw}" style="width:${bw}px;min-height:${bh}px;position:relative;margin:0 auto;overflow:hidden;${bgCss}">\n${snap.body}\n</div>\n</section>`,
       )
       const loaderDef = loaderById(fx?.loader)
       if (loaderDef) {
@@ -831,7 +832,7 @@ export function Workspace({
       `<style>${[...animCss].join('\n')}\n${FX_CSS}</style>`,
       // display:block beats the preview harness's body{display:flex} rule that
       // rides along in the collected component CSS.
-      `<style>body{margin:0;display:block;background:${CONTRAST_BG[canvasTheme]}}.ss-page{display:none;position:relative;min-height:100vh}.ss-page.active{display:block}\n${LOADER_CSS}\n.ss-loading{position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;transition:opacity .4s ease}</style>`,
+      `<style>body{margin:0;display:block;background:${CONTRAST_BG[canvasTheme]}}.ss-page{display:none;position:relative;min-height:100vh}.ss-page.active{display:block}\n${LOADER_CSS}\n${BG_CSS}\n.ss-loading{position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;transition:opacity .4s ease}</style>`,
       '</head><body>',
       sections.join('\n'),
       overlays.join('\n'),
@@ -1080,6 +1081,22 @@ export function Workspace({
         </button>
         <button
           type="button"
+          onClick={() => timeTravel('undo')}
+          title="Undo (⌘Z)"
+          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs bg-secondary hover:bg-secondary/70 transition-colors"
+        >
+          ↩
+        </button>
+        <button
+          type="button"
+          onClick={() => timeTravel('redo')}
+          title="Redo (⇧⌘Z)"
+          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs bg-secondary hover:bg-secondary/70 transition-colors"
+        >
+          ↪
+        </button>
+        <button
+          type="button"
           onClick={() => setCanvasTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
           title={`Canvas: ${canvasTheme} — click for ${canvasTheme === 'dark' ? 'light' : 'dark'}`}
           className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs bg-secondary hover:bg-secondary/70 transition-colors"
@@ -1189,6 +1206,7 @@ export function Workspace({
               rootFor={rootFor}
               theme={canvasTheme}
               artboardWidth={activePage.artboardWidth ?? DEFAULT_ARTBOARD_WIDTH}
+              pageFx={activePage.fx}
               boardHeight={activePage.boardHeight}
               onBoardHeightChange={(h) =>
                 setPages((prev) =>

@@ -2,6 +2,8 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import type { RegistryEntry } from '@component-style-studio/registry'
 import { compileAnim } from '../lib/animation'
 import { MIN_BOARD_HEIGHT, type Instance } from '../lib/canvas'
+import { BG_CSS, backgroundStyle } from '../lib/pagefx'
+import type { PageFx } from '../lib/canvas'
 import { composeRenderProps } from '../lib/controls'
 import { PreviewFrame, type PreviewHandle } from './PreviewFrame'
 import { DRAG_MIME } from './LibraryCard'
@@ -130,6 +132,8 @@ interface CanvasProps {
   onSlotsReported?: (instanceId: string, slots: string[]) => void
   /** Artboard (page) width for the active page */
   artboardWidth: number
+  /** Page-level fx (background paints the artboard) */
+  pageFx?: PageFx
   /** Explicit artboard height the user dragged out (content can exceed it) */
   boardHeight?: number
   onBoardHeightChange?: (h: number) => void
@@ -156,6 +160,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     onNavigate,
     onSlotsReported,
     artboardWidth,
+    pageFx,
     boardHeight,
     onBoardHeightChange,
   },
@@ -466,6 +471,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
 
   return (
     <main className="flex-1 min-w-0 relative overflow-hidden" style={{ background: GUTTER_BG[theme] }}>
+      <style>{BG_CSS}</style>
       <div ref={viewportRef} className="absolute inset-0 overflow-auto">
         {/* Stage sizes the scrollable area; the artboard centers within it. */}
         <div
@@ -490,6 +496,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           backgroundImage: `radial-gradient(${DOT_COLOR[theme]} 1px, transparent 1px)`,
           backgroundSize: '20px 20px',
           backgroundPosition: '-1px -1px',
+          ...(backgroundStyle(pageFx?.bg, pageFx?.bgAccent || '#4B3BFF', pageFx?.bgBase || BOARD_BG[theme]) ?? {}),
           // The artboard IS the page: content that runs past its edge
           // (marquee tracks, wide shadows) clips like it will on the real site
           // instead of bleeding onto the workspace background.

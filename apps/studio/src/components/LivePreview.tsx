@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import { DEFAULT_ARTBOARD_WIDTH, MIN_BOARD_HEIGHT, type Page } from '../lib/canvas'
 import { composeRenderProps } from '../lib/controls'
-import { LOADER_CSS, loaderById, loaderHtml } from '../lib/pagefx'
+import { BG_CSS, LOADER_CSS, backgroundStyle, loaderById, loaderHtml } from '../lib/pagefx'
 import { PreviewFrame } from './PreviewFrame'
 import type { CanvasTheme } from './Canvas'
 
@@ -126,6 +126,7 @@ export function LivePreview({
   const cursorKind = page.fx?.cursor
   const cursorAccent = page.fx?.cursorAccent || '#E3B23C'
   const loaderDef = loaderById(page.fx?.loader)
+  const pageBg = backgroundStyle(page.fx?.bg, page.fx?.bgAccent || '#4B3BFF', page.fx?.bgBase || BG[theme])
 
   return (
     <div
@@ -142,8 +143,10 @@ export function LivePreview({
             margin: '0 auto',
             background: BG[theme],
             overflow: 'hidden',
+            ...(pageBg ?? {}),
           }}
         >
+          <style>{BG_CSS}</style>
           {page.instances.map((inst) => {
             const entry = entryById(inst.entryId)
             if (!entry) return null

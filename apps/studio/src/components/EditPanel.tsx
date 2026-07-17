@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { RegistryEntry } from '@component-style-studio/registry'
 import type { ControlSpec, StyleOverride } from '../lib/controls'
 import { ARTBOARD_WIDTHS, DEFAULT_ARTBOARD_WIDTH, type PageFx } from '../lib/canvas'
-import { CURSORS, LOADERS, LOADER_CSS, cursorPreviewHtml, loaderById, loaderHtml } from '../lib/pagefx'
+import { BACKGROUNDS, BG_CSS, CURSORS, LOADERS, LOADER_CSS, backgroundStyle, cursorPreviewHtml, loaderById, loaderHtml } from '../lib/pagefx'
 import { ControlInput } from './controls/ControlInput'
 import { StyleTab } from './StyleTab'
 import { PanelSideToggle, type PanelSide } from './PanelSideToggle'
@@ -256,7 +256,52 @@ export function EditPanel({
             ))}
           </select>
 
-          <p className="text-[10px] font-semibold mb-1.5" title="Shown while the page loads (and on navigation) in the exported site">
+          <p className="text-[10px] font-semibold mb-1.5" title="Painted behind everything on this page — in the studio, Preview, and the exported site">
+            Page background
+          </p>
+          <select
+            value={pageFx?.bg ?? ''}
+            onChange={(e) => onPageFxChange?.({ ...pageFx, bg: e.target.value || undefined })}
+            className="w-full rounded-md px-2 py-1 text-xs bg-input border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="">— plain —</option>
+            {BACKGROUNDS.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+          {pageFx?.bg && (
+            <>
+              <style>{BG_CSS}</style>
+              <div
+                className="mt-2 h-[92px] rounded-lg border border-border overflow-hidden"
+                style={backgroundStyle(pageFx.bg, pageFx.bgAccent || '#4B3BFF', pageFx.bgBase || '#0c0c0f') ?? undefined}
+              />
+              <div className="flex items-center gap-2 mt-2 mb-1">
+                <label className="flex items-center gap-1.5 flex-1">
+                  <span className="text-[10px] text-muted-foreground">Pattern</span>
+                  <input
+                    type="color"
+                    value={pageFx.bgAccent || '#4B3BFF'}
+                    onChange={(e) => onPageFxChange?.({ ...pageFx, bgAccent: e.target.value })}
+                    className="w-7 h-6 rounded border border-border bg-input p-0.5 cursor-pointer"
+                  />
+                </label>
+                <label className="flex items-center gap-1.5 flex-1">
+                  <span className="text-[10px] text-muted-foreground">Base</span>
+                  <input
+                    type="color"
+                    value={pageFx.bgBase || '#0c0c0f'}
+                    onChange={(e) => onPageFxChange?.({ ...pageFx, bgBase: e.target.value })}
+                    className="w-7 h-6 rounded border border-border bg-input p-0.5 cursor-pointer"
+                  />
+                </label>
+              </div>
+            </>
+          )}
+
+          <p className="text-[10px] font-semibold mb-1.5 mt-4" title="Shown while the page loads (and on navigation) in the exported site">
             Loading screen
           </p>
           <select

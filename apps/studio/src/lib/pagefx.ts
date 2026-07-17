@@ -184,3 +184,100 @@ export const cursorById = (id?: string) => CURSORS.find((c) => c.id === id)
 export function loaderHtml(def: LoaderDef, accent: string): string {
   return def.html.replaceAll('ACC', accent)
 }
+
+// ————— Page backgrounds —————
+// Pure-CSS page surfaces: applied to the artboard in the studio, the page
+// wrapper in Preview, and the .ss-page section in the HTML export. Accent
+// and base recolor every pattern.
+
+export interface BackgroundDef {
+  id: string
+  name: string
+}
+
+export const BACKGROUNDS: BackgroundDef[] = [
+  { id: 'glow', name: 'Accent glow' },
+  { id: 'dots', name: 'Dot grid' },
+  { id: 'grid', name: 'Line grid' },
+  { id: 'retro-orbs', name: 'Retro orbs' },
+  { id: 'ripple-weave', name: 'Ripple weave' },
+  { id: 'rain', name: 'Rain (animated)' },
+]
+
+export const backgroundById = (id?: string) => BACKGROUNDS.find((b) => b.id === id)
+
+/** Keyframes shared by animated backgrounds — include once wherever bgs render. */
+export const BG_CSS = `
+@keyframes ssbg-rain { from { background-position: 0 0, 30px -60px, 60px -120px; } to { background-position: 0 240px, 30px 180px, 60px 120px; } }
+`
+
+interface BgLayer {
+  background: string
+  backgroundSize?: string
+  animation?: string
+}
+
+function bgLayers(id: string, accent: string, base: string): BgLayer | null {
+  switch (id) {
+    case 'glow':
+      return {
+        background: [
+          `radial-gradient(90% 42% at 50% -6%, ${accent}2e, transparent 70%)`,
+          `radial-gradient(45% 30% at 12% 30%, ${accent}14, transparent 75%)`,
+          `radial-gradient(50% 34% at 88% 62%, ${accent}14, transparent 75%)`,
+          base,
+        ].join(', '),
+      }
+    case 'dots':
+      return {
+        background: `radial-gradient(${accent}40 1.5px, transparent 1.5px), ${base}`,
+        backgroundSize: '22px 22px',
+      }
+    case 'grid':
+      return {
+        background: `linear-gradient(${accent}26 1px, transparent 1px), linear-gradient(90deg, ${accent}26 1px, transparent 1px), ${base}`,
+        backgroundSize: '44px 44px, 44px 44px',
+      }
+    case 'retro-orbs':
+      return {
+        background: `radial-gradient(circle at 30% 30%, ${accent}59 0 14px, transparent 15px), radial-gradient(circle at 75% 70%, ${accent}33 0 22px, transparent 23px), ${base}`,
+        backgroundSize: '110px 110px, 150px 150px',
+      }
+    case 'ripple-weave':
+      return {
+        background: `repeating-radial-gradient(circle at 25% 25%, ${accent}3d 0 5px, transparent 5px 26px), repeating-radial-gradient(circle at 75% 75%, ${accent}29 0 5px, transparent 5px 26px), ${base}`,
+        backgroundSize: '140px 140px, 140px 140px',
+      }
+    case 'rain':
+      return {
+        background: `linear-gradient(180deg, transparent 0 62%, ${accent}59 82%, transparent 100%), linear-gradient(180deg, transparent 0 70%, ${accent}33 88%, transparent 100%), linear-gradient(180deg, transparent 0 55%, ${accent}21 80%, transparent 100%), ${base}`,
+        backgroundSize: '7px 240px, 11px 240px, 17px 240px, auto',
+        animation: 'ssbg-rain 1.5s linear infinite',
+      }
+    default:
+      return null
+  }
+}
+
+/** Inline style for React surfaces (canvas artboard, live preview page). */
+export function backgroundStyle(
+  id: string | undefined,
+  accent: string,
+  base: string,
+): React.CSSProperties | null {
+  if (!id) return null
+  const l = bgLayers(id, accent, base)
+  if (!l) return null
+  return { background: l.background, backgroundSize: l.backgroundSize, animation: l.animation }
+}
+
+/** CSS declaration text for the export's per-page style attribute. */
+export function backgroundCssText(id: string | undefined, accent: string, base: string): string {
+  if (!id) return ''
+  const l = bgLayers(id, accent, base)
+  if (!l) return ''
+  let css = `background:${l.background};`
+  if (l.backgroundSize) css += `background-size:${l.backgroundSize};`
+  if (l.animation) css += `animation:${l.animation};`
+  return css
+}
