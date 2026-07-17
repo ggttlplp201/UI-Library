@@ -1,3 +1,4 @@
+import { useId, useState } from "react";
 import { MARG_FONT_IMPORT } from "./libMarg";
 
 /**
@@ -16,11 +17,25 @@ export const RedStamp = ({
   color?: string;
   /** Tilt in degrees */
   tilt?: number;
-}) => (
+}) => {
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const cls = `mgst${uid}`;
+  const [stamp, setStamp] = useState(0);
+  return (
   <>
-    <style>{MARG_FONT_IMPORT}</style>
-    <div style={{ padding: 10, display: "inline-block" }}>
+    <style>{`${MARG_FONT_IMPORT}
+      @keyframes ${cls}-slam {
+        0% { transform: rotate(${tilt}deg) scale(2.2); opacity: 0; }
+        55% { transform: rotate(${tilt}deg) scale(.92); opacity: 1; }
+        100% { transform: rotate(${tilt}deg) scale(1); opacity: .85; }
+      }
+      .${cls} { animation: ${cls}-slam .45s cubic-bezier(.2,.9,.3,1.4) both; cursor: pointer; }
+    `}</style>
+    <div style={{ padding: 10, display: "inline-block" }} title="Click to re-stamp">
       <span
+        key={stamp}
+        className={cls}
+        onClick={() => setStamp((n) => n + 1)}
         style={{
           display: "inline-block",
           padding: "6px 18px",
@@ -41,4 +56,5 @@ export const RedStamp = ({
       </span>
     </div>
   </>
-);
+  );
+};

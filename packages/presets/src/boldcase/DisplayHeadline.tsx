@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { BOLD, BOLD_FONT_IMPORT } from "./libBold";
 
 /**
@@ -23,10 +24,15 @@ export const DisplayHeadline = ({
   /** Ink color */
   ink?: string;
 }) => {
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const cls = `bcdh${uid}`;
   const words = text.split(" ");
   return (
     <>
-      <style>{BOLD_FONT_IMPORT}</style>
+      <style>{`${BOLD_FONT_IMPORT}
+        .${cls} { transition: transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .2s ease; cursor: default; }
+        .${cls}:hover { transform: rotate(1.5deg) scale(1.06); box-shadow: 9px 9px 0 0 currentColor; }
+      `}</style>
       <h2
         style={{
           margin: 0,
@@ -41,6 +47,7 @@ export const DisplayHeadline = ({
         {words.map((w, i) => (
           <span
             key={`${w}-${i}`}
+            className={i === popWord ? cls : undefined}
             style={{
               display: "inline-block",
               marginRight: ".22em",

@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { BOLD, bentoFrame } from "./libBold";
 
 /**
@@ -22,12 +23,24 @@ export const HalftonePhoto = ({
   height?: number;
   /** Halftone dot pitch in px */
   dotSize?: number;
-}) => (
+}) => {
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const cls = `bchp${uid}`;
+  return (
   <div style={{ padding: 8, display: "inline-block" }}>
-    <figure style={{ ...bentoFrame(), margin: 0, width, boxSizing: "border-box", position: "relative", overflow: "visible" }}>
+    <style>{`
+      .${cls} img { transition: filter .35s ease, transform .35s ease; }
+      .${cls}:hover img { filter: contrast(1.02) saturate(1.15); transform: scale(1.04); }
+      .${cls} .${cls}-dots { transition: opacity .35s ease; }
+      .${cls}:hover .${cls}-dots { opacity: 0.15; }
+      .${cls} figcaption { transition: transform .25s cubic-bezier(.34,1.56,.64,1); }
+      .${cls}:hover figcaption { transform: rotate(0deg) translateY(-2px); }
+    `}</style>
+    <figure className={cls} style={{ ...bentoFrame(), margin: 0, width, boxSizing: "border-box", position: "relative", overflow: "visible" }}>
       <div style={{ position: "relative", height, overflow: "hidden" }}>
         <img src={imageSrc} alt={caption} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", filter: "contrast(1.15)" }} />
         <span
+          className={`${cls}-dots`}
           style={{
             position: "absolute",
             inset: 0,
@@ -57,4 +70,5 @@ export const HalftonePhoto = ({
       </figcaption>
     </figure>
   </div>
-);
+  );
+};

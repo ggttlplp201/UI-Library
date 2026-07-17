@@ -1,13 +1,15 @@
+import { useState } from "react";
 import { C95, bevelIn, bevelOut } from "./lib95";
 
 /**
- * Chicago 95 window — silver chrome frame, navy gradient title bar with
- * pixel-tight controls, and a content well. Original set for Component Style
- * Studio, inspired by mid-90s desktop chrome. MIT.
+ * Chicago 95 window — silver chrome frame, navy title bar whose controls
+ * actually work: minimize collapses the well, maximize widens the frame,
+ * close rolls the window up into a taskbar chip you can click to restore.
+ * Original set for Component Style Studio. MIT.
  */
 export const Win95Window = ({
   title = "My Computer",
-  body = "It is now safe to compose your page. Drop components into this window's well, or change its title above.",
+  body = "It is now safe to compose your page. The controls up there really work — minimize, maximize, close.",
   width = 340,
 }: {
   /** Title bar text */
@@ -16,8 +18,27 @@ export const Win95Window = ({
   body?: string;
   /** Window width in px */
   width?: number;
-}) => (
-  <div style={{ ...bevelOut, width, padding: 3, fontFamily: C95.font, boxSizing: "border-box" }}>
+}) => {
+  const [min, setMin] = useState(false);
+  const [max, setMax] = useState(false);
+  const [closed, setClosed] = useState(false);
+  if (closed)
+    return (
+      <button
+        type="button"
+        onClick={() => setClosed(false)}
+        style={{ ...bevelOut, padding: "4px 12px", fontFamily: C95.font, fontSize: 11, fontWeight: 700, color: C95.ink, cursor: "pointer" }}
+      >
+        ▸ {title}
+      </button>
+    );
+  const controls: Array<[string, () => void, boolean]> = [
+    ["_", () => setMin((v) => !v), min],
+    ["□", () => setMax((v) => !v), max],
+    ["✕", () => setClosed(true), false],
+  ];
+  return (
+  <div style={{ ...bevelOut, width: max ? width + 90 : width, padding: 3, fontFamily: C95.font, boxSizing: "border-box", transition: "width .15s steps(3)" }}>
     <div
       style={{
         display: "flex",
@@ -32,12 +53,14 @@ export const Win95Window = ({
       }}
     >
       <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</span>
-      {["_", "□", "✕"].map((g) => (
+      {controls.map(([g, fn, held]) => (
         <button
           key={g}
           type="button"
+          onClick={fn}
           style={{
-            ...bevelOut,
+            ...(held ? bevelIn : bevelOut),
+            background: held ? C95.chrome : undefined,
             width: 18,
             height: 16,
             fontSize: 9,
@@ -53,8 +76,11 @@ export const Win95Window = ({
         </button>
       ))}
     </div>
-    <div style={{ ...bevelIn, margin: "3px 0 0", padding: "12px 12px 14px", fontSize: 12, lineHeight: 1.5, color: C95.ink }}>
-      {body}
-    </div>
+    {!min && (
+      <div style={{ ...bevelIn, margin: "3px 0 0", padding: "12px 12px 14px", fontSize: 12, lineHeight: 1.5, color: C95.ink }}>
+        {body}
+      </div>
+    )}
   </div>
-);
+  );
+};

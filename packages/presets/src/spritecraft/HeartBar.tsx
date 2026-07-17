@@ -1,3 +1,4 @@
+import { useId, useState } from "react";
 import { SPR, SPR_FONT_IMPORT, pixelBorder } from "./libSprite";
 
 /**
@@ -29,29 +30,58 @@ export const HeartBar = ({
 }: {
   /** Total hearts */
   hearts?: number;
-  /** Filled hearts */
+  /** Starting filled hearts (click hearts to take damage / heal) */
   filled?: number;
   /** Row label */
   label?: string;
-}) => (
-  <>
-    <style>{SPR_FONT_IMPORT}</style>
-    <div style={{ padding: 6, display: "inline-block" }}>
-      <div
-        style={{
-          ...pixelBorder(SPR.ink),
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          background: SPR.parchment,
-          padding: "9px 14px 7px",
-        }}
-      >
-        <span style={{ fontFamily: SPR.font, fontSize: 11, color: SPR.ink }}>{label}</span>
-        {Array.from({ length: Math.max(1, hearts) }, (_, i) => (
-          <Heart key={i} filled={i < filled} />
-        ))}
+}) => {
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const cls = `sprhp${uid}`;
+  const total = Math.max(1, hearts);
+  const [hp, setHp] = useState(Math.min(total, filled));
+  const [hurt, setHurt] = useState(0);
+  const set = (next: number) => {
+    if (next < hp) setHurt((n) => n + 1);
+    setHp(next);
+  };
+  return (
+    <>
+      <style>{`${SPR_FONT_IMPORT}
+        @keyframes ${cls}-sh { 0%,100% { transform: translate(0); } 25% { transform: translate(-3px, 1px); } 75% { transform: translate(3px, -1px); } }
+        .${cls}-hurt { animation: ${cls}-sh .16s linear 2; }
+        .${cls}-h { cursor: pointer; transition: transform .12s ease; background: none; border: none; padding: 0; }
+        .${cls}-h:hover { transform: scale(1.15); }
+      `}</style>
+      <div style={{ padding: 6, display: "inline-block" }}>
+        <div
+          key={hurt}
+          className={hurt ? `${cls}-hurt` : undefined}
+          style={{
+            ...pixelBorder(SPR.ink),
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            background: SPR.parchment,
+            padding: "9px 14px 7px",
+          }}
+        >
+          <span style={{ fontFamily: SPR.font, fontSize: 11, color: SPR.ink }}>{label}</span>
+          {Array.from({ length: total }, (_, i) => (
+            <button
+              key={i}
+              type="button"
+              className={`${cls}-h`}
+              title={i + 1 <= hp ? "Take damage" : "Heal"}
+              onClick={() => set(i + 1 === hp ? i : i + 1)}
+            >
+              <Heart filled={i < hp} />
+            </button>
+          ))}
+          <span style={{ fontFamily: SPR.font, fontSize: 11, color: SPR.ink, marginLeft: 4 }}>
+            {hp}/{total}
+          </span>
+        </div>
       </div>
-    </div>
-  </>
-);
+    </>
+  );
+};
