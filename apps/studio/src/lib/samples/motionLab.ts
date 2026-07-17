@@ -35,7 +35,7 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 5080,
+    boardHeight: 6080,
     fx: {
       loader: 'equalizer',
       loaderAccent: RED,
@@ -46,7 +46,7 @@ function build(): Page[] {
     instances: [
       inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
         w: 1280,
-        h: 5080,
+        h: 6080,
         args: { accent: '#ff5a4f', base: RED, glowStrength: 0.12 },
       }),
       // — Title card: red display type + film still inside a black frame —
@@ -119,9 +119,17 @@ function build(): Page[] {
         args: { children: 'Click here' },
         style: { fontSize: 24, color: INKRED, fontFamily: SERIF, fontStyle: 'italic' },
       }),
+      // — Scroll-drawn strokes —
+      act(4230, 'Draw'),
+      filmFrame(60, 4290, 620, 560),
+      inst(preset('src/scroll/ScrollStrokePath.tsx'), 110, 4340, {}),
+      inst(preset('src/scroll/ScrollProgressCircle.tsx'), 780, 4360, {}),
+      // — Pointer play —
+      act(4920, 'Drag'),
+      inst(preset('src/effects/GooeyDrag.tsx'), 60, 4990, {}),
       // — Programme: pill index, rows flood black on hover —
-      act(4300, 'Programme'),
-      inst(preset('src/sections/HoverRowTable.tsx'), 60, 4370, {
+      act(5300, 'Programme'),
+      inst(preset('src/sections/HoverRowTable.tsx'), 60, 5370, {
         args: {
           header: 'Act | Set piece | Driver',
           rows: 'I — Reveal | Character cascade | scroll\nII — Band | Rolling type | loop\nIII — Stack | Sticky cards | pin\nIV — Rhythm | Fade rows | view()\nV — Count | Live numerals | spring\nVI — Hover | Instruments | pointer',
@@ -136,10 +144,10 @@ function build(): Page[] {
         },
       }),
       // — Closing ribbon: asterisk marquee on a black band —
-      inst(preset('src/basics/PanelBand.tsx'), 0, 4900, {
+      inst(preset('src/basics/PanelBand.tsx'), 0, 5900, {
         args: { width: 1280, height: 120, background: FILM, borderColor: FILM, radius: 0 },
       }),
-      inst(preset('src/effects/Marquee.tsx'), 0, 4926, {
+      inst(preset('src/effects/Marquee.tsx'), 0, 5926, {
         w: 1280,
         args: { children: 'Reveals * Zooms * Counters * Cursors * Motion Lab *' },
         style: { fontFamily: SERIF, fontStyle: 'italic', fontSize: 42, color: RED },

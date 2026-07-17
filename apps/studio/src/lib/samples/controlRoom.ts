@@ -2,10 +2,9 @@ import { newPageId, type Page } from '../canvas'
 import { inst, preset, type SampleProject } from './types'
 
 /**
- * Control Room — the instrument panel in the Depot register, effects and
- * all: a frosted glass console floats over full-bleed photography, its mono
- * index inverts row by row and swaps the photograph behind the glass as you
- * hover. Glass bays of live instruments below, ice-blue signal throughout.
+ * Control Room — the dark-console showcase: every readout, switch, slider,
+ * terminal and retro-OS component in the library, grouped into frosted glass
+ * bays on a cold near-black stage (Depot's styling, our content).
  */
 const ICE = '#9FC2D4'
 const INK = '#eef3f6'
@@ -20,6 +19,7 @@ const GLASS_EDGE = 'rgba(255,255,255,0.13)'
 const zone = (x: number, y: number, text: string) =>
   inst(preset('src/basics/TextBlock.tsx'), x, y, {
     args: { text, size: 12, color: ICE, font: MONO },
+    anim: { preset: 'fade', trigger: 'scroll', duration: 0.5, delay: 0, easing: 'ease-out', once: true },
   })
 
 /** Frosted glass bay. */
@@ -28,16 +28,6 @@ const bay = (x: number, y: number, width: number, height: number) =>
     args: { width, height, background: GLASS, borderColor: GLASS_EDGE, radius: 18 },
   })
 
-/** Oversized stat numeral + mono sublabel, Depot console-floor style. */
-const stat = (x: number, y: number, value: string, label: string) => [
-  inst(preset('src/basics/Heading.tsx'), x, y, {
-    args: { text: value, size: 40, color: INK, font: DISPLAY, weight: 700 },
-  }),
-  inst(preset('src/basics/TextBlock.tsx'), x, y + 52, {
-    args: { text: label, size: 9, color: DIM, font: MONO, lineHeight: 1.5 },
-  }),
-]
-
 function build(): Page[] {
   const page: Page = {
     id: newPageId(),
@@ -45,7 +35,7 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 2400,
+    boardHeight: 2820,
     fx: {
       loader: 'newtons-cradle',
       loaderAccent: ICE,
@@ -56,73 +46,77 @@ function build(): Page[] {
     instances: [
       inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
         w: 1280,
-        h: 2400,
+        h: 2820,
         args: { accent: '#7fa8bd', base: '#05080b', glowStrength: 0.11 },
       }),
-      // — The hero IS the effect: hover a row, the photograph behind the
-      //   glass swaps and the row floods white.
-      inst(preset('src/sections/ImageRevealIndex.tsx'), 0, 0, {
-        w: 1280,
-        h: 860,
-        args: {
-          brand: 'CONTROL ROOM',
-          tagline: 'THOUGHTFUL FROM START TO FINISH\n— PRECISE, SIMPLE, EFFECTIVE.',
-          nav: 'PANEL | TELEMETRY | POWER | CALL',
-          label: 'INSTRUMENTS',
-          header: 'NAME | TYPE | YEAR',
-          rows: 'HOLO | IDENTITY | 2027\nNEURAL | BRANDING | 2028\nFLUX | CAMPAIGN | 2028\nGHOST | INTERFACE | 2029\nPULSE | VISUALS | 2026\nNANO | NARRATIVE | 2029\nECHO | MATE | 2030\nPHOTON | LAUNCH | 2030',
-          width: 1280,
-          height: 860,
-          ink: INK,
-          hoverBg: INK,
-          hoverInk: '#05080b',
-        },
+      // — Masthead —
+      inst(preset('src/basics/Heading.tsx'), 60, 50, {
+        args: { text: 'CONTROL ROOM', size: 72, color: INK, font: DISPLAY, weight: 800, tracking: -0.03, lineHeight: 0.95 },
       }),
-      // Stat numerals land on the open floor of the glass console.
-      ...stat(370, 650, '29+', 'COMPLETED\nPROJECTS'),
-      ...stat(520, 650, '75K+', 'MONTHLY ORGANIC\nTRAFFIC'),
-      ...stat(690, 650, '98%', 'PANEL HAPPINESS\nINDEX'),
-      ...stat(845, 650, '2M+', 'SIGNALS\nSERVED'),
-      // — TELEMETRY bay —
-      zone(80, 920, 'TELEMETRY'),
-      bay(60, 950, 540, 430),
-      inst(preset('src/kinetic-lab/LiquidFill.tsx'), 100, 1000, { args: { defaultValue: 64 } }),
-      inst(preset('src/kinetic-ui/KineticRingProgress.tsx'), 380, 1010, { args: { defaultValue: 82 } }),
-      inst(preset('src/text/AnimatedNumbers.tsx', 'AnimatedNumberTicker'), 100, 1255, {}),
-      inst(preset('src/badges/StatusBadge.tsx'), 460, 1265, {}),
-      // — POWER bay —
-      zone(700, 920, 'POWER'),
-      bay(680, 950, 540, 430),
-      inst(preset('src/toggles/IndustrialSwitch.tsx'), 720, 995, {}),
-      inst(preset('src/kinetic-lab/ElasticToggle.tsx'), 730, 1205, {}),
-      inst(preset('src/cupertino/CupertinoSwitch.tsx'), 900, 1205, {}),
-      inst(preset('src/cupertino/CupertinoStepper.tsx'), 900, 1295, {}),
-      // — SIGNAL bay —
-      zone(80, 1435, 'SIGNAL'),
-      bay(60, 1465, 540, 400),
-      inst(preset('src/kinetic-ui/KineticSlider.tsx'), 100, 1525, { w: 260, args: { defaultValue: 36 } }),
-      inst(preset('src/kinetic-lab/RadialMenu.tsx'), 400, 1505, {}),
-      inst(preset('src/cupertino/CupertinoSlider.tsx'), 100, 1655, {}),
-      inst(preset('src/cupertino/CupertinoProgress.tsx'), 100, 1765, {}),
-      // — SYSTEM bay —
-      zone(700, 1435, 'SYSTEM'),
-      bay(680, 1465, 540, 400),
-      inst(preset('src/navigation/SettingsNavList.tsx'), 720, 1510, {}),
+      inst(preset('src/basics/TextBlock.tsx'), 62, 145, {
+        args: { text: 'READOUTS · SWITCHES · TERMINALS · SYSTEM', size: 12, color: DIM, font: MONO },
+      }),
+      // — READOUTS —
+      zone(80, 210, 'READOUTS'),
+      bay(60, 240, 1160, 430),
+      inst(preset('src/kinetic-lab/LiquidFill.tsx'), 100, 290, { args: { defaultValue: 64 } }),
+      inst(preset('src/kinetic-ui/KineticRingProgress.tsx'), 390, 300, { args: { defaultValue: 82 } }),
+      inst(preset('src/text/AnimatedNumbers.tsx', 'AnimatedNumberTicker'), 680, 330, {}),
+      inst(preset('src/badges/StatusBadge.tsx'), 1050, 340, {}),
+      inst(preset('src/cupertino/CupertinoProgress.tsx'), 100, 560, {}),
+      inst(preset('src/chicago95/Win95Progress.tsx'), 480, 560, {}),
+      inst(preset('src/feedback/GradientStrokeLoader.tsx'), 850, 540, {}),
+      // — SWITCHES —
+      zone(80, 710, 'SWITCHES'),
+      bay(60, 740, 1160, 480),
+      inst(preset('src/toggles/IndustrialSwitch.tsx'), 100, 790, {}),
+      inst(preset('src/toggles/BigRedSwitch.tsx'), 350, 790, {}),
+      inst(preset('src/toggles/LeverSwitch.tsx'), 580, 790, {}),
+      inst(preset('src/toggles/MoonSwitch.tsx'), 800, 795, {}),
+      inst(preset('src/kinetic-lab/ElasticToggle.tsx'), 1020, 800, {}),
+      inst(preset('src/cupertino/CupertinoSwitch.tsx'), 100, 1030, {}),
+      inst(preset('src/cupertino/CupertinoStepper.tsx'), 300, 1030, {}),
+      inst(preset('src/toggles/BookmarkToggle.tsx'), 540, 1030, {}),
+      inst(preset('src/toggles/ThemeToggleIcons.tsx'), 700, 1035, {}),
+      inst(preset('src/toggles/DynamicIslandToggle.tsx'), 880, 1020, {}),
+      // — SLIDERS —
+      zone(80, 1260, 'SLIDERS'),
+      bay(60, 1290, 560, 340),
+      inst(preset('src/kinetic-ui/KineticSlider.tsx'), 100, 1350, { w: 260, args: { defaultValue: 36 } }),
+      inst(preset('src/kinetic-lab/RadialMenu.tsx'), 420, 1330, {}),
+      inst(preset('src/cupertino/CupertinoSlider.tsx'), 100, 1480, {}),
+      // — TERMINAL (Glitchtype kit) —
+      zone(700, 1260, 'TERMINAL'),
+      bay(680, 1290, 540, 340),
+      inst(preset('src/glitchtype/GlitchInput.tsx'), 720, 1340, {}),
+      inst(preset('src/glitchtype/GlitchToggle.tsx'), 1020, 1345, {}),
+      inst(preset('src/glitchtype/GlitchBadge.tsx'), 1020, 1420, {}),
+      inst(preset('src/glitchtype/GlitchButton.tsx'), 720, 1440, {}),
+      inst(preset('src/glitchtype/GlitchHeading.tsx'), 720, 1520, {}),
+      // — TERMINAL CARDS —
+      inst(preset('src/glitchtype/TerminalCard.tsx'), 60, 1690, {}),
+      inst(preset('src/glitchtype/ScanlinePanel.tsx'), 500, 1690, {}),
+      inst(preset('src/glitchtype/GlitchMarquee.tsx'), 60, 1990, {}),
+      // — SYSTEM 95 (Chicago 95 kit) —
+      zone(80, 2090, 'SYSTEM 95'),
+      bay(60, 2120, 1160, 420),
+      inst(preset('src/chicago95/Win95Window.tsx'), 100, 2170, {}),
+      inst(preset('src/chicago95/Win95Tabs.tsx'), 560, 2170, {}),
+      inst(preset('src/chicago95/Win95Dialog.tsx'), 900, 2170, {}),
+      inst(preset('src/basics/PanelBand.tsx'), 545, 2400, {
+        args: { width: 430, height: 80, background: '#c0c0c0', borderColor: '#808080', radius: 2 },
+      }),
+      inst(preset('src/chicago95/Win95Checkbox.tsx'), 565, 2425, {}),
+      inst(preset('src/chicago95/Win95Tooltip.tsx'), 810, 2425, {}),
       // — CONSOLE row —
-      zone(80, 1925, 'CONSOLE'),
-      inst(preset('src/basics/Divider.tsx'), 60, 1955, { args: { width: 1160, color: 'rgba(159,194,212,0.25)' } }),
-      inst(preset('src/overlays/DynamicIslandDemo.tsx'), 60, 1995, {}),
-      inst(preset('src/buttons/MusicToggleButton.tsx'), 700, 2035, {}),
-      inst(preset('src/buttons/PushButton3D.tsx'), 950, 2045, {
+      zone(80, 2590, 'CONSOLE'),
+      inst(preset('src/basics/Divider.tsx'), 60, 2620, { args: { width: 1160, color: 'rgba(159,194,212,0.25)' } }),
+      inst(preset('src/overlays/DynamicIslandDemo.tsx'), 60, 2650, {}),
+      inst(preset('src/buttons/MusicToggleButton.tsx'), 700, 2690, {}),
+      inst(preset('src/buttons/PushButton3D.tsx'), 950, 2700, {
         args: { label: 'ARM', hue: 205 },
       }),
-      inst(preset('src/basics/TextBlock.tsx'), 62, 2255, {
-        args: { text: 'ALL INSTRUMENTS LIVE.', maxWidth: 560, size: 11, color: DIM, font: MONO },
-      }),
-      inst(preset('src/text/TextShimmer.tsx'), 60, 2315, {
-        args: { children: 'ALL SYSTEMS NOMINAL' },
-        style: { fontSize: 18, fontFamily: MONO },
-      }),
+      inst(preset('src/chicago95/Win95Taskbar.tsx'), 0, 2770, { w: 1280 }),
     ],
   }
   return [page]
@@ -131,9 +125,9 @@ function build(): Page[] {
 export const controlRoom: SampleProject = {
   id: 'control-room',
   title: 'Control Room',
-  tagline: 'Glass console over photography that answers your cursor',
+  tagline: 'Every instrument in the library, on one dark console',
   detail:
-    'A frosted console floats over full-bleed photography — hover the mono index and each row floods white while the photograph behind the glass swaps. Glass bays of live instruments below: fills, rings, faders, switch banks, Cupertino glass and a dynamic island.',
+    'Readouts, switch banks, sliders, the full Glitchtype terminal kit and the Chicago 95 system kit — grouped into frosted glass bays with a Win95 taskbar closing the page. All live.',
   accent: ICE,
   build,
 }

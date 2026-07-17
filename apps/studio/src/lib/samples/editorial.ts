@@ -21,12 +21,12 @@ function build(): Page[] {
     nodeX: 90,
     nodeY: 130,
     artboardWidth: 1280,
-    boardHeight: 3700,
+    boardHeight: 4420,
     fx: { loader: 'bar', loaderAccent: INK, loaderMs: 900 },
     instances: [
       inst(preset('src/basics/PageBackdrop.tsx'), 0, 0, {
         w: 1280,
-        h: 3700,
+        h: 4420,
         args: { accent: '#EFE6A6', base: PAPER, glowStrength: 0.3 },
       }),
       // — Masthead with serif corners —
@@ -101,22 +101,34 @@ function build(): Page[] {
           italic: true,
         },
       }),
+      // — Posters (Boldcase kit) —
+      inst(preset('src/basics/Heading.tsx'), 60, 1860, {
+        args: { text: 'Posters', size: 52, color: INK, font: SERIF, weight: 500 },
+        anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.5, delay: 0, easing: 'ease-out', once: true },
+      }),
+      inst(preset('src/boldcase/DisplayHeadline.tsx'), 60, 1950, {}),
+      inst(preset('src/boldcase/TapeLabel.tsx'), 640, 1960, {}),
+      inst(preset('src/boldcase/IndexChip.tsx'), 820, 1960, {}),
+      inst(preset('src/boldcase/StudioStat.tsx'), 980, 1950, {}),
+      inst(preset('src/boldcase/HalftonePhoto.tsx'), 60, 2140, {}),
+      inst(preset('src/boldcase/BentoCard.tsx'), 420, 2140, {}),
+      inst(preset('src/boldcase/MarqueeRule.tsx'), 0, 2480, { w: 1280 }),
       // — Studies —
-      inst(preset('src/basics/Heading.tsx'), 60, 1900, {
+      inst(preset('src/basics/Heading.tsx'), 60, 2620, {
         args: { text: 'Studies', size: 52, color: INK, font: SERIF, weight: 500 },
       }),
-      inst(preset('src/basics/Divider.tsx'), 60, 1975, { args: { width: 1160, color: 'rgba(23,21,15,0.18)' } }),
-      inst(preset('src/hover/HoverExpand.tsx', 'HoverExpand_001'), 60, 2020, {}),
-      inst(preset('src/basics/TextBlock.tsx'), 60, 2400, {
+      inst(preset('src/basics/Divider.tsx'), 60, 2695, { args: { width: 1160, color: 'rgba(23,21,15,0.18)' } }),
+      inst(preset('src/hover/HoverExpand.tsx', 'HoverExpand_001'), 60, 2740, {}),
+      inst(preset('src/basics/TextBlock.tsx'), 60, 3120, {
         args: { text: 'Hover studies.', size: 19, color: SOFT, font: SERIF, italic: true },
       }),
       // — Index: hover a row, its photograph appears —
-      inst(preset('src/basics/Divider.tsx'), 60, 2560, { args: { width: 1160, color: 'rgba(23,21,15,0.18)' } }),
-      inst(preset('src/basics/Heading.tsx'), 60, 2620, {
+      inst(preset('src/basics/Divider.tsx'), 60, 3280, { args: { width: 1160, color: 'rgba(23,21,15,0.18)' } }),
+      inst(preset('src/basics/Heading.tsx'), 60, 3340, {
         args: { text: 'Index', size: 52, color: INK, font: SERIF, weight: 500 },
         anim: { preset: 'slide-up', trigger: 'scroll', duration: 0.5, delay: 0, easing: 'ease-out', once: true },
       }),
-      inst(preset('src/sections/HoverIndexReveal.tsx'), 60, 2710, {
+      inst(preset('src/sections/HoverIndexReveal.tsx'), 60, 3430, {
         args: {
           rows: 'Harbor | 2026\nMarket | 2025\nRiver | 2025\nRidge | 2024',
           images:
@@ -129,7 +141,7 @@ function build(): Page[] {
         },
       }),
       // — Signed closer —
-      inst(preset('src/text/SignatureOverType.tsx'), 60, 3220, {
+      inst(preset('src/text/SignatureOverType.tsx'), 60, 3940, {
         args: {
           lines: 'FIELD NOTES\n2019–2026',
           signature: '— L.',
@@ -141,7 +153,7 @@ function build(): Page[] {
         },
         anim: { preset: 'fade', trigger: 'scroll', duration: 0.7, delay: 0, easing: 'ease-out', once: true },
       }),
-      inst(preset('src/marginalia/InkButton.tsx'), 540, 3560, {}),
+      inst(preset('src/marginalia/InkButton.tsx'), 540, 4280, {}),
     ],
   }
   return [page]

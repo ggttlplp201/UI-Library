@@ -18,7 +18,8 @@ export type PillNavItem = {
 };
 
 export interface PillNavProps {
-  logo: string;
+  /** Logo image URL (SVG data-URI by default) */
+  logo?: string;
   logoAlt?: string;
   /** Nav pills */
   items?: PillNavItem[];
@@ -33,8 +34,11 @@ export interface PillNavProps {
   initialLoadAnimation?: boolean;
 }
 
+const DEFAULT_LOGO =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='11' fill='%23120F17'/><circle cx='12' cy='12' r='4' fill='white'/></svg>";
+
 export const PillNav: React.FC<PillNavProps> = ({
-  logo,
+  logo = DEFAULT_LOGO,
   logoAlt = 'Logo',
   items = [
     { label: "Home", href: "#" },
